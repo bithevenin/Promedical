@@ -252,6 +252,15 @@ export class PacientesPage implements OnInit {
     }
   }
 
+  async eliminarTodosLosPacientes() {
+    if (confirm('¿Estás seguro de que deseas eliminar TODOS los pacientes del sistema? Esta acción NO se puede deshacer.')) {
+      if (confirm('Última advertencia: Esto borrará por completo la base de datos de pacientes. ¿Deseas continuar?')) {
+        await this.patientService.deleteAllPatients();
+        this.presentToast('Todos los pacientes han sido eliminados.', 'success');
+      }
+    }
+  }
+
   closeModals() {
     this.showHistoryModal = false;
     this.showEditModal = false;

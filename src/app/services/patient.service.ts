@@ -123,7 +123,7 @@ export class PatientService {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
         edad: fullPatient.edad,
-        fecha_nacimiento: paciente.fecha_nacimiento,
+        fecha_nacimiento: paciente.fecha_nacimiento || null,
         profesion: paciente.profesion,
         seguro: paciente.seguro,
         sexo: paciente.sexo,
@@ -151,7 +151,7 @@ export class PatientService {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
         edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad,
-        fecha_nacimiento: paciente.fecha_nacimiento,
+        fecha_nacimiento: paciente.fecha_nacimiento || null,
         profesion: paciente.profesion,
         seguro: paciente.seguro,
         sexo: paciente.sexo,
@@ -182,6 +182,16 @@ export class PatientService {
     } catch (error) {
       return error;
     }
+  }
+
+  async deleteAllPatients() {
+    if (navigator.onLine) {
+      // Supabase requires a filter for deletes by default, so we use a condition that matches everything
+      const { error } = await this.supabase.from('pacientes').delete().not('cedula', 'eq', 'impossible_value_123');
+      if (error) console.error("Error deleting remote patients:", error);
+    }
+    await this.offlineService.clearStore('pacientes');
+    this.patientsSubject.next([]);
   }
 
   calcularEdad(fechaNacimiento: string): number {

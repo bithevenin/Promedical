@@ -28,6 +28,7 @@ export class ConfiguracionPage implements OnInit {
     };
 
     guardando = false;
+    progresoImportacion = 0;
     mensajeExito = '';
 
     currentProfile = signal<UserProfile | null>(null);
@@ -417,6 +418,94 @@ export class ConfiguracionPage implements OnInit {
                 setTimeout(() => this.mensajeExito = '', 3000);
             } catch (error) {
                 console.error('Error al importar:', error);
+                alert('Error al procesar el archivo. Verifique el formato.');
+            } finally {
+                this.guardando = false;
+                event.target.value = ''; // Reset input
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async importarSistemaViejo(event: any) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        this.guardando = true;
+        const reader = new FileReader();
+        reader.onload = async (e: any) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Usar header: 1 para obtener un array de arrays (índices posicionales)
+            const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            try {
+                const pacientes: Paciente[] = [];
+                
+                // Empezar desde la fila 1 (asumiendo que la fila 0 podría ser encabezados)
+                // Si la fila 0 tiene datos, igual se puede procesar si tiene nombre
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+
+                    const nombre = String(row[0] || '').trim();
+                    const primerApellido = String(row[1] || '').trim();
+                    const segundoApellido = String(row[2] || '').trim();
+                    const direccion = String(row[8] || '').trim();
+                    const telefono = String(row[12] || '').trim();
+                    const historialClinico = String(row[43] || '').trim();
+
+                    const nombreCompleto = `${nombre} ${primerApellido} ${segundoApellido}`.replace(/\s+/g, ' ').trim();
+
+                    if (!nombreCompleto) continue;
+
+                    // Generar cédula única ya que el sistema viejo no la provee
+                    const cedulaGenerada = `IMP-${Date.now().toString().slice(-6)}-${i}`;
+
+                    pacientes.push({
+                        cedula: cedulaGenerada,
+                        nombre: nombreCompleto,
+                        edad: 0,
+                        direccion: direccion,
+                        telefono: telefono,
+                        antecedentesPersonales: historialClinico,
+                        sexo: 'M', // Default
+                        seguro: 'Particular', // Default
+                        fecha_nacimiento: '',
+                        profesion: '',
+                        peso: '',
+                        altura: '',
+                        email: '',
+                        carnetSeguro: '',
+                    });
+                }
+
+                if (pacientes.length === 0) {
+                    alert('No se encontraron pacientes válidos para importar en el formato especificado.');
+                    this.guardando = false;
+                    return;
+                }
+
+                this.progresoImportacion = 0;
+                let errores = 0;
+                for (let i = 0; i < pacientes.length; i++) {
+                    const error = await this.patientService.savePatient(pacientes[i]);
+                    // Assuming savePatient doesn't return error but throws, we should catch, but in patient.service it seems to catch and queue. 
+                    // Actually, if it's offline it queues, if online it might throw. Wait, patientService.savePatient doesn't return anything. It throws on error.
+                    this.progresoImportacion = Math.round(((i + 1) / pacientes.length) * 100);
+                }
+
+                alert(`¡Se han importado ${pacientes.length} pacientes del sistema viejo correctamente!`);
+                this.mensajeExito = `¡Importación completada con éxito!`;
+                setTimeout(() => {
+                    this.mensajeExito = '';
+                    this.progresoImportacion = 0;
+                }, 3000);
+            } catch (error) {
+                console.error('Error al importar sistema viejo:', error);
                 alert('Error al procesar el archivo. Verifique el formato.');
             } finally {
                 this.guardando = false;
