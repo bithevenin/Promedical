@@ -19,7 +19,9 @@ export class CitasPage implements OnInit {
     altura: '',
     peso: '',
     profesion: '',
-    seguro: 'Particular'
+    seguro: 'Particular',
+    sexo: 'M' as 'M' | 'F',
+    telefono: ''
   };
 
   // Listado de ARS (se carga dinámicamente)
@@ -30,10 +32,13 @@ export class CitasPage implements OnInit {
   proximoTurno: number = 1;
   errorBusqueda: string = '';
 
+  fechaSeleccionada: string = new Date().toISOString().split('T')[0];
+  fechaFiltro: string = new Date().toISOString().split('T')[0];
+
   // Exponer Math para el template
   Math = Math;
 
-  constructor(private citasService: CitasService) { }
+  constructor(public citasService: CitasService) { }
 
   ngOnInit() {
     this.citasService.config$.subscribe(config => {
@@ -41,14 +46,24 @@ export class CitasPage implements OnInit {
     });
 
     this.citasService.appointments$.subscribe(appointments => {
-      this.proximasCitas = appointments.filter(c => c.estado === 'espera');
-      this.citasPorCobrar = appointments.filter(c => c.estado === 'por_pagar');
-
-      const allAppointments = this.citasService.getAppointments();
-      this.proximoTurno = allAppointments.length > 0
-        ? Math.max(...allAppointments.map(c => c.turno)) + 1
-        : 1;
+      this.actualizarListas(appointments);
     });
+  }
+
+  cambiarFechaFiltro(event: any) {
+    this.fechaFiltro = event.detail.value.split('T')[0];
+    this.actualizarListas(this.citasService.getAppointments());
+  }
+
+  actualizarListas(appointments: Cita[]) {
+    this.proximasCitas = appointments.filter(c => c.estado === 'espera' && c.fecha === this.fechaFiltro);
+    this.citasPorCobrar = appointments.filter(c => c.estado === 'por_pagar' && c.fecha === this.fechaFiltro);
+
+    // Calcular próximo turno solo para el día de hoy o el día seleccionado
+    const citasDelDia = appointments.filter(c => c.fecha === this.fechaSeleccionada);
+    this.proximoTurno = citasDelDia.length > 0
+      ? Math.max(...citasDelDia.map(c => c.turno)) + 1
+      : 1;
   }
 
   // Modal de cobro
@@ -142,6 +157,19 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
     };
   }
 
+  enviarRecordatorio(cita: Cita) {
+    const telefono = cita.telefono || '';
+    const name = cita.nombre;
+    const time = cita.hora;
+    const date = cita.fecha;
+
+    const message = `Hola ${name}, le recordamos su cita el día ${date} a las ${time} en el consultorio del Dr. Thevenin. Por favor confirme su asistencia.`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank');
+  }
+
   cambiarModo(modo: 'nuevo' | 'registrado') {
     this.modoRegistro = modo;
     this.limpiarFormulario();
@@ -159,8 +187,10 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         edad: paciente.edad,
         profesion: paciente.profesion,
         seguro: paciente.seguro,
+        sexo: paciente.sexo || 'M',
         altura: paciente.altura || '',
-        peso: paciente.peso || ''
+        peso: paciente.peso || '',
+        telefono: paciente.telefono || ''
       };
     } else {
       this.errorBusqueda = 'Paciente no encontrado. Use el modo "Nuevo" para registrarlo.';
@@ -176,8 +206,10 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         edad: this.nuevoPaciente.edad,
         profesion: this.nuevoPaciente.profesion,
         seguro: this.nuevoPaciente.seguro,
+        sexo: this.nuevoPaciente.sexo,
         altura: this.nuevoPaciente.altura,
-        peso: this.nuevoPaciente.peso
+        peso: this.nuevoPaciente.peso,
+        telefono: this.nuevoPaciente.telefono
       };
       this.citasService.savePatient(datosPaciente);
 
@@ -188,15 +220,19 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         cedula: this.nuevoPaciente.cedula,
         edad: this.nuevoPaciente.edad,
         seguro: this.nuevoPaciente.seguro,
+        sexo: this.nuevoPaciente.sexo,
+        fecha: this.fechaSeleccionada,
         estado: 'espera',
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         altura: this.nuevoPaciente.altura,
         peso: this.nuevoPaciente.peso,
-        profesion: this.nuevoPaciente.profesion
+        profesion: this.nuevoPaciente.profesion,
+        telefono: this.nuevoPaciente.telefono
       };
 
       this.citasService.addAppointment(nuevaCita);
       this.limpiarFormulario();
+      this.fechaSeleccionada = new Date().toISOString().split('T')[0]; // Reset date
     }
   }
 
@@ -208,7 +244,9 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
       altura: '',
       peso: '',
       profesion: '',
-      seguro: 'Particular'
+      seguro: 'Particular',
+      sexo: 'M',
+      telefono: ''
     };
     this.errorBusqueda = '';
   }

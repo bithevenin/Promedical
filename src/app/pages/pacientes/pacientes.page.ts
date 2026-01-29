@@ -19,6 +19,19 @@ export class PacientesPage implements OnInit {
   pacienteSeleccionado: Paciente | null = null;
   historialPaciente: Consulta[] = [];
 
+  // Tab control in History Modal
+  activeTab: 'consultas' | 'clinico' = 'consultas';
+
+  // Vital Signs Form
+  nuevosSignos = {
+    presionArterial: '',
+    frecuenciaCardiaca: 0,
+    temperatura: 0,
+    peso: 0,
+    talla: 0,
+    imc: 0
+  };
+
   // Edit Form
   editData: Paciente = {
     cedula: '',
@@ -26,8 +39,14 @@ export class PacientesPage implements OnInit {
     edad: 0,
     profesion: '',
     seguro: '',
+    sexo: 'M',
     altura: '',
-    peso: ''
+    peso: '',
+    telefono: '',
+    email: '',
+    antecedentesPersonales: '',
+    antecedentesFamiliares: '',
+    alergias: ''
   };
 
   listaSeguros: string[] = ['Particular'];
@@ -77,6 +96,29 @@ export class PacientesPage implements OnInit {
     this.showHistoryModal = false;
     this.showEditModal = false;
     this.pacienteSeleccionado = null;
+    this.activeTab = 'consultas';
+  }
+
+  // Clinical History Logic
+  calcularIMC() {
+    if (this.nuevosSignos.peso > 0 && this.nuevosSignos.talla > 0) {
+      const tallaMeters = this.nuevosSignos.talla / 100;
+      this.nuevosSignos.imc = Number((this.nuevosSignos.peso / (tallaMeters * tallaMeters)).toFixed(1));
+    }
+  }
+
+  guardarSignos() {
+    if (this.pacienteSeleccionado && this.nuevosSignos.peso > 0) {
+      const signos = {
+        ...this.nuevosSignos,
+        fecha: new Date().toLocaleDateString()
+      };
+      this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
+      // Actualizar paciente seleccionado para reflejar cambios
+      this.pacienteSeleccionado = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula) || null;
+      // Reset form
+      this.nuevosSignos = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0 };
+    }
   }
 
   consultarPaciente(paciente: Paciente) {

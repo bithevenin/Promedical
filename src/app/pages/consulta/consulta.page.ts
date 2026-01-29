@@ -58,6 +58,8 @@ export class ConsultaPage implements OnInit {
         cedula: paciente.cedula,
         edad: paciente.edad,
         seguro: paciente.seguro,
+        sexo: paciente.sexo || 'M',
+        fecha: new Date().toISOString().split('T')[0],
         estado: 'consulta',
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         altura: paciente.altura,

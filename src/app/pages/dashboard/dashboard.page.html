@@ -52,8 +52,8 @@
           <span class="dot"></span>
         </button>
         <div class="user-info hide-on-tablet">
-          <span class="user-name">Dr. Alex Smith</span>
-          <span class="user-role">Administrador</span>
+          <span class="user-name">ProMedical System</span>
+          <span class="user-role">Control de Panel</span>
         </div>
       </div>
     </header>
@@ -107,7 +107,10 @@
                 @for (item of recentActivity(); track item.id) {
                 <div class="activity-item d-flex align-items-center justify-content-between p-2 p-md-3 mb-2 rounded-3">
                   <div class="d-flex align-items-center gap-2 gap-md-3">
-                    <img [src]="item.avatar" class="rounded-circle avatar-img" alt="User">
+                    <div class="avatar-icon-box rounded-circle d-flex align-items-center justify-content-center"
+                      [ngClass]="item.sexo === 'M' ? 'bg-primary-light text-primary' : 'bg-danger-light text-danger'">
+                      <ion-icon [name]="item.sexo === 'M' ? 'man' : 'woman'"></ion-icon>
+                    </div>
                     <div>
                       <h6 class="m-0 fw-bold text-white small-mobile">{{ item.user }}</h6>
                       <small class="text-light opacity-75 d-none d-md-block">{{ item.action }}</small>

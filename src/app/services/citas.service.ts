@@ -1,15 +1,32 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
+export interface SignoVital {
+  fecha: string;
+  presionArterial: string;
+  frecuenciaCardiaca: number;
+  temperatura: number;
+  peso: number;
+  talla: number;
+  imc: number;
+}
+
 export interface Paciente {
   cedula: string;
   nombre: string;
   edad: number;
   profesion: string;
   seguro: string;
+  sexo: 'M' | 'F';
+  telefono?: string;
+  email?: string;
   altura?: string;
   peso?: string;
-  carnetSeguro?: string; // Número de carnet del seguro
+  carnetSeguro?: string;
+  antecedentesPersonales?: string;
+  antecedentesFamiliares?: string;
+  alergias?: string;
+  signosVitales?: SignoVital[];
 }
 
 export interface Cita {
@@ -18,6 +35,8 @@ export interface Cita {
   cedula: string;
   edad: number;
   seguro: string;
+  sexo: 'M' | 'F';
+  fecha: string; // YYYY-MM-DD
   estado: 'espera' | 'consulta' | 'por_pagar' | 'atendido';
   hora: string;
   altura?: string;
@@ -26,6 +45,7 @@ export interface Cita {
   instruccionCobro?: 'cobrar' | 'seguro' | 'gratis';
   montoCobrado?: number;
   carnetSeguro?: string;
+  telefono?: string;
 }
 
 export interface Consulta {
@@ -203,6 +223,25 @@ export class CitasService {
     const history: Consulta[] = data ? JSON.parse(data) : [];
     history.push(consulta);
     localStorage.setItem(this.historyKey, JSON.stringify(history));
+  }
+
+  addSignosVitales(cedula: string, signos: SignoVital) {
+    const paciente = this.findPatientByCedula(cedula);
+    if (paciente) {
+      if (!paciente.signosVitales) paciente.signosVitales = [];
+      paciente.signosVitales.push(signos);
+      this.savePatient(paciente);
+    }
+  }
+
+  updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
+    const paciente = this.findPatientByCedula(cedula);
+    if (paciente) {
+      paciente.antecedentesPersonales = data.personales ?? paciente.antecedentesPersonales;
+      paciente.antecedentesFamiliares = data.familiares ?? paciente.antecedentesFamiliares;
+      paciente.alergias = data.alergias ?? paciente.alergias;
+      this.savePatient(paciente);
+    }
   }
 
   // --- Accounting ---

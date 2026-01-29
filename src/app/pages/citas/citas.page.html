@@ -121,24 +121,44 @@
                     </select>
                   </div>
                   <div class="col-6">
+                    <label class="form-label small fw-bold text-light">Sexo</label>
+                    <select class="form-select custom-input" [(ngModel)]="nuevoPaciente.sexo"
+                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda">
+                      <option value="M">Masculino</option>
+                      <option value="F">Femenino</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-4">
                     <label class="form-label small fw-bold text-light">Altura (cm)</label>
                     <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.altura"
                       placeholder="Ej. 175">
                   </div>
+                  <div class="col-4">
+                    <label class="form-label small fw-bold text-light">Peso (kg)</label>
+                    <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.peso"
+                      placeholder="Ej. 70">
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label small fw-bold text-light">Teléfono</label>
+                    <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.telefono"
+                      placeholder="809-XXX... ">
+                  </div>
                 </div>
 
                 <div class="mb-4">
-                  <label class="form-label small fw-bold text-light">Peso (kg)</label>
-                  <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.peso"
-                    placeholder="Ej. 70">
+                  <label class="form-label small fw-bold text-light">Fecha de la Cita</label>
+                  <input type="date" class="form-control custom-input" [(ngModel)]="fechaSeleccionada">
                 </div>
 
                 <div class="turno-preview p-3 mb-4 rounded-3 d-flex justify-content-between align-items-center">
                   <div>
-                    <small class="d-block text-primary fw-bold">PRÓXIMO TURNO</small>
+                    <small class="d-block text-primary fw-bold">TURNO ASIGNADO</small>
                     <h3 class="m-0 fw-black">#{{ proximoTurno }}</h3>
                   </div>
-                  <ion-icon name="ticket-outline" class="fs-1 text-primary opacity-25"></ion-icon>
+                  <ion-icon name="calendar-outline" class="fs-1 text-primary opacity-25"></ion-icon>
                 </div>
 
                 <button class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-sm" (click)="registrarCita()"
@@ -154,7 +174,12 @@
             <!-- Turnos en Espera -->
             <div class="card border-0 shadow-sm p-4 rounded-4 mb-4">
               <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold m-0 text-white">Cola de Pacientes</h5>
+                <div class="d-flex align-items-center gap-3">
+                  <h5 class="fw-bold m-0 text-white">Cola de Pacientes</h5>
+                  <input type="date" class="form-control form-control-sm custom-input-dark" [ngModel]="fechaFiltro"
+                    (ngModelChange)="fechaFiltro = $event; actualizarListas(citasService.getAppointments())"
+                    style="width: auto;">
+                </div>
                 <span class="badge bg-primary-light text-primary rounded-pill px-3">{{ proximasCitas.length }}</span>
               </div>
 
@@ -180,6 +205,10 @@
                         <span class="ars-tag" [attr.data-seguro]="cita.seguro">{{ cita.seguro }}</span>
                       </td>
                       <td class="text-end pe-3">
+                        <button class="btn btn-icon-action me-1 text-success" (click)="enviarRecordatorio(cita)"
+                          title="Enviar Recordatorio">
+                          <ion-icon name="logo-whatsapp"></ion-icon>
+                        </button>
                         <button class="btn btn-icon-action me-1"><ion-icon
                             name="checkmark-circle-outline"></ion-icon></button>
                         <button class="btn btn-icon-action text-danger"><ion-icon

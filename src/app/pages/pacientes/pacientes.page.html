@@ -121,13 +121,26 @@
       <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
         <div>
           <h4 class="fw-bold m-0 text-main">{{ pacienteSeleccionado?.nombre }}</h4>
-          <small class="text-muted">Historial Clínico Reciente</small>
+          <small class="text-muted">Expediente Médico</small>
         </div>
         <button class="btn btn-icon-action" (click)="closeModals()">
           <ion-icon name="close-outline"></ion-icon>
         </button>
       </div>
+
+      <!-- Tabs Navigation -->
+      <div class="modal-tabs d-flex border-bottom">
+        <button class="tab-btn" [class.active]="activeTab === 'consultas'" (click)="activeTab = 'consultas'">
+          <ion-icon name="medical-outline"></ion-icon> Consultas
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'clinico'" (click)="activeTab = 'clinico'">
+          <ion-icon name="heart-outline"></ion-icon> Historia Clínica
+        </button>
+      </div>
+
       <div class="modal-body-custom p-4">
+        <!-- Consultations Tab -->
+        @if (activeTab === 'consultas') {
         <div class="history-timeline">
           @for (h of historialPaciente.slice().reverse(); track h.fecha) {
           <div class="history-item-modal mb-4 pb-3 border-bottom">
@@ -146,10 +159,97 @@
           } @empty {
           <div class="text-center py-5 text-muted">
             <ion-icon name="document-text-outline" class="fs-1 opacity-25 mb-2"></ion-icon>
-            <p>No hay consultas registradas para este paciente.</p>
+            <p>No hay consultas registradas.</p>
           </div>
           }
         </div>
+        }
+
+        <!-- Clinical Details Tab -->
+        @if (activeTab === 'clinico') {
+        <div class="clinical-details">
+          <!-- Antecedentes -->
+          <div class="card bg-glass-dark p-3 mb-4 rounded-4">
+            <h6 class="fw-bold text-primary mb-3"><ion-icon name="alert-circle-outline"></ion-icon> Antecedentes y
+              Alergias</h6>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="small fw-bold text-muted opacity-75">ALERGIAS</label>
+                <div class="p-2 bg-danger-light rounded-3 text-danger fw-bold">
+                  {{ pacienteSeleccionado?.alergias || 'Sin alergias reportadas' }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="small fw-bold text-muted opacity-75">PERSONALES</label>
+                <p class="text-white small">{{ pacienteSeleccionado?.antecedentesPersonales || 'No especificado' }}</p>
+              </div>
+              <div class="col-md-6">
+                <label class="small fw-bold text-muted opacity-75">FAMILIARES</label>
+                <p class="text-white small">{{ pacienteSeleccionado?.antecedentesFamiliares || 'No especificado' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registro de Signos Vitales -->
+          <div class="vital-entry mb-4 p-3 rounded-4 border-primary-left">
+            <h6 class="fw-bold text-white mb-3">Nuevo Registro de Signos Vitales</h6>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="x-small fw-bold text-muted">Presión</label>
+                <input type="text" class="form-control form-control-sm custom-input" placeholder="120/80"
+                  [(ngModel)]="nuevosSignos.presionArterial">
+              </div>
+              <div class="col-4">
+                <label class="x-small fw-bold text-muted">Peso (kg)</label>
+                <input type="number" class="form-control form-control-sm custom-input" (ngModelChange)="calcularIMC()"
+                  [(ngModel)]="nuevosSignos.peso">
+              </div>
+              <div class="col-4">
+                <label class="x-small fw-bold text-muted">Talla (cm)</label>
+                <input type="number" class="form-control form-control-sm custom-input" (ngModelChange)="calcularIMC()"
+                  [(ngModel)]="nuevosSignos.talla">
+              </div>
+              <div class="col-4">
+                <label class="x-small fw-bold text-muted">IMC</label>
+                <div class="p-2 bg-primary-light rounded text-center fw-bold">{{ nuevosSignos.imc }}</div>
+              </div>
+              <div class="col-8 d-flex align-items-end">
+                <button class="btn btn-primary btn-sm w-100 fw-bold" (click)="guardarSignos()">Guardar Signos</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Histórico de Signos -->
+          <h6 class="fw-bold text-white mb-3">Evolución de Signos Vitales</h6>
+          <div class="table-responsive rounded-3 overflow-hidden">
+            <table class="table table-sm table-vital">
+              <thead class="bg-glass-dark">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Presión</th>
+                  <th>Peso</th>
+                  <th>IMC</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (sv of pacienteSeleccionado?.signosVitales?.slice()?.reverse(); track sv.fecha) {
+                <tr>
+                  <td>{{ sv.fecha }}</td>
+                  <td>{{ sv.presionArterial }}</td>
+                  <td>{{ sv.peso }}kg</td>
+                  <td><span class="badge" [class.bg-success]="sv.imc < 25" [class.bg-warning]="sv.imc >= 25">{{ sv.imc
+                      }}</span></td>
+                </tr>
+                } @empty {
+                <tr>
+                  <td colspan="4" class="text-center py-3 opacity-50">Sin registros previos</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
       </div>
     </div>
   </div>
@@ -184,12 +284,36 @@
             </select>
           </div>
           <div class="col-6">
-            <label class="form-label small fw-bold text-muted">Peso (kg)</label>
-            <input type="text" class="form-control custom-input" [(ngModel)]="editData.peso">
+            <label class="form-label small fw-bold text-muted">Sexo</label>
+            <select class="form-select custom-input" [(ngModel)]="editData.sexo">
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
           </div>
           <div class="col-6">
-            <label class="form-label small fw-bold text-muted">Altura (cm)</label>
-            <input type="text" class="form-control custom-input" [(ngModel)]="editData.altura">
+            <label class="form-label small fw-bold text-muted">Teléfono</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="editData.telefono"
+              placeholder="809-000-0000">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold text-muted">Email</label>
+            <input type="email" class="form-control custom-input" [(ngModel)]="editData.email"
+              placeholder="paciente@ejemplo.com">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted">Alergias</label>
+            <input type="text" class="form-control custom-input text-danger" [(ngModel)]="editData.alergias"
+              placeholder="Ej. Penicilina">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Antecedentes Personales</label>
+            <textarea class="form-control custom-input" [(ngModel)]="editData.antecedentesPersonales"
+              rows="2"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Antecedentes Familiares</label>
+            <textarea class="form-control custom-input" [(ngModel)]="editData.antecedentesFamiliares"
+              rows="2"></textarea>
           </div>
         </div>
         <div class="d-grid mt-4">

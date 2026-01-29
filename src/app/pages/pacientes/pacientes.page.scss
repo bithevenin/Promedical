@@ -105,7 +105,7 @@
     // Estilo especial para el botón de consulta
     &.btn-consulta {
         color: #10b981; // Verde esmeralda
-        
+
         &:hover {
             background: rgba(16, 185, 129, 0.1);
             color: #34d399;
@@ -270,4 +270,123 @@
 
 .rounded-4 {
     border-radius: 16px !important;
+}
+
+// ========================================
+// NUEVOS ESTILOS - HISTORIA CLÍNICA Y TABS
+// ========================================
+
+.modal-tabs {
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    border-bottom: 1px solid $glass-border;
+
+    .tab-btn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 15px;
+        color: $text-secondary;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border-bottom: 3px solid transparent;
+
+        ion-icon {
+            font-size: 1.2rem;
+        }
+
+        &.active {
+            color: $primary;
+            border-bottom-color: $primary;
+            background: rgba($primary, 0.05);
+        }
+
+        &:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+    }
+}
+
+.clinical-details {
+    .bg-glass-dark {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .border-primary-left {
+        border-left: 4px solid $primary;
+        background: rgba($primary, 0.03);
+    }
+
+    .table-vital {
+        font-size: 0.85rem;
+        margin-top: 10px;
+
+        th {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        td {
+            padding: 10px;
+            border-color: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+    }
+}
+
+.x-small {
+    font-size: 0.75rem;
+}
+
+// Forzar colores claros en todo el contenido del modal
+.custom-modal {
+    color: #ffffff !important;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .text-main,
+    p,
+    span,
+    label,
+    td,
+    th {
+        color: #ffffff !important;
+    }
+
+    .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+        opacity: 0.8;
+    }
+
+    .custom-input {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.05);
+
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+    }
+}
+
+// Clases de utilidad para fondos claros/oscuros
+.bg-danger-light {
+    background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.bg-primary-light {
+    background: rgba(67, 97, 238, 0.15) !important;
 }
