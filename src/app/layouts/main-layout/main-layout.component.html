@@ -1,0 +1,62 @@
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <ion-icon name="medical-outline"></ion-icon>
+      <span>Clinic</span>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active">
+        <ion-icon name="grid-outline"></ion-icon>
+        Dashboard
+      </a>
+      <a routerLink="/patients">
+        <ion-icon name="people-outline"></ion-icon>
+        Pacientes
+      </a>
+      <a routerLink="/appointments">
+        <ion-icon name="calendar-outline"></ion-icon>
+        Turnos
+      </a>
+      <a routerLink="/medical-records">
+        <ion-icon name="document-text-outline"></ion-icon>
+        Historial Clínico
+      </a>
+      <a routerLink="/insurances">
+        <ion-icon name="shield-checkmark-outline"></ion-icon>
+        Seguros
+      </a>
+      <a routerLink="/billing">
+        <ion-icon name="cash-outline"></ion-icon>
+        Facturación
+      </a>
+      <a routerLink="/reports">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        Reportes
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <header class="header">
+      <h2>Dashboard</h2>
+
+      <div class="user">
+        <img src="https://i.pravatar.cc/40?img=12">
+        <span>{{ userName }}</span>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <section class="content">
+      <router-outlet></router-outlet>
+    </section>
+
+  </main>
+
+</div>

@@ -1,0 +1,94 @@
+// ========================================
+// VARIABLES GLOBALES - TEMA OSCURO
+// ========================================
+
+/* Colores principales */
+$primary: #4361ee;
+$secondary: #3f37c9;
+$accent: #4cc9f0;
+
+/* Fondos oscuros */
+$bg-dark: #0f172a;
+$bg-dark-secondary: #1e293b;
+$bg-dark-tertiary: #334155;
+$bg-body: #0f172a; // Cambio del claro al oscuro
+
+/* Glassmorphism */
+$glass-bg: rgba(255, 255, 255, 0.05);
+$glass-bg-hover: rgba(255, 255, 255, 0.08);
+$glass-border: rgba(255, 255, 255, 0.1);
+$glass-border-hover: rgba(255, 255, 255, 0.3);
+
+/* Textos */
+$text-main: #ffffff;
+$text-primary: #ffffff;
+$text-secondary: rgba(255, 255, 255, 0.7);
+$text-tertiary: rgba(255, 255, 255, 0.5);
+$text-muted: rgba(255, 255, 255, 0.4);
+
+/* Cards y contenedores */
+$card-bg: rgba(30, 41, 59, 0.6);
+$card-border: rgba(255, 255, 255, 0.08);
+
+/* Componentes específicos */
+$sidebar-bg: $bg-dark-secondary;
+$sidebar-border: $glass-border;
+$topbar-bg: $bg-dark-secondary;
+$topbar-border: $glass-border;
+$input-bg: $glass-bg;
+$input-border: $glass-border;
+
+/* Sombras */
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+$shadow-md: 0 10px 20px rgba(0, 0, 0, 0.4);
+$shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+/* Border radius */
+$radius-sm: 12px;
+$radius-md: 16px;
+$radius-lg: 24px;
+
+/* Dimensiones */
+$sidebar-width: 80px;
+$topbar-height: 70px;
+
+/* ========================================
+   BREAKPOINTS RESPONSIVOS
+   ======================================== */
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+/* Mixins para media queries */
+@mixin mobile {
+    @media (max-width: #{$breakpoint-md - 1px}) {
+        @content;
+    }
+}
+
+@mixin tablet {
+    @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1px}) {
+        @content;
+    }
+}
+
+@mixin tablet-up {
+    @media (min-width: #{$breakpoint-md}) {
+        @content;
+    }
+}
+
+@mixin desktop {
+    @media (min-width: #{$breakpoint-lg}) {
+        @content;
+    }
+}
+
+@mixin large-desktop {
+    @media (min-width: #{$breakpoint-xl}) {
+        @content;
+    }
+}

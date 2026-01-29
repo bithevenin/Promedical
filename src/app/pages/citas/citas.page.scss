@@ -1,0 +1,632 @@
+// Importar variables del tema oscuro
+@import '../../styles/variables';
+
+// Reutilización de Layout
+.dashboard-wrapper {
+  display: flex;
+  height: 100vh;
+  background-color: $bg-body;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 80px;
+  background: $sidebar-bg;
+  border-right: 1px solid $sidebar-border;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.top-bar {
+  height: 70px;
+  background: $topbar-bg;
+  border-bottom: 1px solid $topbar-border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+}
+
+.content-body {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.icon-indicator {
+  width: 4px;
+  height: 20px;
+  border-radius: 10px;
+}
+
+.custom-input {
+  background: $glass-bg;
+  border: 1px solid $glass-border;
+  padding: 12px 15px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: $text-primary;
+  transition: all 0.3s;
+
+  &:focus {
+    background: $glass-bg-hover;
+    border-color: $primary;
+    box-shadow: 0 0 0 4px rgba($primary, 0.15);
+  }
+
+  &:disabled {
+    background: rgba(255, 255, 255, 0.02);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: $text-tertiary;
+  }
+}
+
+.mode-toggle {
+  background: $glass-bg;
+  padding: 4px;
+  border-radius: 12px;
+  display: flex;
+  gap: 4px;
+
+  .btn-toggle {
+    border: none;
+    background: transparent;
+    padding: 6px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: $text-tertiary;
+    transition: all 0.3s;
+
+    &.active {
+      background: rgba($primary, 0.2);
+      color: $primary;
+      box-shadow: 0 2px 8px rgba($primary, 0.3);
+    }
+  }
+}
+
+.profession-tag {
+  background: rgba($primary, 0.1);
+  color: $primary;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+
+  &.x-small {
+    font-size: 0.7rem;
+  }
+}
+
+.turno-preview {
+  background: rgba($primary, 0.05);
+  border: 1px dashed rgba($primary, 0.3);
+
+  .fw-black {
+    font-weight: 900;
+    font-size: 2rem;
+    color: $primary;
+  }
+}
+
+.badge-turno {
+  width: 35px;
+  height: 35px;
+  background: $primary;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-weight: 800;
+  box-shadow: 0 4px 6px rgba($primary, 0.2);
+}
+
+.ars-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: $glass-bg;
+  color: $text-secondary;
+
+  &[data-seguro*="Senasa"] {
+    background: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+  }
+
+  &[data-seguro*="Humano"] {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+  }
+}
+
+.btn-icon-action {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  color: $text-muted;
+  padding: 5px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+    color: $primary;
+  }
+}
+
+.sidebar-nav .nav-item {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+
+  &.active {
+    background: rgba($primary, 0.1);
+    color: $primary;
+  }
+}
+
+.logo-box {
+  width: 45px;
+  height: 45px;
+  background: $primary;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 40px;
+}
+
+.avatar-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.user-info {
+  text-align: right;
+
+  .user-name {
+    display: block;
+    font-weight: 700;
+    color: $text-primary;
+    font-size: 0.9rem;
+  }
+
+  .user-role {
+    display: block;
+    font-size: 0.75rem;
+    color: $text-secondary;
+  }
+}
+
+// Estilos para tablas
+.table {
+  color: $text-primary;
+  background: transparent !important;
+
+  thead {
+    th {
+      color: $text-primary !important;
+      background: $glass-bg !important;
+      border-color: $glass-border !important;
+    }
+  }
+
+  tbody {
+    background: transparent !important;
+
+    tr {
+      background: transparent !important;
+      border-color: $glass-border !important;
+
+      td {
+        color: $text-primary !important;
+        background: transparent !important;
+        border-color: $glass-border !important;
+      }
+    }
+  }
+
+  &.table-hover tbody tr:hover {
+    background: $glass-bg-hover !important;
+  }
+}
+
+.table-light {
+  background: $glass-bg !important;
+  color: $text-primary !important;
+
+  th {
+    background: $glass-bg !important;
+    color: $text-primary !important;
+  }
+}
+
+// Forzar que NO haya fondos blancos en ninguna fila
+tbody tr {
+  background: transparent !important;
+
+  td {
+    background: transparent !important;
+    color: $text-primary !important;
+  }
+}
+
+.table-responsive {
+  background: transparent !important;
+}
+
+// Asegurar que todos los textos sean legibles
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: $text-primary !important;
+}
+
+.card {
+  color: $text-primary;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: $text-primary !important;
+  }
+
+  p,
+  span,
+  div {
+    color: $text-secondary;
+  }
+}
+
+// Texto blanco forzado
+.text-white {
+  color: #ffffff !important;
+}
+
+.text-light {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.text-main {
+  color: $text-primary !important;
+}
+
+// Badges
+.bg-primary-light {
+  background: rgba($primary, 0.15) !important;
+  color: #93b4ff !important;
+}
+
+.bg-danger-light {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.bg-success-light {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+.text-success {
+  color: #4ade80 !important;
+}
+
+.text-primary {
+  color: #93b4ff !important;
+}
+
+// Modificar bg-white explícito
+.bg-white {
+  background: $glass-bg !important;
+  backdrop-filter: blur(10px);
+}
+
+.border-primary-top {
+  border-top: 2px solid $primary !important;
+}
+
+// Select y option
+select.custom-input {
+  option {
+    background: $bg-dark-secondary;
+    color: $text-primary;
+  }
+}
+
+// Botones con iconos
+.btn-icon-action {
+  &.text-danger {
+    color: #f87171 !important;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.15) !important;
+    }
+  }
+}
+
+// ========================================
+// MODAL DE COBRO
+// ========================================
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-cobro {
+  background: $bg-dark-secondary;
+  border: 1px solid $glass-border;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header-cobro {
+  padding: 20px 24px;
+  background: rgba($primary, 0.1);
+  border-bottom: 1px solid $glass-border;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: $text-primary;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(90deg);
+  }
+}
+
+.modal-body-cobro {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.patient-info-cobro {
+  background: $glass-bg;
+  border: 1px solid $glass-border;
+}
+
+.patient-avatar {
+  width: 50px;
+  height: 50px;
+  background: rgba($primary, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: $primary;
+}
+
+.input-group-text {
+  background: $glass-bg !important;
+  border: 1px solid $glass-border !important;
+  color: $text-primary !important;
+}
+
+.total-display {
+  background: linear-gradient(135deg, rgba($primary, 0.2), rgba($primary, 0.1));
+  border: 1px solid rgba($primary, 0.3);
+}
+
+.vuelto-display {
+  border: 2px solid;
+  animation: pulse 0.5s ease;
+
+  &.bg-success-light {
+    background: rgba(34, 197, 94, 0.1) !important;
+    border-color: #4ade80 !important;
+  }
+
+  &.bg-danger-light {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: #f87171 !important;
+  }
+}
+
+.modal-footer-cobro {
+  padding: 20px 24px;
+  background: $bg-dark;
+  border-top: 1px solid $glass-border;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+// Animaciones
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+// ========================================
+// MENSAJE DE ÉXITO (TOAST)
+// ========================================
+
+.success-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  animation: slideInRight 0.4s ease;
+}
+
+.success-toast-content {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.95));
+  backdrop-filter: blur(10px);
+  border: 2px solid #4ade80;
+  border-radius: 16px;
+  padding: 20px;
+  min-width: 350px;
+  max-width: 450px;
+  box-shadow: 0 10px 40px rgba(34, 197, 94, 0.4);
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.success-icon {
+  font-size: 2.5rem;
+  color: white;
+  flex-shrink: 0;
+  animation: bounceIn 0.6s ease;
+}
+
+.success-message {
+  flex-grow: 1;
+  color: white;
+
+  h6 {
+    margin: 0;
+    color: white !important;
+    font-size: 1.1rem;
+  }
+}
+
+.success-details {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0 0 0;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.btn-close-toast {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+  }
+}
+
+// Animaciones adicionales
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}

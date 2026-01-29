@@ -1,0 +1,228 @@
+<div class="dashboard-wrapper">
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <div class="logo" routerLink="/main">
+      <div class="logo-icon">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <ion-icon name="notifications-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar hide-on-mobile">
+    <div class="sidebar-header">
+      <div class="logo-box" routerLink="/main">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item" routerLink="/main"><ion-icon name="home-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/dashboard"><ion-icon name="grid-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/citas"><ion-icon name="calendar-outline"></ion-icon></div>
+      <div class="nav-item active" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar-box">
+        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar hide-on-mobile">
+      <div class="page-info">
+        <h4 class="m-0 fw-bold text-white">Registro de Pacientes</h4>
+      </div>
+      <div class="top-actions">
+        <div class="user-info hide-on-tablet">
+          <span class="user-name">Administración</span>
+          <span class="user-role">Control de Pacientes</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="container-fluid py-4">
+        <div class="card border-0 shadow-sm p-4 rounded-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0">Pacientes Registrados</h5>
+            <div class="search-box">
+              <input type="text" class="form-control custom-input" placeholder="Buscar por nombre o cédula..."
+                [(ngModel)]="filtroNombre">
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle border-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0 rounded-start ps-3">Cédula</th>
+                  <th class="border-0">Nombre</th>
+                  <th class="border-0">Edad</th>
+                  <th class="border-0">Profesión</th>
+                  <th class="border-0">Seguro</th>
+                  <th class="border-0 text-end pe-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="border-0">
+                @for (paciente of pacientesFiltrados; track paciente.cedula) {
+                <tr>
+                  <td class="ps-3 fw-bold text-primary">{{ paciente.cedula }}</td>
+                  <td>
+                    <div class="fw-bold text-main">{{ paciente.nombre }}</div>
+                  </td>
+                  <td>{{ paciente.edad }} años</td>
+                  <td>
+                    <span class="profession-tag">{{ paciente.profesion }}</span>
+                  </td>
+                  <td>
+                    <span class="ars-tag" [attr.data-seguro]="paciente.seguro">{{ paciente.seguro }}</span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <button class="btn btn-icon-action btn-consulta" (click)="consultarPaciente(paciente)"
+                      title="Iniciar Consulta">
+                      <ion-icon name="medical-outline"></ion-icon>
+                    </button>
+                    <button class="btn btn-icon-action" (click)="verHistorial(paciente)" title="Ver Historial">
+                      <ion-icon name="eye-outline"></ion-icon>
+                    </button>
+                    <button class="btn btn-icon-action" (click)="editarPaciente(paciente)" title="Editar Paciente">
+                      <ion-icon name="create-outline"></ion-icon>
+                    </button>
+                  </td>
+                </tr>
+                } @empty {
+                <tr>
+                  <td colspan="6" class="text-center py-5 text-muted">
+                    No se encontraron pacientes registrados
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- History Modal -->
+  @if (showHistoryModal) {
+  <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+    <div class="custom-modal animate__animated animate__zoomIn">
+      <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="fw-bold m-0 text-main">{{ pacienteSeleccionado?.nombre }}</h4>
+          <small class="text-muted">Historial Clínico Reciente</small>
+        </div>
+        <button class="btn btn-icon-action" (click)="closeModals()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="modal-body-custom p-4">
+        <div class="history-timeline">
+          @for (h of historialPaciente.slice().reverse(); track h.fecha) {
+          <div class="history-item-modal mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-primary-light text-primary rounded-pill px-3">{{ h.fecha }}</span>
+            </div>
+            <div class="mb-2">
+              <label class="small fw-bold text-muted d-block uppercase tracking-wider">DIAGNÓSTICO</label>
+              <p class="mb-0 text-main fw-bold">{{ h.diagnostico }}</p>
+            </div>
+            <div>
+              <label class="small fw-bold text-muted d-block uppercase tracking-wider">RECETA / TRATAMIENTO</label>
+              <p class="mb-0 text-muted">{{ h.receta }}</p>
+            </div>
+          </div>
+          } @empty {
+          <div class="text-center py-5 text-muted">
+            <ion-icon name="document-text-outline" class="fs-1 opacity-25 mb-2"></ion-icon>
+            <p>No hay consultas registradas para este paciente.</p>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Edit Modal -->
+  @if (showEditModal) {
+  <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+    <div class="custom-modal modal-edit animate__animated animate__zoomIn">
+      <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold m-0 text-main">Editar Perfil del Paciente</h5>
+        <button class="btn btn-icon-action" (click)="closeModals()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="modal-body-custom p-4">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted">Nombre Completo</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="editData.nombre">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted">Profesión / Ocupación</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="editData.profesion">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-bold text-muted">Seguro Médico (ARS)</label>
+            <select class="form-select custom-input" [(ngModel)]="editData.seguro">
+              @for (seguro of listaSeguros; track seguro) {
+              <option [value]="seguro">{{ seguro }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold text-muted">Peso (kg)</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="editData.peso">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold text-muted">Altura (cm)</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="editData.altura">
+          </div>
+        </div>
+        <div class="d-grid mt-4">
+          <button class="btn btn-primary py-3 rounded-4 fw-bold shadow-md" (click)="guardarCambios()">
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Mobile Navbar -->
+  <nav class="mobile-navbar">
+    <div class="nav-item" routerLink="/main">
+      <ion-icon name="home-outline"></ion-icon>
+      <span>Inicio</span>
+    </div>
+    <div class="nav-item" routerLink="/dashboard">
+      <ion-icon name="grid-outline"></ion-icon>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" routerLink="/citas">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Citas</span>
+    </div>
+    <div class="nav-item active" routerLink="/pacientes">
+      <ion-icon name="people-outline"></ion-icon>
+      <span>Pacientes</span>
+    </div>
+    <div class="nav-item" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Finanzas</span>
+    </div>
+  </nav>
+</div>

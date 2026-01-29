@@ -1,0 +1,180 @@
+<div class="dashboard-wrapper">
+  <!-- Mobile Header (solo visible en móvil) -->
+  <div class="mobile-header">
+    <div class="logo" routerLink="/main">
+      <div class="logo-icon">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <ion-icon name="notifications-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Personalizado (Estilo Minimalista) -->
+  <aside class="sidebar hide-on-mobile">
+    <div class="sidebar-header">
+      <div class="logo-box" routerLink="/main">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item" [class.active]="item.active" [title]="item.label" (click)="navigateTo(item.route!)">
+        <ion-icon [name]="item.icon"></ion-icon>
+      </div>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar-box">
+        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+      </div>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <!-- Header Superior -->
+    <header class="top-bar hide-on-mobile">
+      <div class="search-container">
+        <ion-icon name="search-outline"></ion-icon>
+        <input type="text" placeholder="Buscar pacientes, citas...">
+      </div>
+
+      <div class="top-actions">
+        <button class="icon-btn">
+          <ion-icon name="notifications-outline"></ion-icon>
+          <span class="dot"></span>
+        </button>
+        <div class="user-info hide-on-tablet">
+          <span class="user-name">Dr. Alex Smith</span>
+          <span class="user-role">Administrador</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable Area -->
+    <div class="content-body">
+      <div class="container-fluid py-4">
+
+        <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+          <div>
+            <h1 class="h3 fw-bold mb-1 text-white">Dashboard General</h1>
+            <p class="text-light mb-0 opacity-75 hide-on-mobile">Bienvenido de nuevo al sistema ProMedical.</p>
+          </div>
+          <button class="btn btn-primary d-flex align-items-center gap-2 px-4 py-2 rounded-3 shadow-sm"
+            routerLink="/citas">
+            <ion-icon name="add-outline"></ion-icon>
+            <span class="hide-on-mobile">Nueva</span> Cita
+          </button>
+        </div>
+
+        <!-- Grid de Estadísticas -->
+        <div class="row g-3 g-md-4 mb-4">
+          @for (stat of stats(); track stat.title) {
+          <div class="col-6 col-md-6 col-xl-3">
+            <div class="stat-card border-0 shadow-sm p-3 p-md-4">
+              <div class="d-flex justify-content-between align-items-start mb-2 mb-md-3">
+                <div class="icon-wrapper" [ngClass]="stat.colorClass">
+                  <ion-icon [name]="stat.icon"></ion-icon>
+                </div>
+                <div class="trend-badge hide-on-mobile" [class.negative]="!stat.isPositive">
+                  {{ stat.trend }}
+                </div>
+              </div>
+              <h2 class="h4 h2-md fw-bold mb-1 text-white">{{ stat.value }}</h2>
+              <p class="text-light mb-0 opacity-75 small">{{ stat.title }}</p>
+            </div>
+          </div>
+          }
+        </div>
+
+        <div class="row g-3 g-md-4">
+          <!-- Listado de Actividad -->
+          <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm p-3 p-md-4 h-100 rounded-4">
+              <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4">
+                <h5 class="fw-bold m-0 text-white">Pacientes en Espera</h5>
+                <a href="#" class="text-decoration-none small fw-bold text-primary">Ver todos</a>
+              </div>
+
+              <div class="activity-list">
+                @for (item of recentActivity(); track item.id) {
+                <div class="activity-item d-flex align-items-center justify-content-between p-2 p-md-3 mb-2 rounded-3">
+                  <div class="d-flex align-items-center gap-2 gap-md-3">
+                    <img [src]="item.avatar" class="rounded-circle avatar-img" alt="User">
+                    <div>
+                      <h6 class="m-0 fw-bold text-white small-mobile">{{ item.user }}</h6>
+                      <small class="text-light opacity-75 d-none d-md-block">{{ item.action }}</small>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge rounded-pill" style="background: rgba(67, 97, 238, 0.2); color: #93b4ff;">{{
+                      item.time }}</span>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendario / Sidebar Derecho -->
+          <div class="col-12 col-lg-4">
+            <div
+              class="card border-0 shadow-sm p-3 p-md-4 h-100 bg-primary text-white rounded-4 overflow-hidden position-relative">
+              <div class="z-1 position-relative">
+                <h5 class="fw-bold mb-3 mb-md-4">Resumen Semanal</h5>
+                <div class="mb-3 mb-md-4">
+                  <div class="d-flex justify-content-between mb-2">
+                    <small>Citas Completadas</small>
+                    <small class="fw-bold">85%</small>
+                  </div>
+                  <div class="progress bg-white bg-opacity-25" style="height: 6px;">
+                    <div class="progress-bar bg-white" style="width: 85%"></div>
+                  </div>
+                </div>
+                <div class="d-grid gap-3">
+                  <div class="p-3 bg-white bg-opacity-10 rounded-3 border border-white border-opacity-10">
+                    <small class="d-block opacity-75">Siguiente Paciente</small>
+                    <p class="m-0 fw-bold">Dr. Carlos V. (14:30)</p>
+                  </div>
+                </div>
+              </div>
+              <ion-icon name="medical" class="bg-icon-watermark hide-on-mobile"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Navbar (solo visible en móvil) -->
+  <nav class="mobile-navbar">
+    <div class="nav-item" routerLink="/main">
+      <ion-icon name="home-outline"></ion-icon>
+      <span>Inicio</span>
+    </div>
+    <div class="nav-item active" routerLink="/dashboard">
+      <ion-icon name="grid-outline"></ion-icon>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" routerLink="/citas">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Citas</span>
+    </div>
+    <div class="nav-item" routerLink="/pacientes">
+      <ion-icon name="people-outline"></ion-icon>
+      <span>Pacientes</span>
+    </div>
+    <div class="nav-item" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Finanzas</span>
+    </div>
+  </nav>
+</div>

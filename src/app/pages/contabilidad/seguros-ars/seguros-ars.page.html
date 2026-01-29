@@ -1,0 +1,283 @@
+<div class="dashboard-wrapper">
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="logo" routerLink="/main">
+            <div class="logo-icon">
+                <ion-icon name="pulse-outline"></ion-icon>
+            </div>
+            <span class="logo-text">ProMedical</span>
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" (click)="volver()">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar hide-on-mobile">
+        <div class="sidebar-header">
+            <div class="logo-box" routerLink="/main">
+                <ion-icon name="pulse-outline"></ion-icon>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item" routerLink="/main"><ion-icon name="home-outline"></ion-icon></div>
+            <div class="nav-item" routerLink="/dashboard"><ion-icon name="grid-outline"></ion-icon></div>
+            <div class="nav-item" routerLink="/citas"><ion-icon name="calendar-outline"></ion-icon></div>
+            <div class="nav-item" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
+            <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
+            <div class="nav-item active" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="avatar-box">
+                <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar hide-on-mobile">
+            <div class="page-info d-flex align-items-center gap-3">
+                <button class="btn btn-icon-back" (click)="volver()">
+                    <ion-icon name="arrow-back-outline"></ion-icon>
+                </button>
+                <div>
+                    <h4 class="m-0 fw-bold text-white">Gestión de Seguros ARS</h4>
+                    <small class="text-light opacity-75">Facturación mensual por aseguradoras</small>
+                </div>
+            </div>
+            <div class="top-actions d-flex gap-3">
+                <button class="btn btn-export btn-excel" (click)="exportarExcel()">
+                    <ion-icon name="document-outline"></ion-icon>
+                    Excel
+                </button>
+                <button class="btn btn-export btn-pdf" (click)="exportarPDF()">
+                    <ion-icon name="download-outline"></ion-icon>
+                    PDF
+                </button>
+            </div>
+        </header>
+
+        <div class="content-body">
+            <div class="container-fluid py-4">
+                <!-- Filters & Summary Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-lg-4">
+                        <div class="card border-0 shadow-sm p-4 rounded-4 filter-card">
+                            <label class="form-label small fw-bold text-light mb-2">Seleccionar Seguro</label>
+                            <select class="form-select custom-input" [value]="seguroSeleccionado()"
+                                (change)="onSeguroChange($event)">
+                                @for (seguro of segurosDisponibles; track seguro.value) {
+                                <option [value]="seguro.value">{{ seguro.label }}</option>
+                                }
+                            </select>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="soloPendientes"
+                                    [checked]="mostrarSoloPendientes()" (change)="togglePendientes()">
+                                <label class="form-check-label small text-light" for="soloPendientes">
+                                    Mostrar solo pendientes
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-4">
+                        <div class="card border-0 shadow-sm p-4 rounded-4 summary-card bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="m-0 opacity-75">Total a Cobrar</h6>
+                                <ion-icon name="cash-outline" class="fs-4"></ion-icon>
+                            </div>
+                            <h2 class="fw-black m-0">RD$ {{ totalMonto().toLocaleString() }}</h2>
+                            <small class="opacity-75 mt-2 d-block">Del período actual</small>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-4">
+                        <div class="card border-0 shadow-sm p-4 rounded-4 summary-card bg-info text-white">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="m-0 opacity-75">Total Pacientes</h6>
+                                <ion-icon name="people-outline" class="fs-4"></ion-icon>
+                            </div>
+                            <h2 class="fw-black m-0">{{ totalPacientes() }}</h2>
+                            <small class="opacity-75 mt-2 d-block">Facturas registradas</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Card -->
+                <div class="card border-0 shadow-sm p-4 rounded-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0 text-white">
+                            Facturas
+                            @if (seguroSeleccionado() !== 'todos') {
+                            <span class="badge bg-primary-light text-primary ms-2">{{ seguroSeleccionado() }}</span>
+                            }
+                        </h5>
+                        <button class="btn btn-primary btn-sm rounded-pill px-3" (click)="abrirModalAgregar()">
+                            <ion-icon name="add-outline" class="me-1"></ion-icon>
+                            Agregar Factura
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 rounded-start ps-3">Fecha</th>
+                                    <th class="border-0">Paciente</th>
+                                    <th class="border-0">Edad</th>
+                                    <th class="border-0">Carnet Seguro</th>
+                                    <th class="border-0">Seguro</th>
+                                    <th class="border-0">Monto</th>
+                                    <th class="border-0">Estado</th>
+                                    <th class="border-0 text-end pe-3 rounded-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (factura of facturasFiltradas(); track factura.id) {
+                                <tr>
+                                    <td class="ps-3">
+                                        <small class="text-light opacity-75">{{ factura.fecha }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-white">{{ factura.nombrePaciente }}</div>
+                                        <small class="text-light opacity-50">{{ factura.cedula }}</small>
+                                    </td>
+                                    <td class="text-light">{{ factura.edad }} años</td>
+                                    <td>
+                                        <span class="carnet-tag">{{ factura.carnetSeguro }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="ars-tag" [attr.data-seguro]="factura.seguro">{{ factura.seguro
+                                            }}</span>
+                                    </td>
+                                    <td class="fw-bold text-primary">RD$ {{ factura.monto.toLocaleString() }}</td>
+                                    <td>
+                                        @if (factura.estado === 'pendiente') {
+                                        <span
+                                            class="badge bg-warning-light text-warning rounded-pill px-3">Pendiente</span>
+                                        } @else {
+                                        <span
+                                            class="badge bg-success-light text-success rounded-pill px-3">Pagado</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        @if (factura.estado === 'pendiente') {
+                                        <button class="btn btn-icon-action btn-success-action"
+                                            (click)="marcarPagada(factura)" title="Marcar como Pagado">
+                                            <ion-icon name="checkmark-circle-outline"></ion-icon>
+                                        </button>
+                                        } @else {
+                                        <ion-icon name="checkmark-done" class="text-success fs-5"></ion-icon>
+                                        }
+                                    </td>
+                                </tr>
+                                } @empty {
+                                <tr>
+                                    <td colspan="8" class="text-center py-5 text-light">
+                                        <ion-icon name="document-text-outline"
+                                            class="fs-1 opacity-25 d-block mb-2"></ion-icon>
+                                        <p>No hay facturas registradas para este filtro</p>
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Table Footer with Totals -->
+                    <div class="table-footer mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-light">
+                            Mostrando {{ facturasFiltradas().length }} facturas
+                        </span>
+                        <div class="total-box">
+                            <span class="text-light me-2">Total:</span>
+                            <span class="fw-black text-primary fs-5">RD$ {{ totalMonto().toLocaleString() }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Invoice Modal -->
+    @if (showAddModal) {
+    <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+        <div class="custom-modal modal-add animate__animated animate__zoomIn">
+            <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0 text-white">Agregar Factura de Seguro</h5>
+                <button class="btn btn-icon-action" (click)="cerrarModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-light">Nombre del Paciente</label>
+                        <input type="text" class="form-control custom-input" [(ngModel)]="nuevaFactura.nombrePaciente"
+                            placeholder="Nombre completo">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Cédula</label>
+                        <input type="text" class="form-control custom-input" [(ngModel)]="nuevaFactura.cedula"
+                            placeholder="000-0000000-0">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Edad</label>
+                        <input type="number" class="form-control custom-input" [(ngModel)]="nuevaFactura.edad">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-light">Número de Carnet</label>
+                        <input type="text" class="form-control custom-input" [(ngModel)]="nuevaFactura.carnetSeguro"
+                            placeholder="Número de afiliado">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Seguro</label>
+                        <select class="form-select custom-input" [(ngModel)]="nuevaFactura.seguro">
+                            @for (seguro of segurosDisponibles; track seguro.value) {
+                            @if (seguro.value !== 'todos') {
+                            <option [value]="seguro.value">{{ seguro.label }}</option>
+                            }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Monto (RD$)</label>
+                        <input type="number" class="form-control custom-input" [(ngModel)]="nuevaFactura.monto">
+                    </div>
+                </div>
+                <div class="d-grid mt-4">
+                    <button class="btn btn-primary py-3 rounded-4 fw-bold shadow-md" (click)="guardarFactura()">
+                        Guardar Factura
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Mobile Navbar -->
+    <nav class="mobile-navbar">
+        <div class="nav-item" routerLink="/main">
+            <ion-icon name="home-outline"></ion-icon>
+            <span>Inicio</span>
+        </div>
+        <div class="nav-item" routerLink="/dashboard">
+            <ion-icon name="grid-outline"></ion-icon>
+            <span>Dashboard</span>
+        </div>
+        <div class="nav-item" routerLink="/citas">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>Citas</span>
+        </div>
+        <div class="nav-item" routerLink="/pacientes">
+            <ion-icon name="people-outline"></ion-icon>
+            <span>Pacientes</span>
+        </div>
+        <div class="nav-item active" routerLink="/contabilidad">
+            <ion-icon name="wallet-outline"></ion-icon>
+            <span>Finanzas</span>
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,292 @@
+<div class="dashboard-wrapper">
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <div class="logo" routerLink="/main">
+      <div class="logo-icon">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <ion-icon name="notifications-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar hide-on-mobile">
+    <div class="sidebar-header">
+      <div class="logo-box" routerLink="/main">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item" routerLink="/main"><ion-icon name="home-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/dashboard"><ion-icon name="grid-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/citas"><ion-icon name="calendar-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
+      <div class="nav-item active" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar-box">
+        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar hide-on-mobile">
+      <div class="page-info">
+        <h4 class="m-0 fw-bold text-white">Contabilidad</h4>
+      </div>
+      <div class="top-actions">
+        <div class="user-info hide-on-tablet">
+          <span class="user-name">Administración</span>
+          <span class="user-role">Finanzas</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="container-fluid py-4">
+        <!-- Summary Cards -->
+        <div class="row g-3 g-md-4 mb-4">
+          <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-primary text-white">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0 opacity-75">Ingresos Totales</h6>
+                <ion-icon name="trending-up-outline" class="fs-4"></ion-icon>
+              </div>
+              <h2 class="fw-black m-0">{{ totalIngresos() | currency }}</h2>
+              <small class="opacity-75 mt-2 d-block">Basado en cobros realizados</small>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-danger text-white">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0 opacity-75">Gastos Operativos</h6>
+                <ion-icon name="trending-down-outline" class="fs-4"></ion-icon>
+              </div>
+              <h2 class="fw-black m-0">{{ totalGastos() | currency }}</h2>
+              <small class="opacity-75 mt-2 d-block">Mantenimiento y suministros</small>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-success text-white">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0 opacity-75">Balance Neto</h6>
+                <ion-icon name="wallet-outline" class="fs-4"></ion-icon>
+              </div>
+              <h2 class="fw-black m-0">{{ balanceNeto() | currency }}</h2>
+              <small class="opacity-75 mt-2 d-block">Utilidad neta acumulada</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <!-- Recent Transactions -->
+          <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold m-0 text-white">Transacciones Recientes</h5>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-danger btn-sm rounded-pill px-3" (click)="abrirModalEgreso()">
+                    <ion-icon name="remove-circle-outline" class="me-1"></ion-icon>
+                    Nuevo Egreso
+                  </button>
+                  <button class="btn btn-primary btn-sm rounded-pill px-3" (click)="abrirModalIngreso()">
+                    <ion-icon name="add-circle-outline" class="me-1"></ion-icon>
+                    Nueva Entrada
+                  </button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle border-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="border-0 rounded-start ps-3">Fecha</th>
+                      <th class="border-0">Concepto</th>
+                      <th class="border-0">Categoría</th>
+                      <th class="border-0">Monto</th>
+                      <th class="border-0 text-end pe-3">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (t of transactions(); track t.id) {
+                    <tr>
+                      <td class="ps-3"><small class="text-light opacity-75">{{ t.fecha }}</small></td>
+                      <td class="fw-bold text-white">{{ t.concepto }}</td>
+                      <td>
+                        <span class="badge rounded-pill px-3" [class.bg-primary-light]="t.categoria === 'Ingreso'"
+                          [class.text-primary]="t.categoria === 'Ingreso'"
+                          [class.bg-danger-light]="t.categoria === 'Gasto'"
+                          [class.text-danger]="t.categoria === 'Gasto'">
+                          {{ t.categoria }}
+                        </span>
+                      </td>
+                      <td class="fw-bold" [class.text-success]="t.categoria === 'Ingreso'"
+                        [class.text-danger]="t.categoria === 'Gasto'">
+                        {{ t.categoria === 'Ingreso' ? '+' : '-' }}{{ t.monto | currency }}
+                      </td>
+                      <td class="text-end pe-3"><ion-icon name="checkmark-circle" class="text-success"></ion-icon></td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                      <td colspan="5" class="text-center py-5 text-light">No hay transacciones registradas</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pending Payments -->
+          <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
+              <h5 class="fw-bold mb-4 text-white">Pagos por ARS</h5>
+              <div class="ars-list">
+                @for (seguro of resumenSeguros(); track seguro.seguro) {
+                @if (seguro.totalFacturas > 0) {
+                <div class="ars-item p-3 mb-3 rounded-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="m-0 fw-bold text-white">{{ seguro.seguro }}</h6>
+                    <small class="text-light opacity-75">{{ seguro.totalFacturas }} Facturas pendientes</small>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-bold text-primary">{{ seguro.totalPendiente | currency }}</div>
+                    <small class="text-light opacity-75">En proceso</small>
+                  </div>
+                </div>
+                }
+                } @empty {
+                <div class="text-center py-4 text-light">
+                  <ion-icon name="document-text-outline" class="fs-1 opacity-25 d-block mb-2"></ion-icon>
+                  <p class="mb-0">No hay facturas pendientes</p>
+                </div>
+                }
+              </div>
+              <button class="btn btn-outline-primary w-100 mt-auto rounded-3" (click)="verReporteSeguros()">
+                <ion-icon name="bar-chart-outline" class="me-2"></ion-icon>
+                Ver Reporte Detallado
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nuevo Ingreso -->
+  @if (showIngresoModal) {
+  <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+    <div class="custom-modal animate__animated animate__zoomIn">
+      <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold m-0 text-white">Nueva Entrada</h5>
+          <small class="text-light opacity-75">Registrar ingreso</small>
+        </div>
+        <button class="btn btn-icon-action" (click)="cerrarModalIngreso()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="modal-body-custom p-4">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-bold text-light">Concepto</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="nuevoIngreso.concepto"
+              placeholder="Ej: Pago de consulta, Venta de productos...">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold text-light">Monto (RD$)</label>
+            <input type="number" class="form-control custom-input" [(ngModel)]="nuevoIngreso.monto" placeholder="0.00">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold text-light">Paciente (opcional)</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="nuevoIngreso.paciente"
+              placeholder="Nombre del paciente">
+          </div>
+        </div>
+        <div class="d-grid mt-4">
+          <button class="btn btn-primary py-3 rounded-4 fw-bold shadow-md" (click)="guardarIngreso()"
+            [disabled]="!nuevoIngreso.concepto || nuevoIngreso.monto <= 0">
+            <ion-icon name="add-circle-outline" class="me-2"></ion-icon>
+            Registrar Ingreso
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Nuevo Egreso -->
+  @if (showEgresoModal) {
+  <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+    <div class="custom-modal animate__animated animate__zoomIn">
+      <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold m-0 text-white">Nuevo Egreso</h5>
+          <small class="text-light opacity-75">Registrar gasto</small>
+        </div>
+        <button class="btn btn-icon-action" (click)="cerrarModalEgreso()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="modal-body-custom p-4">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-bold text-light">Categoría</label>
+            <select class="form-select custom-input" [(ngModel)]="nuevoEgreso.categoria">
+              @for (cat of categoriasEgreso; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-bold text-light">Descripción</label>
+            <input type="text" class="form-control custom-input" [(ngModel)]="nuevoEgreso.concepto"
+              placeholder="Ej: Compra de medicamentos, Pago de luz...">
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-bold text-light">Monto (RD$)</label>
+            <input type="number" class="form-control custom-input" [(ngModel)]="nuevoEgreso.monto" placeholder="0.00">
+          </div>
+        </div>
+        <div class="d-grid mt-4">
+          <button class="btn btn-danger py-3 rounded-4 fw-bold shadow-md" (click)="guardarEgreso()"
+            [disabled]="!nuevoEgreso.concepto || nuevoEgreso.monto <= 0">
+            <ion-icon name="remove-circle-outline" class="me-2"></ion-icon>
+            Registrar Egreso
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Mobile Navbar -->
+  <nav class="mobile-navbar">
+    <div class="nav-item" routerLink="/main">
+      <ion-icon name="home-outline"></ion-icon>
+      <span>Inicio</span>
+    </div>
+    <div class="nav-item" routerLink="/dashboard">
+      <ion-icon name="grid-outline"></ion-icon>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" routerLink="/citas">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Citas</span>
+    </div>
+    <div class="nav-item" routerLink="/pacientes">
+      <ion-icon name="people-outline"></ion-icon>
+      <span>Pacientes</span>
+    </div>
+    <div class="nav-item active" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Finanzas</span>
+    </div>
+  </nav>
+</div>

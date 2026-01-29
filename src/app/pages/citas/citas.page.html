@@ -1,0 +1,409 @@
+<div class="dashboard-wrapper">
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <div class="logo" routerLink="/main">
+      <div class="logo-icon">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <ion-icon name="notifications-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar hide-on-mobile">
+    <div class="sidebar-header">
+      <div class="logo-box" routerLink="/main">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item" routerLink="/main"><ion-icon name="home-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/dashboard"><ion-icon name="grid-outline"></ion-icon></div>
+      <div class="nav-item active" routerLink="/citas"><ion-icon name="calendar-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
+      <div class="nav-item" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar-box">
+        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar hide-on-mobile">
+      <div class="page-info">
+        <h4 class="m-0 fw-bold text-white">Gestión de Citas</h4>
+      </div>
+      <div class="top-actions">
+        <div class="user-info hide-on-tablet">
+          <span class="user-name">Secretaría ProMedical</span>
+          <span class="user-role">Control de Turnos</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="container-fluid py-4">
+        <div class="row g-3 g-md-4">
+
+          <!-- Formulario de Registro -->
+          <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm p-4 rounded-4">
+              <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="icon-indicator bg-primary"></div>
+                  <h5 class="fw-bold m-0 text-white">Registro de Cita</h5>
+                </div>
+                <!-- Toggle Nuevo / Registrado -->
+                <div class="mode-toggle">
+                  <button class="btn-toggle" [class.active]="modoRegistro === 'nuevo'"
+                    (click)="cambiarModo('nuevo')">Nuevo</button>
+                  <button class="btn-toggle" [class.active]="modoRegistro === 'registrado'"
+                    (click)="cambiarModo('registrado')">Registrado</button>
+                </div>
+              </div>
+
+              <div class="form-container">
+                <!-- Campo Cédula con búsqueda si es Registrado -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-light">Cédula / Identificación</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.cedula"
+                      placeholder="000-0000000-0">
+                    @if (modoRegistro === 'registrado') {
+                    <button class="btn btn-primary px-3" (click)="buscarPaciente()">
+                      <ion-icon name="search-outline"></ion-icon>
+                    </button>
+                    }
+                  </div>
+                  @if (errorBusqueda) {
+                  <small class="text-danger mt-1 d-block">{{ errorBusqueda }}</small>
+                  }
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-light">Nombre Completo</label>
+                  <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.nombre"
+                    placeholder="Ej. Pedro Alcántara"
+                    [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.nombre !== ''">
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-light">Edad</label>
+                    <input type="number" class="form-control custom-input" [(ngModel)]="nuevoPaciente.edad"
+                      placeholder="Años"
+                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.edad !== null">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-light">Profesión / Ocupación</label>
+                    <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.profesion"
+                      placeholder="Ej. Ingeniero"
+                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.profesion !== ''">
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-light">Aseguradora (ARS)</label>
+                    <select class="form-select custom-input" [(ngModel)]="nuevoPaciente.seguro"
+                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.seguro !== 'Particular'">
+                      @for (seguro of listaSeguros; track seguro) {
+                      <option [value]="seguro">{{ seguro }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-light">Altura (cm)</label>
+                    <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.altura"
+                      placeholder="Ej. 175">
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-light">Peso (kg)</label>
+                  <input type="text" class="form-control custom-input" [(ngModel)]="nuevoPaciente.peso"
+                    placeholder="Ej. 70">
+                </div>
+
+                <div class="turno-preview p-3 mb-4 rounded-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <small class="d-block text-primary fw-bold">PRÓXIMO TURNO</small>
+                    <h3 class="m-0 fw-black">#{{ proximoTurno }}</h3>
+                  </div>
+                  <ion-icon name="ticket-outline" class="fs-1 text-primary opacity-25"></ion-icon>
+                </div>
+
+                <button class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-sm" (click)="registrarCita()"
+                  [disabled]="!nuevoPaciente.nombre || !nuevoPaciente.cedula || !nuevoPaciente.edad">
+                  Confirmar y Asignar Turno
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Listado de Turnos del Día -->
+          <div class="col-12 col-xl-7">
+            <!-- Turnos en Espera -->
+            <div class="card border-0 shadow-sm p-4 rounded-4 mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold m-0 text-white">Cola de Pacientes</h5>
+                <span class="badge bg-primary-light text-primary rounded-pill px-3">{{ proximasCitas.length }}</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover align-middle border-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="border-0 rounded-start ps-3">Turno</th>
+                      <th class="border-0">Paciente</th>
+                      <th class="border-0">Seguro</th>
+                      <th class="border-0 text-end pe-3">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="border-0">
+                    @for (cita of proximasCitas; track cita.turno) {
+                    <tr class="animate__animated animate__fadeIn">
+                      <td class="ps-3"><span class="badge-turno">{{ cita.turno }}</span></td>
+                      <td>
+                        <div class="fw-bold text-white">{{ cita.nombre }}</div>
+                        <small class="text-light opacity-75">{{ cita.hora }}</small>
+                      </td>
+                      <td>
+                        <span class="ars-tag" [attr.data-seguro]="cita.seguro">{{ cita.seguro }}</span>
+                      </td>
+                      <td class="text-end pe-3">
+                        <button class="btn btn-icon-action me-1"><ion-icon
+                            name="checkmark-circle-outline"></ion-icon></button>
+                        <button class="btn btn-icon-action text-danger"><ion-icon
+                            name="trash-outline"></ion-icon></button>
+                      </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                      <td colspan="4" class="text-center py-4 text-light">No hay pacientes en espera</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pacientes por Cobrar -->
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white border-primary-top">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold m-0 text-primary">Caja: Pendientes de Cobro</h5>
+                <span class="badge bg-warning text-dark rounded-pill px-3">{{ citasPorCobrar.length }}</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover align-middle border-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="border-0 ps-3">Paciente</th>
+                      <th class="border-0">Indicación</th>
+                      <th class="border-0 text-end pe-3">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (cita of citasPorCobrar; track cita.turno) {
+                    <tr>
+                      <td class="ps-3">
+                        <div class="fw-bold text-white">{{ cita.nombre }}</div>
+                        <small class="text-light opacity-75">Turno #{{ cita.turno }}</small>
+                      </td>
+                      <td>
+                        @if (cita.instruccionCobro === 'cobrar') {
+                        <span class="badge bg-danger-light text-danger rounded-pill px-3 x-small fw-bold">COBRAR</span>
+                        } @else if (cita.instruccionCobro === 'seguro') {
+                        <span
+                          class="badge bg-primary-light text-primary rounded-pill px-3 x-small fw-bold">SEGURO</span>
+                        } @else {
+                        <span
+                          class="badge bg-success-light text-success rounded-pill px-3 x-small fw-bold">GRATIS</span>
+                        }
+                      </td>
+                      <td class="text-end pe-3">
+                        <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" (click)="cobrar(cita)">
+                          <ion-icon name="cash-outline" class="me-1"></ion-icon>
+                          Cobrar
+                        </button>
+                      </td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                      <td colspan="3" class="text-center py-4 text-light">No hay cobros pendientes</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de Cobro -->
+  @if (mostrarModalCobro && citaParaCobrar) {
+  <div class="modal-backdrop" (click)="cerrarModalCobro()">
+    <div class="modal-cobro" (click)="$event.stopPropagation()">
+      <div class="modal-header-cobro">
+        <h5 class="fw-bold text-white m-0">💰 Cobro de Consulta</h5>
+        <button class="btn-close-modal" (click)="cerrarModalCobro()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="modal-body-cobro">
+        <!-- Info del Paciente -->
+        <div class="patient-info-cobro p-3 rounded-3 mb-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="patient-avatar">
+              <ion-icon name="person-outline"></ion-icon>
+            </div>
+            <div>
+              <h6 class="fw-bold m-0 text-white">{{ citaParaCobrar.nombre }}</h6>
+              <small class="text-light opacity-75">Turno #{{ citaParaCobrar.turno }} • {{ citaParaCobrar.seguro
+                }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos de cobro -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-light">💳 Monto del Seguro (Informativo)</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control custom-input" [(ngModel)]="datosCobro.montoSeguro"
+              (ngModelChange)="calcularTotal()" disabled>
+          </div>
+          <small class="text-light opacity-75">
+            @if (citaParaCobrar.seguro !== 'Particular') {
+            ✓ El seguro médico cubre $700.00 (NO lo paga el paciente)
+            } @else {
+            Paciente particular (sin seguro)
+            }
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-light">💵 Diferencia a Cobrar (Lo que PAGA el paciente)</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control custom-input" [(ngModel)]="datosCobro.diferencia"
+              (ngModelChange)="calcularTotal()" [disabled]="citaParaCobrar.instruccionCobro === 'gratis'"
+              placeholder="Ingrese la diferencia">
+          </div>
+          <small class="text-light opacity-75">Monto variable según consulta - SOLO esto paga el paciente</small>
+        </div>
+
+        <!-- Total a Cobrar AL PACIENTE -->
+        <div class="total-display p-3 rounded-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="text-light">Total a Cobrar AL PACIENTE:</span>
+              <br>
+              <small class="text-light opacity-75">(Solo la diferencia)</small>
+            </div>
+            <h4 class="fw-black m-0 text-white">${{ datosCobro.totalACobrar.toFixed(2) }}</h4>
+          </div>
+        </div>
+
+        <!-- Pago Recibido -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-light">💰 Pago Recibido del Paciente</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control custom-input" [(ngModel)]="datosCobro.pagoRecibido"
+              (ngModelChange)="calcularVuelto()" placeholder="Cuánto pagó el paciente">
+          </div>
+          <small class="text-light opacity-75">Ingrese el monto que entregó el paciente</small>
+        </div>
+
+        <!-- Vuelto -->
+        @if (datosCobro.pagoRecibido > 0) {
+        <div class="vuelto-display p-3 rounded-3" [class.bg-success-light]="datosCobro.vuelto >= 0"
+          [class.bg-danger-light]="datosCobro.vuelto < 0">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">
+              @if (datosCobro.vuelto >= 0) {
+              <ion-icon name="cash-outline" class="text-success"></ion-icon> Vuelto a Entregar:
+              } @else {
+              <ion-icon name="alert-circle-outline" class="text-danger"></ion-icon> Falta por Pagar:
+              }
+            </span>
+            <h5 class="fw-black m-0" [class.text-success]="datosCobro.vuelto >= 0"
+              [class.text-danger]="datosCobro.vuelto < 0">
+              ${{ Math.abs(datosCobro.vuelto).toFixed(2) }}
+            </h5>
+          </div>
+        </div>
+        }
+      </div>
+
+      <div class="modal-footer-cobro">
+        <button class="btn btn-outline-secondary rounded-3 px-4" (click)="cerrarModalCobro()">
+          Cancelar
+        </button>
+        <button class="btn btn-primary rounded-3 px-4 fw-bold" (click)="confirmarCobro()"
+          [disabled]="datosCobro.pagoRecibido < datosCobro.totalACobrar">
+          <ion-icon name="checkmark-circle-outline" class="me-1"></ion-icon>
+          Confirmar Cobro
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Mensaje de Éxito Interno -->
+  @if (mostrarMensajeExito) {
+  <div class="success-toast">
+    <div class="success-toast-content">
+      <div class="success-icon">
+        <ion-icon name="checkmark-circle"></ion-icon>
+      </div>
+      <div class="success-message">
+        <h6 class="fw-bold mb-2">✅ Cobro Completado</h6>
+        <pre class="success-details">{{ mensajeExito }}</pre>
+      </div>
+      <button class="btn-close-toast" (click)="mostrarMensajeExito = false">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- Mobile Navbar -->
+  <nav class="mobile-navbar">
+    <div class="nav-item" routerLink="/main">
+      <ion-icon name="home-outline"></ion-icon>
+      <span>Inicio</span>
+    </div>
+    <div class="nav-item" routerLink="/dashboard">
+      <ion-icon name="grid-outline"></ion-icon>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item active" routerLink="/citas">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Citas</span>
+    </div>
+    <div class="nav-item" routerLink="/pacientes">
+      <ion-icon name="people-outline"></ion-icon>
+      <span>Pacientes</span>
+    </div>
+    <div class="nav-item" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Finanzas</span>
+    </div>
+  </nav>
+</div>
