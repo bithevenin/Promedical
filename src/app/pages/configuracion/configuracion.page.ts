@@ -37,17 +37,19 @@ export class ConfiguracionPage implements OnInit {
         this.config.tarifasSeguros = this.config.tarifasSeguros.map(t => ({ ...t }));
     }
 
-    guardarConfiguracion() {
+    async guardarConfiguracion() {
         this.guardando = true;
-        this.citasService.saveConfig(this.config);
-
-        setTimeout(() => {
-            this.guardando = false;
+        try {
+            await this.citasService.saveConfig(this.config);
             this.mensajeExito = '¡Configuración guardada exitosamente!';
             setTimeout(() => {
                 this.mensajeExito = '';
             }, 3000);
-        }, 500);
+        } catch (error) {
+            console.error('Error al guardar configuración:', error);
+        } finally {
+            this.guardando = false;
+        }
     }
 
     agregarSeguro() {

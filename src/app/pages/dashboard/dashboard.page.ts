@@ -41,7 +41,11 @@ export class DashboardPage implements OnInit {
   allTransactions = signal<any[]>([]);
 
   stats = computed<StatCard[]>(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    const today = localDate.toISOString().split('T')[0];
+
     const citasHoy = this.allCitas().filter(c => c.fecha === today).length;
     const pacientesTotales = this.allPatients().length;
 
@@ -49,16 +53,24 @@ export class DashboardPage implements OnInit {
     const añoActual = new Date().getFullYear();
     const ingresosMes = this.allTransactions()
       .filter(t => {
-        const [d, m, y] = t.fecha.split('/');
+        // Manejar formato YYYY-MM-DD de Supabase o DD/MM/YYYY antiguo
+        let m, y;
+        if (t.fecha.includes('-')) {
+          [y, m] = t.fecha.split('-');
+        } else {
+          [, m, y] = t.fecha.split('/');
+        }
         return t.categoria === 'Ingreso' && (Number(m) - 1) === mesActual && Number(y) === añoActual;
       })
       .reduce((sum, t) => sum + t.monto, 0);
+
+    const citasEsperaHoy = this.allCitas().filter(c => c.estado === 'espera' && c.fecha === today).length;
 
     return [
       { title: 'Pacientes Totales', value: pacientesTotales.toString(), trend: '+3%', isPositive: true, icon: 'people', colorClass: 'blue' },
       { title: 'Consultas Hoy', value: citasHoy.toString(), trend: '+5%', isPositive: true, icon: 'medical', colorClass: 'indigo' },
       { title: 'Ingresos Mensuales', value: `$${ingresosMes.toLocaleString()}`, trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' },
-      { title: 'Citas en Espera', value: this.allCitas().filter(c => c.estado === 'espera').length.toString(), trend: '0%', isPositive: true, icon: 'time', colorClass: 'orange' }
+      { title: 'Citas en Espera', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'time', colorClass: 'orange' }
     ];
   });
 

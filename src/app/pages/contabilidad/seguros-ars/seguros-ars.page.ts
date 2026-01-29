@@ -114,7 +114,7 @@ export class SegurosArsPage implements OnInit {
                 edad: this.nuevaFactura.edad,
                 carnetSeguro: this.nuevaFactura.carnetSeguro,
                 seguro: this.nuevaFactura.seguro,
-                fecha: new Date().toLocaleDateString(),
+                fecha: new Date().toISOString().split('T')[0],
                 monto: this.nuevaFactura.monto,
                 estado: 'pendiente'
             };

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { SupabaseService } from './supabase.service';
 
 export interface SignoVital {
   fecha: string;
@@ -30,6 +31,7 @@ export interface Paciente {
 }
 
 export interface Cita {
+  id?: number;
   turno: number;
   nombre: string;
   cedula: string;
@@ -95,12 +97,7 @@ export interface ConfiguracionDoctor {
   providedIn: 'root'
 })
 export class CitasService {
-  private appointmentsKey = 'medical_appointments';
-  private historyKey = 'medical_history';
-  private patientsKey = 'medical_patients';
-  private transactionsKey = 'medical_transactions';
-  private facturasSeguroKey = 'medical_facturas_seguro';
-  private configKey = 'medical_config';
+  private supabase = this.supabaseService.client;
 
   private defaultConfig: ConfiguracionDoctor = {
     nombreDoctor: 'Dr. Thevenin',
@@ -117,32 +114,184 @@ export class CitasService {
     ]
   };
 
-  private appointmentsSubject = new BehaviorSubject<Cita[]>(this.loadAppointments());
+  private appointmentsSubject = new BehaviorSubject<Cita[]>([]);
   appointments$ = this.appointmentsSubject.asObservable();
 
-  private patientsSubject = new BehaviorSubject<Paciente[]>(this.loadPatients());
+  private patientsSubject = new BehaviorSubject<Paciente[]>([]);
   patients$ = this.patientsSubject.asObservable();
 
-  private transactionsSubject = new BehaviorSubject<Transaccion[]>(this.loadTransactions());
+  private transactionsSubject = new BehaviorSubject<Transaccion[]>([]);
   transactions$ = this.transactionsSubject.asObservable();
 
-  private facturasSeguroSubject = new BehaviorSubject<FacturaSeguro[]>(this.loadFacturasSeguro());
+  private facturasSeguroSubject = new BehaviorSubject<FacturaSeguro[]>([]);
   facturasSeguro$ = this.facturasSeguroSubject.asObservable();
 
-  private configSubject = new BehaviorSubject<ConfiguracionDoctor>(this.loadConfig());
+  private consultationsSubject = new BehaviorSubject<Consulta[]>([]);
+  consultations$ = this.consultationsSubject.asObservable();
+
+  private configSubject = new BehaviorSubject<ConfiguracionDoctor>(this.defaultConfig);
   config$ = this.configSubject.asObservable();
 
-  constructor() { }
-
-  // --- Configuration ---
-  private loadConfig(): ConfiguracionDoctor {
-    const data = localStorage.getItem(this.configKey);
-    return data ? JSON.parse(data) : this.defaultConfig;
+  constructor(private supabaseService: SupabaseService) {
+    this.initializeData();
   }
 
-  saveConfig(config: ConfiguracionDoctor) {
-    localStorage.setItem(this.configKey, JSON.stringify(config));
-    this.configSubject.next(config);
+  private async initializeData() {
+    await Promise.all([
+      this.refreshConfig(),
+      this.refreshPatients(),
+      this.refreshAppointments(),
+      this.refreshTransactions(),
+      this.refreshFacturasSeguro(),
+      this.refreshConsultas()
+    ]);
+  }
+
+  // --- Refresh Methods (Fetch from Supabase) ---
+  async refreshConsultas() {
+    const { data } = await this.supabase.from('consultas').select('*');
+    if (data) {
+      const consultas: Consulta[] = data.map(c => ({
+        cedula: c.paciente_cedula,
+        fecha: c.fecha,
+        diagnostico: c.diagnostico,
+        receta: c.receta
+      }));
+      this.consultationsSubject.next(consultas);
+    }
+  }
+  async refreshConfig() {
+    const { data: configRows } = await this.supabase.from('configuracion_doctor').select('*').single();
+    const { data: tarifas } = await this.supabase.from('tarifas_seguro').select('*');
+
+    if (configRows) {
+      const config: ConfiguracionDoctor = {
+        nombreDoctor: configRows.nombre_doctor,
+        especialidad: configRows.especialidad,
+        fotoUrl: configRows.foto_url,
+        montoConsultaParticular: configRows.monto_consulta_particular,
+        tarifasSeguros: (tarifas || []).map(t => ({
+          seguro: t.seguro,
+          montoCobertura: t.monto_cobertura,
+          copago: t.copago
+        }))
+      };
+      this.configSubject.next(config);
+    } else {
+      // Si no hay datos en la DB, usar los valores por defecto
+      this.configSubject.next(this.defaultConfig);
+    }
+  }
+
+  async refreshPatients() {
+    const { data } = await this.supabase.from('pacientes').select('*, signos_vitales(*)');
+    if (data) {
+      const patients: Paciente[] = data.map(p => ({
+        cedula: p.cedula,
+        nombre: p.nombre,
+        edad: p.edad,
+        profesion: p.profesion,
+        seguro: p.seguro,
+        sexo: p.sexo,
+        telefono: p.telefono,
+        email: p.email,
+        altura: p.altura,
+        peso: p.peso,
+        carnetSeguro: p.carnet_seguro,
+        antecedentesPersonales: p.antecedentes_personales,
+        antecedentesFamiliares: p.antecedentes_familiares,
+        alergias: p.alergias,
+        signosVitales: p.signos_vitales.map((sv: any) => ({
+          fecha: sv.fecha,
+          presionArterial: sv.presion_arterial,
+          frecuenciaCardiaca: sv.frecuencia_cardiaca,
+          temperatura: sv.temperatura,
+          peso: sv.peso,
+          talla: sv.talla,
+          imc: sv.imc
+        }))
+      }));
+      this.patientsSubject.next(patients);
+    }
+  }
+
+  async refreshAppointments() {
+    const { data } = await this.supabase.from('citas').select('*');
+    if (data) {
+      const appointments: Cita[] = data.map(c => ({
+        id: c.id,
+        turno: Number(c.turno),
+        nombre: c.nombre,
+        cedula: c.cedula,
+        edad: c.edad,
+        seguro: c.seguro,
+        sexo: c.sexo,
+        fecha: c.fecha,
+        estado: c.estado,
+        hora: c.hora,
+        altura: c.altura,
+        peso: c.peso,
+        profesion: c.profesion,
+        instruccionCobro: c.instruccion_cobro,
+        montoCobrado: c.monto_cobrado,
+        carnetSeguro: c.carnet_seguro,
+        telefono: c.telefono
+      }));
+      this.appointmentsSubject.next(appointments);
+    }
+  }
+
+  async refreshTransactions() {
+    const { data } = await this.supabase.from('transacciones').select('*');
+    if (data) {
+      this.transactionsSubject.next(data);
+    }
+  }
+
+  async refreshFacturasSeguro() {
+    const { data } = await this.supabase.from('facturas_seguro').select('*');
+    if (data) {
+      const facturas: FacturaSeguro[] = data.map(f => ({
+        id: f.id,
+        cedula: f.cedula,
+        nombrePaciente: f.nombre_paciente,
+        edad: f.edad,
+        carnetSeguro: f.carnet_seguro,
+        seguro: f.seguro,
+        fecha: f.fecha,
+        monto: f.monto,
+        estado: f.estado,
+        fechaPago: f.fecha_pago
+      }));
+      this.facturasSeguroSubject.next(facturas);
+    }
+  }
+
+  // --- Configuration ---
+  async saveConfig(config: ConfiguracionDoctor) {
+    // 1. Actualizar datos básicos del doctor
+    await this.supabase.from('configuracion_doctor').update({
+      nombre_doctor: config.nombreDoctor,
+      especialidad: config.especialidad,
+      foto_url: config.fotoUrl,
+      monto_consulta_particular: config.montoConsultaParticular
+    }).eq('id', 1);
+
+    // 2. Gestionar tarifas de seguros (borrar y re-insertar para sincronizar)
+    // Primero borramos todas las tarifas actuales
+    await this.supabase.from('tarifas_seguro').delete().neq('seguro', 'NONE');
+
+    // Luego insertamos las nuevas
+    if (config.tarifasSeguros.length > 0) {
+      const inserts = config.tarifasSeguros.map(t => ({
+        seguro: t.seguro,
+        monto_cobertura: t.montoCobertura,
+        copago: t.copago
+      }));
+      await this.supabase.from('tarifas_seguro').insert(inserts);
+    }
+
+    await this.refreshConfig();
   }
 
   getConfig(): ConfiguracionDoctor {
@@ -154,57 +303,72 @@ export class CitasService {
   }
 
   // --- Appointments ---
-  private loadAppointments(): Cita[] {
-    const data = localStorage.getItem(this.appointmentsKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private saveAppointments(appointments: Cita[]) {
-    localStorage.setItem(this.appointmentsKey, JSON.stringify(appointments));
-    this.appointmentsSubject.next(appointments);
-  }
-
   getAppointments() {
     return this.appointmentsSubject.value;
   }
 
-  addAppointment(cita: Cita) {
-    const current = this.getAppointments();
-    this.saveAppointments([...current, cita]);
+  async addAppointment(cita: Cita) {
+    await this.supabase.from('citas').insert([{
+      turno: cita.turno,
+      nombre: cita.nombre,
+      cedula: cita.cedula,
+      edad: cita.edad,
+      seguro: cita.seguro,
+      sexo: cita.sexo,
+      fecha: cita.fecha,
+      estado: cita.estado,
+      hora: cita.hora,
+      altura: cita.altura,
+      peso: cita.peso,
+      profesion: cita.profesion,
+      instruccion_cobro: cita.instruccionCobro,
+      monto_cobrado: cita.montoCobrado,
+      carnet_seguro: cita.carnetSeguro,
+      telefono: cita.telefono
+    }]);
+    await this.refreshAppointments();
   }
 
-  updateAppointmentStatus(turno: number, estado: Cita['estado'], extraData?: Partial<Cita>) {
-    const current = this.getAppointments();
-    const updated = current.map(c =>
-      c.turno === turno ? { ...c, estado, ...extraData } : c
-    );
-    this.saveAppointments(updated);
+  async updateAppointmentStatus(turno: number, estado: Cita['estado'], extraData?: Partial<Cita>) {
+    const updateData: any = { estado };
+    const today = extraData?.fecha || new Date().toISOString().split('T')[0];
+
+    // Mapear automáticamente camelCase a snake_case para los campos adicionales
+    if (extraData) {
+      Object.keys(extraData).forEach(key => {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        updateData[snakeKey] = (extraData as any)[key];
+      });
+    }
+
+    // Usar turno y fecha para encontrar la cita correcta si no hay ID
+    await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
+    await this.refreshAppointments();
   }
 
   // --- Patients ---
-  private loadPatients(): Paciente[] {
-    const data = localStorage.getItem(this.patientsKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private savePatients(patients: Paciente[]) {
-    localStorage.setItem(this.patientsKey, JSON.stringify(patients));
-    this.patientsSubject.next(patients);
-  }
-
   getPatients(): Paciente[] {
     return this.patientsSubject.value;
   }
 
-  savePatient(paciente: Paciente) {
-    const current = this.getPatients();
-    const index = current.findIndex(p => p.cedula === paciente.cedula);
-    if (index > -1) {
-      current[index] = paciente;
-      this.savePatients([...current]);
-    } else {
-      this.savePatients([...current, paciente]);
-    }
+  async savePatient(paciente: Paciente) {
+    await this.supabase.from('pacientes').upsert({
+      cedula: paciente.cedula,
+      nombre: paciente.nombre,
+      edad: paciente.edad,
+      profesion: paciente.profesion,
+      seguro: paciente.seguro,
+      sexo: paciente.sexo,
+      telefono: paciente.telefono,
+      email: paciente.email,
+      altura: paciente.altura,
+      peso: paciente.peso,
+      carnet_seguro: paciente.carnetSeguro,
+      antecedentes_personales: paciente.antecedentesPersonales,
+      antecedentes_familiares: paciente.antecedentesFamiliares,
+      alergias: paciente.alergias
+    });
+    await this.refreshPatients();
   }
 
   findPatientByCedula(cedula: string): Paciente | undefined {
@@ -213,118 +377,126 @@ export class CitasService {
 
   // --- History ---
   getPatientHistory(cedula: string): Consulta[] {
-    const data = localStorage.getItem(this.historyKey);
-    const history: Consulta[] = data ? JSON.parse(data) : [];
-    return history.filter(h => h.cedula === cedula);
+    return this.consultationsSubject.value.filter(h => h.cedula === cedula);
   }
 
-  saveConsultation(consulta: Consulta) {
-    const data = localStorage.getItem(this.historyKey);
-    const history: Consulta[] = data ? JSON.parse(data) : [];
-    history.push(consulta);
-    localStorage.setItem(this.historyKey, JSON.stringify(history));
+  async saveConsultation(consulta: Consulta) {
+    await this.supabase.from('consultas').insert({
+      paciente_cedula: consulta.cedula,
+      fecha: consulta.fecha,
+      diagnostico: consulta.diagnostico,
+      receta: consulta.receta
+    });
+    await this.refreshConsultas();
   }
 
-  addSignosVitales(cedula: string, signos: SignoVital) {
-    const paciente = this.findPatientByCedula(cedula);
-    if (paciente) {
-      if (!paciente.signosVitales) paciente.signosVitales = [];
-      paciente.signosVitales.push(signos);
-      this.savePatient(paciente);
-    }
+  async addSignosVitales(cedula: string, signos: SignoVital) {
+    await this.supabase.from('signos_vitales').insert({
+      paciente_cedula: cedula,
+      fecha: new Date().toISOString(),
+      presion_arterial: signos.presionArterial,
+      frecuencia_cardiaca: signos.frecuenciaCardiaca,
+      temperatura: signos.temperatura,
+      peso: signos.peso,
+      talla: signos.talla,
+      imc: signos.imc
+    });
+    await this.refreshPatients();
   }
 
-  updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
-    const paciente = this.findPatientByCedula(cedula);
-    if (paciente) {
-      paciente.antecedentesPersonales = data.personales ?? paciente.antecedentesPersonales;
-      paciente.antecedentesFamiliares = data.familiares ?? paciente.antecedentesFamiliares;
-      paciente.alergias = data.alergias ?? paciente.alergias;
-      this.savePatient(paciente);
-    }
+  async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
+    await this.supabase.from('pacientes').update({
+      antecedentes_personales: data.personales,
+      antecedentes_familiares: data.familiares,
+      alergias: data.alergias
+    }).eq('cedula', cedula);
+    await this.refreshPatients();
   }
 
   // --- Accounting ---
-  private loadTransactions(): Transaccion[] {
-    const data = localStorage.getItem(this.transactionsKey);
-    return data ? JSON.parse(data) : [];
+  async agregarTransaccion(transaccion: Transaccion) {
+    await this.supabase.from('transacciones').insert({
+      concepto: transaccion.concepto,
+      categoria: transaccion.categoria,
+      monto: transaccion.monto,
+      paciente: transaccion.paciente,
+      fecha: transaccion.fecha || new Date().toISOString().split('T')[0]
+    });
+    await this.refreshTransactions();
   }
 
-  private saveTransactions(transactions: Transaccion[]) {
-    localStorage.setItem(this.transactionsKey, JSON.stringify(transactions));
-    this.transactionsSubject.next(transactions);
-  }
-
-  agregarTransaccion(transaccion: Transaccion) {
-    const current = this.loadTransactions();
-    this.saveTransactions([...current, transaccion]);
-  }
-
-  registrarCobro(turno: number, monto: number) {
+  async registrarCobro(turno: number, monto: number) {
     const apps = this.getAppointments();
-    const cita = apps.find(c => c.turno === turno);
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    const today = localDate.toISOString().split('T')[0];
+
+    // Buscar la cita por turno y fecha de hoy
+    const cita = apps.find(c => c.turno === turno && c.fecha === today);
 
     if (cita) {
-      // 1. Registrar transacción
-      const transactions = this.loadTransactions();
       const nuevaTrans: Transaccion = {
         id: Date.now(),
-        fecha: new Date().toLocaleDateString(),
+        fecha: today,
         concepto: `Consulta Médica - ${cita.nombre}`,
         categoria: 'Ingreso',
         monto: monto,
         paciente: cita.nombre
       };
-      this.saveTransactions([...transactions, nuevaTrans]);
+      await this.agregarTransaccion(nuevaTrans);
 
-      // 2. Si tiene seguro y la instrucción es seguro, crear factura para el seguro
-      if (cita.seguro && cita.seguro !== 'Particular' && cita.instruccionCobro === 'seguro') {
+      // 2. Si tiene seguro y no es consulta gratis, crear factura para el seguro
+      if (cita.seguro && cita.seguro !== 'Particular' && cita.instruccionCobro !== 'gratis') {
         const paciente = this.findPatientByCedula(cita.cedula);
         const tarifa = this.getTarifaSeguro(cita.seguro);
-        this.agregarFacturaSeguro({
+
+        // El monto a cobrar al seguro es lo que dice la tarifa (cobertura)
+        const montoSeguro = tarifa ? tarifa.montoCobertura : 500;
+
+        await this.agregarFacturaSeguro({
           id: Date.now(),
           cedula: cita.cedula,
           nombrePaciente: cita.nombre,
           edad: cita.edad,
-          carnetSeguro: paciente?.carnetSeguro || cita.carnetSeguro || 'Sin carnet',
+          carnetSeguro: cita.carnetSeguro || paciente?.carnetSeguro || 'Sin carnet',
           seguro: cita.seguro,
-          fecha: new Date().toLocaleDateString(),
-          monto: tarifa ? tarifa.montoCobertura : 500, // Usar monto de configuración si existe
+          fecha: today,
+          monto: montoSeguro,
           estado: 'pendiente'
         });
       }
 
       // 3. Marcar cita como atendida
-      this.updateAppointmentStatus(turno, 'atendido', { montoCobrado: monto });
+      await this.updateAppointmentStatus(turno, 'atendido', { montoCobrado: monto, fecha: today });
     }
   }
 
   // --- Facturas de Seguro ---
-  private loadFacturasSeguro(): FacturaSeguro[] {
-    const data = localStorage.getItem(this.facturasSeguroKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private saveFacturasSeguro(facturas: FacturaSeguro[]) {
-    localStorage.setItem(this.facturasSeguroKey, JSON.stringify(facturas));
-    this.facturasSeguroSubject.next(facturas);
-  }
-
   getFacturasSeguro(): FacturaSeguro[] {
     return this.facturasSeguroSubject.value;
   }
 
-  agregarFacturaSeguro(factura: FacturaSeguro) {
-    const current = this.getFacturasSeguro();
-    this.saveFacturasSeguro([...current, factura]);
+  async agregarFacturaSeguro(factura: FacturaSeguro) {
+    await this.supabase.from('facturas_seguro').insert({
+      cedula: factura.cedula,
+      nombre_paciente: factura.nombrePaciente,
+      edad: factura.edad,
+      carnet_seguro: factura.carnetSeguro,
+      seguro: factura.seguro,
+      fecha: factura.fecha,
+      monto: factura.monto,
+      estado: factura.estado
+    });
+    await this.refreshFacturasSeguro();
   }
 
-  marcarFacturaPagada(id: number) {
-    const current = this.getFacturasSeguro();
-    const updated = current.map(f =>
-      f.id === id ? { ...f, estado: 'pagado' as const, fechaPago: new Date().toLocaleDateString() } : f
-    );
-    this.saveFacturasSeguro(updated);
+  async marcarFacturaPagada(id: number) {
+    await this.supabase.from('facturas_seguro').update({
+      estado: 'pagado',
+      fecha_pago: new Date().toISOString().split('T')[0]
+    }).eq('id', id);
+    await this.refreshFacturasSeguro();
   }
 
   getFacturasPorSeguro(seguro: string): FacturaSeguro[] {
@@ -348,18 +520,17 @@ export class CitasService {
   }
 
   // --- Gestión de Seguros ---
-  agregarSeguro(nuevaTarifa: TarifaSeguro) {
-    const config = this.getConfig();
-    if (!config.tarifasSeguros.find(t => t.seguro === nuevaTarifa.seguro)) {
-      config.tarifasSeguros.push(nuevaTarifa);
-      this.saveConfig(config);
-    }
+  async agregarSeguro(nuevaTarifa: TarifaSeguro) {
+    await this.supabase.from('tarifas_seguro').insert({
+      seguro: nuevaTarifa.seguro,
+      monto_cobertura: nuevaTarifa.montoCobertura,
+      copago: nuevaTarifa.copago
+    });
+    await this.refreshConfig();
   }
 
-  eliminarSeguro(nombreSeguro: string) {
-    const config = this.getConfig();
-    config.tarifasSeguros = config.tarifasSeguros.filter(t => t.seguro !== nombreSeguro);
-    this.saveConfig(config);
+  async eliminarSeguro(nombreSeguro: string) {
+    await this.supabase.from('tarifas_seguro').delete().eq('seguro', nombreSeguro);
+    await this.refreshConfig();
   }
 }
-

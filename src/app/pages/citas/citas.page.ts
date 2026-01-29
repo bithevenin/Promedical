@@ -31,14 +31,25 @@ export class CitasPage implements OnInit {
   citasPorCobrar: Cita[] = [];
   proximoTurno: number = 1;
   errorBusqueda: string = '';
+  fechaSeleccionada: string;
+  fechaFiltro: string;
 
-  fechaSeleccionada: string = new Date().toISOString().split('T')[0];
-  fechaFiltro: string = new Date().toISOString().split('T')[0];
+  // Modal de Seguro (Nuevo)
+  mostrarModalSeguro = false;
+  carnetSeguroTemp = '';
 
   // Exponer Math para el template
   Math = Math;
 
-  constructor(public citasService: CitasService) { }
+  constructor(public citasService: CitasService) {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    const todayStr = localDate.toISOString().split('T')[0];
+
+    this.fechaSeleccionada = todayStr;
+    this.fechaFiltro = todayStr;
+  }
 
   ngOnInit() {
     this.citasService.config$.subscribe(config => {
@@ -48,6 +59,20 @@ export class CitasPage implements OnInit {
     this.citasService.appointments$.subscribe(appointments => {
       this.actualizarListas(appointments);
     });
+  }
+
+  onSeguroChange() {
+    if (this.nuevoPaciente.seguro !== 'Particular') {
+      this.mostrarModalSeguro = true;
+    }
+  }
+
+  cerrarModalSeguro() {
+    this.mostrarModalSeguro = false;
+  }
+
+  guardarCarnetSeguro() {
+    this.mostrarModalSeguro = false;
   }
 
   cambiarFechaFiltro(event: any) {
@@ -121,10 +146,10 @@ export class CitasPage implements OnInit {
     this.datosCobro.vuelto = vuelto > 0 ? vuelto : 0;
   }
 
-  confirmarCobro() {
+  async confirmarCobro() {
     if (this.citaParaCobrar) {
       const montoTotal = this.datosCobro.diferencia; // Solo se registra lo que pagó el paciente
-      this.citasService.registrarCobro(this.citaParaCobrar.turno, montoTotal);
+      await this.citasService.registrarCobro(this.citaParaCobrar.turno, montoTotal);
 
       // Preparar mensaje interno
       this.mensajeExito = `Cobro registrado exitosamente!
@@ -173,6 +198,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
   cambiarModo(modo: 'nuevo' | 'registrado') {
     this.modoRegistro = modo;
     this.limpiarFormulario();
+    this.carnetSeguroTemp = '';
   }
 
   buscarPaciente() {
@@ -192,12 +218,13 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         peso: paciente.peso || '',
         telefono: paciente.telefono || ''
       };
+      this.carnetSeguroTemp = paciente.carnetSeguro || '';
     } else {
       this.errorBusqueda = 'Paciente no encontrado. Use el modo "Nuevo" para registrarlo.';
     }
   }
 
-  registrarCita() {
+  async registrarCita() {
     if (this.nuevoPaciente.nombre && this.nuevoPaciente.cedula && this.nuevoPaciente.edad) {
       // 1. Guardar/Actualizar en el registro de pacientes
       const datosPaciente: Paciente = {
@@ -209,9 +236,10 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         sexo: this.nuevoPaciente.sexo,
         altura: this.nuevoPaciente.altura,
         peso: this.nuevoPaciente.peso,
-        telefono: this.nuevoPaciente.telefono
+        telefono: this.nuevoPaciente.telefono,
+        carnetSeguro: this.carnetSeguroTemp
       };
-      this.citasService.savePatient(datosPaciente);
+      await this.citasService.savePatient(datosPaciente);
 
       // 2. Crear la cita
       const nuevaCita: Cita = {
@@ -227,12 +255,18 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         altura: this.nuevoPaciente.altura,
         peso: this.nuevoPaciente.peso,
         profesion: this.nuevoPaciente.profesion,
-        telefono: this.nuevoPaciente.telefono
+        telefono: this.nuevoPaciente.telefono,
+        carnetSeguro: this.carnetSeguroTemp
       };
 
-      this.citasService.addAppointment(nuevaCita);
+      await this.citasService.addAppointment(nuevaCita);
       this.limpiarFormulario();
-      this.fechaSeleccionada = new Date().toISOString().split('T')[0]; // Reset date
+      this.carnetSeguroTemp = '';
+
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+      this.fechaSeleccionada = localDate.toISOString().split('T')[0];
     }
   }
 

@@ -85,9 +85,9 @@ export class PacientesPage implements OnInit {
     this.showEditModal = true;
   }
 
-  guardarCambios() {
+  async guardarCambios() {
     if (this.editData.nombre) {
-      this.citasService.savePatient(this.editData);
+      await this.citasService.savePatient(this.editData);
       this.closeModals();
     }
   }
@@ -107,13 +107,13 @@ export class PacientesPage implements OnInit {
     }
   }
 
-  guardarSignos() {
+  async guardarSignos() {
     if (this.pacienteSeleccionado && this.nuevosSignos.peso > 0) {
       const signos = {
         ...this.nuevosSignos,
         fecha: new Date().toLocaleDateString()
       };
-      this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
+      await this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
       // Actualizar paciente seleccionado para reflejar cambios
       this.pacienteSeleccionado = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula) || null;
       // Reset form

@@ -73,17 +73,17 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  seleccionarPaciente(paciente: Cita) {
+  async seleccionarPaciente(paciente: Cita) {
     this.pacienteSeleccionado = paciente;
     this.historialPasado = this.citasService.getPatientHistory(paciente.cedula);
 
     // Si estaba en espera, pasarlo a consulta
     if (paciente.estado === 'espera') {
-      this.citasService.updateAppointmentStatus(paciente.turno, 'consulta');
+      await this.citasService.updateAppointmentStatus(paciente.turno, 'consulta');
     }
   }
 
-  finalizarConsulta() {
+  async finalizarConsulta() {
     if (this.pacienteSeleccionado && this.nuevaConsulta.diagnostico) {
       const consulta: Consulta = {
         cedula: this.pacienteSeleccionado.cedula,
@@ -92,12 +92,12 @@ export class ConsultaPage implements OnInit {
         receta: this.nuevaConsulta.receta
       };
 
-      this.citasService.saveConsultation(consulta);
+      await this.citasService.saveConsultation(consulta);
 
       // Si es consulta directa (desde página de pacientes), no hay cita que actualizar
       if (!this.esConsultaDirecta) {
         // Pasar a por_pagar con la instrucción de cobro
-        this.citasService.updateAppointmentStatus(this.pacienteSeleccionado.turno, 'por_pagar', {
+        await this.citasService.updateAppointmentStatus(this.pacienteSeleccionado.turno, 'por_pagar', {
           instruccionCobro: this.nuevaConsulta.instruccionCobro
         });
       }
