@@ -12,15 +12,7 @@ import * as XLSX from 'xlsx';
     standalone: false,
 })
 export class SegurosArsPage implements OnInit {
-    segurosDisponibles = [
-        { value: 'todos', label: 'Todos los Seguros' },
-        { value: 'ARS Humano', label: 'ARS Humano' },
-        { value: 'ARS Primera', label: 'ARS Primera' },
-        { value: 'ARS Senasa', label: 'ARS Senasa' },
-        { value: 'ARS Mapfre', label: 'ARS Mapfre' },
-        { value: 'ARS Futuro', label: 'ARS Futuro' },
-        { value: 'ARS Palic', label: 'ARS Palic' }
-    ];
+    segurosDisponibles: { value: string; label: string }[] = [{ value: 'todos', label: 'Todos los Seguros' }];
 
     seguroSeleccionado = signal<string>('todos');
     facturas = signal<FacturaSeguro[]>([]);
@@ -33,7 +25,7 @@ export class SegurosArsPage implements OnInit {
         nombrePaciente: '',
         edad: 0,
         carnetSeguro: '',
-        seguro: 'ARS Humano',
+        seguro: '',
         monto: 500
     };
 
@@ -65,6 +57,16 @@ export class SegurosArsPage implements OnInit {
     ngOnInit() {
         this.citasService.facturasSeguro$.subscribe(facturas => {
             this.facturas.set(facturas);
+        });
+
+        this.citasService.config$.subscribe(config => {
+            this.segurosDisponibles = [
+                { value: 'todos', label: 'Todos los Seguros' },
+                ...config.tarifasSeguros.map(t => ({ value: t.seguro, label: t.seguro }))
+            ];
+            if (this.nuevaFactura.seguro === '' && config.tarifasSeguros.length > 0) {
+                this.nuevaFactura.seguro = config.tarifasSeguros[0].seguro;
+            }
         });
     }
 

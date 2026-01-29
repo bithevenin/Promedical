@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { CitasService, ConfiguracionDoctor } from '../../services/citas.service';
 
 @Component({
   selector: 'app-main',
@@ -7,10 +8,14 @@ import { Component, OnInit } from '@angular/core';
   standalone: false,
 })
 export class MainPage implements OnInit {
+  config: ConfiguracionDoctor | null = null;
 
-  constructor() { }
+  constructor(private citasService: CitasService) { }
 
   ngOnInit() {
+    this.citasService.config$.subscribe(config => {
+      this.config = config;
+    });
   }
 
 }

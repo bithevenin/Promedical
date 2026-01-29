@@ -30,16 +30,7 @@ export class PacientesPage implements OnInit {
     peso: ''
   };
 
-  listaSeguros: string[] = [
-    'Particular',
-    'ARS Senasa',
-    'ARS Humano',
-    'ARS Mapfre',
-    'ARS Monumental',
-    'ARS Primera',
-    'ARS Renacer',
-    'ARS Universal'
-  ];
+  listaSeguros: string[] = ['Particular'];
 
   constructor(
     private citasService: CitasService,
@@ -49,6 +40,10 @@ export class PacientesPage implements OnInit {
   ngOnInit() {
     this.citasService.patients$.subscribe(patients => {
       this.pacientes = patients;
+    });
+
+    this.citasService.config$.subscribe(config => {
+      this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
     });
   }
 

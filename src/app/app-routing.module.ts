@@ -27,6 +27,10 @@ const routes: Routes = [
     loadChildren: () => import('./pages/contabilidad/contabilidad.module').then(m => m.ContabilidadPageModule)
   },
   {
+    path: 'configuracion',
+    loadChildren: () => import('./pages/configuracion/configuracion.module').then(m => m.ConfiguracionPageModule)
+  },
+  {
     path: '',
     redirectTo: 'main',
     pathMatch: 'full'

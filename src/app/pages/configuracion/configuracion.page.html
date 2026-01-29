@@ -1,0 +1,200 @@
+<div class="dashboard-wrapper">
+    <!-- Mobile Header -->
+    <div class="mobile-header hide-on-desktop">
+        <div class="mobile-brand">
+            <ion-icon name="settings-outline"></ion-icon>
+            <span>Configuración</span>
+        </div>
+        <div class="mobile-actions">
+            <button class="btn-icon" routerLink="/main">
+                <ion-icon name="home-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Sidebar Desktop Slim -->
+        <aside class="sidebar hide-on-mobile">
+            <div class="sidebar-header">
+                <div class="logo-box" routerLink="/main">
+                    <ion-icon name="pulse-outline"></ion-icon>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item" routerLink="/main"><ion-icon name="home-outline"></ion-icon></div>
+                <div class="nav-item" routerLink="/dashboard"><ion-icon name="grid-outline"></ion-icon></div>
+                <div class="nav-item" routerLink="/citas"><ion-icon name="calendar-outline"></ion-icon></div>
+                <div class="nav-item" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
+                <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
+                <div class="nav-item" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+                <div class="nav-item active" routerLink="/configuracion"><ion-icon name="settings-outline"></ion-icon>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="avatar-box">
+                    <img [src]="config.fotoUrl" [alt]="config.nombreDoctor">
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content -->
+        <main class="content-body" *ngIf="config">
+            <div class="page-header">
+                <h1>Configuración</h1>
+                <p class="text-muted">Personaliza los datos del consultorio y tarifas</p>
+            </div>
+
+            <!-- Mensaje de éxito -->
+            <div *ngIf="mensajeExito" class="alert-success">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                {{ mensajeExito }}
+            </div>
+
+            <div class="config-grid">
+                <!-- Información del Doctor -->
+                <div class="config-card">
+                    <div class="card-header">
+                        <ion-icon name="person-outline"></ion-icon>
+                        <h3>Información del Doctor</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="photo-section">
+                            <div class="photo-preview">
+                                <img [src]="config.fotoUrl" alt="Foto del Doctor" *ngIf="config.fotoUrl">
+                                <ion-icon name="person-outline" *ngIf="!config.fotoUrl"></ion-icon>
+                            </div>
+                            <div class="photo-actions">
+                                <label class="btn btn-secondary">
+                                    <ion-icon name="camera-outline"></ion-icon>
+                                    Subir Foto
+                                    <input type="file" accept="image/*" (change)="actualizarFoto($event)" hidden>
+                                </label>
+                                <input type="text" [(ngModel)]="config.fotoUrl" placeholder="O ingrese URL de imagen"
+                                    class="form-control mt-2">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nombre del Doctor</label>
+                            <input type="text" [(ngModel)]="config.nombreDoctor" class="form-control"
+                                placeholder="Dr. Juan Pérez">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Especialidad</label>
+                            <input type="text" [(ngModel)]="config.especialidad" class="form-control"
+                                placeholder="Medicina General">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarifas de Consulta -->
+                <div class="config-card">
+                    <div class="card-header">
+                        <ion-icon name="cash-outline"></ion-icon>
+                        <h3>Tarifas de Consulta</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group highlight-input">
+                            <label>
+                                <ion-icon name="card-outline"></ion-icon>
+                                Consulta Particular (sin seguro)
+                            </label>
+                            <div class="input-currency">
+                                <span class="currency-symbol">RD$</span>
+                                <input type="number" [(ngModel)]="config.montoConsultaParticular" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+                        <h4 class="section-subtitle">
+                            <ion-icon name="shield-checkmark-outline"></ion-icon>
+                            Montos por Seguro
+                        </h4>
+
+                        <!-- Formulario para agregar nuevo seguro -->
+                        <div class="add-seguro-form mb-4">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-5">
+                                    <label class="small text-muted">Nombre ARS</label>
+                                    <input type="text" [(ngModel)]="nuevoSeguro.seguro" class="form-control"
+                                        placeholder="Ej. ARS Universal">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted">Cobertura</label>
+                                    <input type="number" [(ngModel)]="nuevoSeguro.montoCobertura" class="form-control"
+                                        placeholder="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted">Copago</label>
+                                    <input type="number" [(ngModel)]="nuevoSeguro.copago" class="form-control"
+                                        placeholder="0">
+                                </div>
+                                <div class="col-md-1">
+                                    <button class="btn btn-primary w-100" (click)="agregarSeguro()"
+                                        [disabled]="!nuevoSeguro.seguro">
+                                        <ion-icon name="add-outline"></ion-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="seguros-grid">
+                            <div *ngFor="let tarifa of config.tarifasSeguros" class="seguro-item">
+                                <div class="seguro-name">{{ tarifa.seguro }}</div>
+                                <div class="seguro-inputs">
+                                    <div class="input-group">
+                                        <label>Cobertura</label>
+                                        <div class="input-currency small">
+                                            <span class="currency-symbol">RD$</span>
+                                            <input type="number" [(ngModel)]="tarifa.montoCobertura">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Copago</label>
+                                        <div class="input-currency small">
+                                            <span class="currency-symbol">RD$</span>
+                                            <input type="number" [(ngModel)]="tarifa.copago">
+                                        </div>
+                                    </div>
+                                    <button class="btn-delete-seguro" (click)="eliminarSeguro(tarifa.seguro)">
+                                        <ion-icon name="trash-outline"></ion-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Guardar -->
+            <div class="actions-footer">
+                <button class="btn btn-primary btn-lg" (click)="guardarConfiguracion()" [disabled]="guardando">
+                    <ion-icon name="save-outline" *ngIf="!guardando"></ion-icon>
+                    <ion-icon name="sync-outline" class="spin" *ngIf="guardando"></ion-icon>
+                    {{ guardando ? 'Guardando...' : 'Guardar Configuración' }}
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Navbar -->
+    <nav class="mobile-navbar hide-on-desktop">
+        <a routerLink="/dashboard" class="nav-item">
+            <ion-icon name="grid-outline"></ion-icon>
+            <span>Dashboard</span>
+        </a>
+        <a routerLink="/citas" class="nav-item">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>Citas</span>
+        </a>
+        <a routerLink="/consulta" class="nav-item">
+            <ion-icon name="medical-outline"></ion-icon>
+            <span>Consulta</span>
+        </a>
+        <a routerLink="/configuracion" class="nav-item active">
+            <ion-icon name="settings-outline"></ion-icon>
+            <span>Ajustes</span>
+        </a>
+    </nav>
+</div>

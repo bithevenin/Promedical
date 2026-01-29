@@ -22,17 +22,8 @@ export class CitasPage implements OnInit {
     seguro: 'Particular'
   };
 
-  // Listado de ARS Dominicanas
-  listaSeguros: string[] = [
-    'Particular',
-    'ARS Senasa',
-    'ARS Humano',
-    'ARS Mapfre',
-    'ARS Monumental',
-    'ARS Primera',
-    'ARS Renacer',
-    'ARS Universal'
-  ];
+  // Listado de ARS (se carga dinámicamente)
+  listaSeguros: string[] = ['Particular'];
 
   proximasCitas: Cita[] = [];
   citasPorCobrar: Cita[] = [];
@@ -45,6 +36,10 @@ export class CitasPage implements OnInit {
   constructor(private citasService: CitasService) { }
 
   ngOnInit() {
+    this.citasService.config$.subscribe(config => {
+      this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
+    });
+
     this.citasService.appointments$.subscribe(appointments => {
       this.proximasCitas = appointments.filter(c => c.estado === 'espera');
       this.citasPorCobrar = appointments.filter(c => c.estado === 'por_pagar');
@@ -75,23 +70,24 @@ export class CitasPage implements OnInit {
     this.citaParaCobrar = cita;
     this.mostrarModalCobro = true;
 
+    const tarifa = this.citasService.getTarifaSeguro(cita.seguro);
+    const montoSeguroConfig = tarifa ? tarifa.montoCobertura : 0;
+    const copagoConfig = tarifa ? tarifa.copago : 0;
+
     // Calcular montos según la instrucción
     if (cita.instruccionCobro === 'cobrar') {
-      // Tiene seguro médico → 700 es informativo (lo paga el seguro)
       if (cita.seguro !== 'Particular') {
-        this.datosCobro.montoSeguro = 700;  // Informativo
-        this.datosCobro.diferencia = 0;      // El usuario pondrá la diferencia que paga el paciente
+        this.datosCobro.montoSeguro = montoSeguroConfig;
+        this.datosCobro.diferencia = copagoConfig; // Sugerir el copago configurado
       } else {
-        // Particular → no hay seguro
+        const config = this.citasService.getConfig();
         this.datosCobro.montoSeguro = 0;
-        this.datosCobro.diferencia = 0;
+        this.datosCobro.diferencia = config.montoConsultaParticular;
       }
     } else if (cita.instruccionCobro === 'seguro') {
-      // Solo seguro (sin diferencia) - el paciente no paga nada
-      this.datosCobro.montoSeguro = 700;
+      this.datosCobro.montoSeguro = montoSeguroConfig;
       this.datosCobro.diferencia = 0;
     } else {
-      // Gratis (cortesía)
       this.datosCobro.montoSeguro = 0;
       this.datosCobro.diferencia = 0;
     }

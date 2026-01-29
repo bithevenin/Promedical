@@ -57,6 +57,20 @@ export interface FacturaSeguro {
   fechaPago?: string;
 }
 
+export interface TarifaSeguro {
+  seguro: string;
+  montoCobertura: number; // Lo que paga el seguro
+  copago: number; // Lo que paga el paciente
+}
+
+export interface ConfiguracionDoctor {
+  nombreDoctor: string;
+  especialidad: string;
+  fotoUrl: string;
+  montoConsultaParticular: number;
+  tarifasSeguros: TarifaSeguro[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -66,6 +80,22 @@ export class CitasService {
   private patientsKey = 'medical_patients';
   private transactionsKey = 'medical_transactions';
   private facturasSeguroKey = 'medical_facturas_seguro';
+  private configKey = 'medical_config';
+
+  private defaultConfig: ConfiguracionDoctor = {
+    nombreDoctor: 'Dr. Thevenin',
+    especialidad: 'Urólogo',
+    fotoUrl: 'https://i.pravatar.cc/150?u=doctor',
+    montoConsultaParticular: 1500,
+    tarifasSeguros: [
+      { seguro: 'ARS Humano', montoCobertura: 500, copago: 200 },
+      { seguro: 'ARS Primera', montoCobertura: 450, copago: 250 },
+      { seguro: 'ARS Senasa', montoCobertura: 400, copago: 0 },
+      { seguro: 'ARS Mapfre', montoCobertura: 500, copago: 200 },
+      { seguro: 'ARS Futuro', montoCobertura: 450, copago: 250 },
+      { seguro: 'ARS Palic', montoCobertura: 480, copago: 220 }
+    ]
+  };
 
   private appointmentsSubject = new BehaviorSubject<Cita[]>(this.loadAppointments());
   appointments$ = this.appointmentsSubject.asObservable();
@@ -79,7 +109,29 @@ export class CitasService {
   private facturasSeguroSubject = new BehaviorSubject<FacturaSeguro[]>(this.loadFacturasSeguro());
   facturasSeguro$ = this.facturasSeguroSubject.asObservable();
 
+  private configSubject = new BehaviorSubject<ConfiguracionDoctor>(this.loadConfig());
+  config$ = this.configSubject.asObservable();
+
   constructor() { }
+
+  // --- Configuration ---
+  private loadConfig(): ConfiguracionDoctor {
+    const data = localStorage.getItem(this.configKey);
+    return data ? JSON.parse(data) : this.defaultConfig;
+  }
+
+  saveConfig(config: ConfiguracionDoctor) {
+    localStorage.setItem(this.configKey, JSON.stringify(config));
+    this.configSubject.next(config);
+  }
+
+  getConfig(): ConfiguracionDoctor {
+    return this.configSubject.value;
+  }
+
+  getTarifaSeguro(seguro: string): TarifaSeguro | undefined {
+    return this.getConfig().tarifasSeguros.find(t => t.seguro === seguro);
+  }
 
   // --- Appointments ---
   private loadAppointments(): Cita[] {
@@ -189,6 +241,7 @@ export class CitasService {
       // 2. Si tiene seguro y la instrucción es seguro, crear factura para el seguro
       if (cita.seguro && cita.seguro !== 'Particular' && cita.instruccionCobro === 'seguro') {
         const paciente = this.findPatientByCedula(cita.cedula);
+        const tarifa = this.getTarifaSeguro(cita.seguro);
         this.agregarFacturaSeguro({
           id: Date.now(),
           cedula: cita.cedula,
@@ -197,7 +250,7 @@ export class CitasService {
           carnetSeguro: paciente?.carnetSeguro || cita.carnetSeguro || 'Sin carnet',
           seguro: cita.seguro,
           fecha: new Date().toLocaleDateString(),
-          monto: 500, // Monto estándar por consulta del seguro (puede ajustarse)
+          monto: tarifa ? tarifa.montoCobertura : 500, // Usar monto de configuración si existe
           estado: 'pendiente'
         });
       }
@@ -244,7 +297,7 @@ export class CitasService {
   }
 
   getResumenSeguros(): { seguro: string; totalPendiente: number; totalFacturas: number }[] {
-    const seguros = ['ARS Humano', 'ARS Primera', 'ARS Senasa', 'ARS Mapfre', 'ARS Futuro', 'ARS Palic'];
+    const seguros = this.getConfig().tarifasSeguros.map(t => t.seguro);
     return seguros.map(seguro => {
       const facturas = this.getFacturasPendientesPorSeguro(seguro);
       return {
@@ -253,6 +306,21 @@ export class CitasService {
         totalFacturas: facturas.length
       };
     });
+  }
+
+  // --- Gestión de Seguros ---
+  agregarSeguro(nuevaTarifa: TarifaSeguro) {
+    const config = this.getConfig();
+    if (!config.tarifasSeguros.find(t => t.seguro === nuevaTarifa.seguro)) {
+      config.tarifasSeguros.push(nuevaTarifa);
+      this.saveConfig(config);
+    }
+  }
+
+  eliminarSeguro(nombreSeguro: string) {
+    const config = this.getConfig();
+    config.tarifasSeguros = config.tarifasSeguros.filter(t => t.seguro !== nombreSeguro);
+    this.saveConfig(config);
   }
 }
 
