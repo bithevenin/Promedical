@@ -1,0 +1,16 @@
+<div class="modal-wrapper">
+  <div class="modal-content">
+    <div class="icon-wrapper" [ngClass]="type">
+      <ion-icon name="alert-circle-outline" *ngIf="type === 'error'"></ion-icon>
+      <ion-icon name="warning-outline" *ngIf="type === 'warning'"></ion-icon>
+      <ion-icon name="checkmark-circle-outline" *ngIf="type === 'success'"></ion-icon>
+    </div>
+    
+    <h2 class="modal-title">{{ title }}</h2>
+    <p class="modal-message">{{ message }}</p>
+
+    <button class="modal-button" (click)="dismiss()">
+      Entendido
+    </button>
+  </div>
+</div>

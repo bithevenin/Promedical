@@ -1,0 +1,112 @@
+@import '../../../../styles/variables';
+
+.modal-wrapper {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: transparent; 
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: $radius-lg;
+  padding: 50px 40px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: $text-main;
+}
+
+.icon-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 20px; /* Changed from 50% to 20px to match login logo */
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 35px;
+  background: rgba(255, 255, 255, 0.05); /* Will be overridden by specific types if needed, or keep generic */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: rotate(-5deg); /* Match login rotation */
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: rotate(0deg) scale(1.05); /* Match login hover */
+  }
+
+  &.error {
+    background: linear-gradient(135deg, $danger, darken($danger, 10%)); /* Gradients */
+    color: white;
+    box-shadow: 0 15px 30px rgba($danger, 0.4);
+  }
+  
+  &.warning {
+    background: linear-gradient(135deg, $warning, darken($warning, 10%));
+    color: white;
+    box-shadow: 0 15px 30px rgba($warning, 0.4);
+  }
+  
+  &.success {
+    background: linear-gradient(135deg, $success, darken($success, 10%));
+    color: white;
+    box-shadow: 0 15px 30px rgba($success, 0.4);
+  }
+}
+
+.modal-title {
+  font-size: 24px; /* Increased from 20px */
+  font-weight: 850;
+  margin: 0 0 10px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(to bottom, #ffffff, #cbd5e1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.modal-message {
+  color: $text-secondary;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 25px;
+}
+
+.modal-button {
+  width: 100%;
+  background: linear-gradient(135deg, $primary, $secondary);
+  border: none;
+  border-radius: $radius-md;
+  padding: 16px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba($primary, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

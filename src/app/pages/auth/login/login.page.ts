@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
-import { LoadingController, ToastController } from '@ionic/angular';
+import { LoadingController, ModalController } from '@ionic/angular';
+import { ErrorModalComponent } from '../components/error-modal/error-modal.component';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,8 @@ export class LoginPage implements OnInit {
     private authService: AuthService,
     private router: Router,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
+    private modalCtrl: ModalController,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -26,7 +28,23 @@ export class LoginPage implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.route.queryParams.subscribe(async params => {
+      if (params['authWarning']) {
+        const modal = await this.modalCtrl.create({
+          component: ErrorModalComponent,
+          componentProps: {
+            title: 'Sesión Expirada',
+            message: 'Su sesión ha expirado o no ha iniciado sesión. Por favor ingrese sus credenciales nuevamente.',
+            type: 'warning'
+          },
+          cssClass: 'auto-height-modal',
+          backdropDismiss: false
+        });
+        await modal.present();
+      }
+    });
+  }
 
   async onLogin() {
     if (this.loginForm.invalid) return;
@@ -42,13 +60,24 @@ export class LoginPage implements OnInit {
       await this.authService.signIn(email, password);
       this.router.navigate(['/main']);
     } catch (error: any) {
-      const toast = await this.toastCtrl.create({
-        message: 'Error: ' + (error.message || 'Credenciales inválidas'),
-        duration: 3000,
-        color: 'danger',
-        position: 'bottom'
+      let message = 'Correo o contraseña incorrectos. Por favor verifique sus datos.';
+      
+      // Intentar identificar si es un error de red o algo más, pero mantener el mensaje de credenciales genérico
+      if (error.message && error.message.includes('network')) {
+        message = 'Error de conexión. Por favor verifique su internet.';
+      }
+
+      const modal = await this.modalCtrl.create({
+        component: ErrorModalComponent,
+        componentProps: {
+          title: 'Error de Acceso',
+          message: message,
+          type: 'error'
+        },
+        cssClass: 'auto-height-modal',
+        backdropDismiss: false
       });
-      toast.present();
+      await modal.present();
     } finally {
       loading.dismiss();
     }

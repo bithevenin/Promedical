@@ -958,3 +958,17 @@ $breakpoint-xl: 1200px;
     }
   }
 }
+
+/* Modal Transparente (Glassmorphism) */
+.auto-height-modal {
+  --background: transparent;
+  --box-shadow: none;
+  
+  &::part(backdrop) {
+    backdrop-filter: blur(5px);
+  }
+  
+  .ion-page {
+    background: transparent;
+  }
+}

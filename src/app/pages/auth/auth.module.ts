@@ -6,6 +6,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { LoginPage } from './login/login.page';
 import { ForgotPasswordPage } from './forgot-password/forgot-password.page';
+import { ErrorModalComponent } from './components/error-modal/error-modal.component';
 
 const routes: Routes = [
   {
@@ -26,6 +27,6 @@ const routes: Routes = [
     IonicModule,
     RouterModule.forChild(routes)
   ],
-  declarations: [LoginPage, ForgotPasswordPage]
+  declarations: [LoginPage, ForgotPasswordPage, ErrorModalComponent]
 })
 export class AuthModule { }
