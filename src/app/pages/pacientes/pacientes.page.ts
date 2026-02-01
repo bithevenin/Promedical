@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CitasService, Paciente, Consulta } from '../../services/citas.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-pacientes',
@@ -11,6 +12,8 @@ import { CitasService, Paciente, Consulta } from '../../services/citas.service';
 export class PacientesPage implements OnInit {
   pacientes: Paciente[] = [];
   filtroNombre: string = '';
+  
+  currentProfile = signal<any>(null);
 
   // Modals state
   showHistoryModal = false;
@@ -53,13 +56,16 @@ export class PacientesPage implements OnInit {
 
   constructor(
     private citasService: CitasService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
     this.citasService.patients$.subscribe(patients => {
       this.pacientes = patients;
     });
+    
+    this.authService.profile$.subscribe(p => this.currentProfile.set(p));
 
     this.citasService.config$.subscribe(config => {
       this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
@@ -122,9 +128,13 @@ export class PacientesPage implements OnInit {
   }
 
   consultarPaciente(paciente: Paciente) {
-    // Navegar a la página de consulta con la cédula del paciente
     this.router.navigate(['/consulta'], {
       queryParams: { cedula: paciente.cedula }
     });
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }

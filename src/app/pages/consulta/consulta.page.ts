@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CitasService, Cita, Consulta, Paciente } from '../../services/citas.service';
 import { PrintRecetaService } from '../../services/print-receta.service';
+import { AuthService } from '../../services/auth.service';
+import { signal } from '@angular/core';
 
 @Component({
   selector: 'app-consulta',
@@ -13,6 +15,8 @@ export class ConsultaPage implements OnInit {
   pacientesEspera: Cita[] = [];
   pacienteSeleccionado: Cita | null = null;
   historialPasado: Consulta[] = [];
+  
+  currentProfile = signal<any>(null);
 
   // Flag para indicar si es consulta directa (sin cita previa)
   esConsultaDirecta = false;
@@ -27,7 +31,9 @@ export class ConsultaPage implements OnInit {
   constructor(
     private citasService: CitasService,
     private printRecetaService: PrintRecetaService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private router: Router
   ) { }
 
   ngOnInit() {
@@ -46,6 +52,8 @@ export class ConsultaPage implements OnInit {
         this.seleccionarPaciente(enConsulta);
       }
     });
+
+    this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
   cargarPacienteDirecto(cedula: string) {
@@ -120,5 +128,10 @@ export class ConsultaPage implements OnInit {
     } else {
       alert('Por favor ingrese la receta antes de imprimir.');
     }
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }

@@ -28,10 +28,13 @@
       <div class="nav-item" routerLink="/pacientes"><ion-icon name="people-outline"></ion-icon></div>
       <div class="nav-item" routerLink="/consulta"><ion-icon name="medical-outline"></ion-icon></div>
       <div class="nav-item active" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
+      <div class="nav-item mt-auto" title="Cerrar Sesión" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-danger"></ion-icon>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="avatar-box">
-        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin">
+        <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre">
       </div>
     </div>
   </aside>
@@ -43,8 +46,11 @@
       </div>
       <div class="top-actions">
         <div class="user-info hide-on-tablet">
-          <span class="user-name">Administración</span>
-          <span class="user-role">Finanzas</span>
+          <span class="user-name">{{ currentProfile()?.nombre || 'Administración' }}</span>
+          <span class="user-role text-uppercase">
+            {{ currentProfile()?.rol || 'Finanzas' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
         </div>
       </div>
     </header>

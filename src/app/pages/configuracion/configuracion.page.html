@@ -29,10 +29,13 @@
                 <div class="nav-item" routerLink="/contabilidad"><ion-icon name="wallet-outline"></ion-icon></div>
                 <div class="nav-item active" routerLink="/configuracion"><ion-icon name="settings-outline"></ion-icon>
                 </div>
+                <div class="nav-item mt-auto" title="Cerrar Sesión" (click)="logout()">
+                    <ion-icon name="log-out-outline" class="text-danger"></ion-icon>
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <div class="avatar-box">
-                    <img [src]="config.fotoUrl" [alt]="config.nombreDoctor">
+                    <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre">
                 </div>
             </div>
         </aside>
@@ -50,41 +53,38 @@
                 {{ mensajeExito }}
             </div>
 
-            <div class="config-grid">
-                <!-- Información del Doctor -->
+            <!-- Segment Control -->
+            <div class="segment-container mb-4">
+                <ion-segment [(ngModel)]="selectedSegment" mode="ios">
+                    <ion-segment-button value="consultorio">
+                        <ion-label>Consultorio</ion-label>
+                    </ion-segment-button>
+                    <ion-segment-button value="usuarios">
+                        <ion-label>Gestión de Usuarios</ion-label>
+                    </ion-segment-button>
+                </ion-segment>
+            </div>
+
+            <!-- SECCIÓN CONSULTORIO -->
+            <div *ngIf="selectedSegment === 'consultorio'" class="config-grid animate__animated animate__fadeIn">
+                <!-- Información del Doctor (Solo visual/configuración básica) -->
                 <div class="config-card">
                     <div class="card-header">
-                        <ion-icon name="person-outline"></ion-icon>
-                        <h3>Información del Doctor</h3>
+                        <ion-icon name="business-outline"></ion-icon>
+                        <h3>Datos del Consultorio</h3>
                     </div>
                     <div class="card-body">
-                        <div class="photo-section">
-                            <div class="photo-preview">
-                                <img [src]="config.fotoUrl" alt="Foto del Doctor" *ngIf="config.fotoUrl">
-                                <ion-icon name="person-outline" *ngIf="!config.fotoUrl"></ion-icon>
-                            </div>
-                            <div class="photo-actions">
-                                <label class="btn btn-secondary">
-                                    <ion-icon name="camera-outline"></ion-icon>
-                                    Subir Foto
-                                    <input type="file" accept="image/*" (change)="actualizarFoto($event)" hidden>
-                                </label>
-                                <input type="text" [(ngModel)]="config.fotoUrl" placeholder="O ingrese URL de imagen"
-                                    class="form-control mt-2">
-                            </div>
-                        </div>
-
                         <div class="form-group">
-                            <label>Nombre del Doctor</label>
+                            <label>Nombre del Doctor / Clínica</label>
                             <input type="text" [(ngModel)]="config.nombreDoctor" class="form-control"
                                 placeholder="Dr. Juan Pérez">
                         </div>
-
                         <div class="form-group">
                             <label>Especialidad</label>
                             <input type="text" [(ngModel)]="config.especialidad" class="form-control"
                                 placeholder="Medicina General">
                         </div>
+                        <!-- Correo y password aquí solo afectan la info de contacto pública, no el login -->
                     </div>
                 </div>
 
@@ -162,6 +162,102 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN GESTIÓN DE USUARIOS -->
+            <div *ngIf="selectedSegment === 'usuarios'" class="usuarios-panel animate__animated animate__fadeIn">
+                
+                <!-- Registrar Nuevo Usuario -->
+                <div class="config-card mb-4">
+                    <div class="card-header">
+                        <ion-icon name="person-add-outline"></ion-icon>
+                        <h3>Registrar Nuevo Usuario</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="photo-section centered">
+                                    <div class="photo-preview large">
+                                        <img [src]="nuevoUsuario.fotoUrl" alt="Avatar">
+                                    </div>
+                                    <div class="photo-actions mt-3">
+                                        <label class="btn btn-secondary btn-sm">
+                                            <ion-icon name="camera-outline"></ion-icon> Subir Foto
+                                            <input type="file" accept="image/*" (change)="actualizarFotoNuevoUsuario($event)" hidden>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Nombre Completo</label>
+                                            <input type="text" [(ngModel)]="nuevoUsuario.nombre" (keyup)="actualizarNombreAvatar()" class="form-control" placeholder="Nombre Apellido">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Correo Electrónico (Login)</label>
+                                            <input type="email" [(ngModel)]="nuevoUsuario.email" class="form-control" placeholder="usuario@promedical.com">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Rol</label>
+                                            <select [(ngModel)]="nuevoUsuario.rol" class="form-control">
+                                                <option *ngFor="let rol of roles" [value]="rol.value">{{ rol.label }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="nuevoUsuario.rol === 'doctor'">
+                                        <div class="form-group animate__animated animate__fadeIn">
+                                            <label>Especialidad</label>
+                                            <input type="text" [(ngModel)]="nuevoUsuario.especialidad" class="form-control" placeholder="Ej. Cardiología">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Contraseña (Mínimo 8 caracteres)</label>
+                                            <input type="password" [(ngModel)]="nuevoUsuario.password" class="form-control" placeholder="********" maxlength="8">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button class="btn btn-primary" (click)="guardarNuevoUsuario()" [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
+                                        <ion-icon name="save-outline"></ion-icon>
+                                        Crear Usuario
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Usuarios -->
+                <h3 class="section-title mb-3">Usuarios Registrados ({{usuarios.length}})</h3>
+                <div class="users-grid">
+                    <div class="user-card" *ngFor="let user of usuarios">
+                        <div class="user-avatar">
+                            <img [src]="user.foto_url || 'https://ui-avatars.com/api/?name=' + user.nombre" alt="{{user.nombre}}">
+                            <label class="edit-photo-btn">
+                                <ion-icon name="pencil-outline"></ion-icon>
+                                <input type="file" accept="image/*" (change)="actualizarFotoUsuarioExistente($event, user)" hidden>
+                            </label>
+                        </div>
+                        <div class="user-info">
+                            <input type="text" [(ngModel)]="user.nombre" class="form-control bare-input" placeholder="Nombre">
+                            <p class="user-email">{{user.correo}}</p>
+                            <select [(ngModel)]="user.rol" class="form-control bare-select mt-1">
+                                <option *ngFor="let rol of roles" [value]="rol.value">{{ rol.label }}</option>
+                            </select>
+                            <input *ngIf="user.rol === 'doctor'" type="text" [(ngModel)]="user.especialidad" class="form-control bare-input mt-1 animate__animated animate__fadeIn" placeholder="Especialidad">
+                            <button class="btn btn-sm btn-outline-primary mt-2" (click)="guardarEdicionUsuario(user)">
+                                <ion-icon name="save-outline"></ion-icon> Actualizar
+                            </button>
                         </div>
                     </div>
                 </div>

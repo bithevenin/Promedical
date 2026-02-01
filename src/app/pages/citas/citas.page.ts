@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CitasService, Cita, Paciente } from '../../services/citas.service';
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-citas',
@@ -37,11 +39,17 @@ export class CitasPage implements OnInit {
   // Modal de Seguro (Nuevo)
   mostrarModalSeguro = false;
   carnetSeguroTemp = '';
+  
+  currentProfile = signal<any>(null);
 
   // Exponer Math para el template
   Math = Math;
 
-  constructor(public citasService: CitasService) {
+  constructor(
+    public citasService: CitasService, 
+    private authService: AuthService,
+    private router: Router
+  ) {
     const now = new Date();
     const offset = now.getTimezoneOffset();
     const localDate = new Date(now.getTime() - (offset * 60 * 1000));
@@ -59,6 +67,8 @@ export class CitasPage implements OnInit {
     this.citasService.appointments$.subscribe(appointments => {
       this.actualizarListas(appointments);
     });
+    
+    this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
   onSeguroChange() {
@@ -283,5 +293,10 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
       telefono: ''
     };
     this.errorBusqueda = '';
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }

@@ -88,6 +88,8 @@ export interface TarifaSeguro {
 export interface ConfiguracionDoctor {
   nombreDoctor: string;
   especialidad: string;
+  email?: string;
+  password?: string;
   fotoUrl: string;
   montoConsultaParticular: number;
   tarifasSeguros: TarifaSeguro[];
@@ -102,6 +104,7 @@ export class CitasService {
   private defaultConfig: ConfiguracionDoctor = {
     nombreDoctor: 'Dr. Thevenin',
     especialidad: 'Urólogo',
+    email: 'doctor@promedical.com',
     fotoUrl: 'https://i.pravatar.cc/150?u=doctor',
     montoConsultaParticular: 1500,
     tarifasSeguros: [
@@ -168,6 +171,7 @@ export class CitasService {
       const config: ConfiguracionDoctor = {
         nombreDoctor: configRows.nombre_doctor,
         especialidad: configRows.especialidad,
+        email: configRows.email,
         fotoUrl: configRows.foto_url,
         montoConsultaParticular: configRows.monto_consulta_particular,
         tarifasSeguros: (tarifas || []).map(t => ({
@@ -273,6 +277,7 @@ export class CitasService {
     await this.supabase.from('configuracion_doctor').update({
       nombre_doctor: config.nombreDoctor,
       especialidad: config.especialidad,
+      email: config.email,
       foto_url: config.fotoUrl,
       monto_consulta_particular: config.montoConsultaParticular
     }).eq('id', 1);

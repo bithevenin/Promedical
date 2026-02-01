@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CitasService, Cita } from '../../services/citas.service';
+import { AuthService } from '../../services/auth.service';
 
 interface NavItem {
   icon: string;
@@ -39,6 +40,7 @@ export class DashboardPage implements OnInit {
   allCitas = signal<Cita[]>([]);
   allPatients = signal<any[]>([]);
   allTransactions = signal<any[]>([]);
+  currentProfile = signal<any>(null);
 
   stats = computed<StatCard[]>(() => {
     const now = new Date();
@@ -90,16 +92,23 @@ export class DashboardPage implements OnInit {
 
   constructor(
     private router: Router,
-    private citasService: CitasService
+    private citasService: CitasService,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
     this.citasService.appointments$.subscribe(data => this.allCitas.set(data));
     this.citasService.patients$.subscribe(data => this.allPatients.set(data));
     this.citasService.transactions$.subscribe(data => this.allTransactions.set(data));
+    this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
-  navigateTo(route: string): void {
+  navigateTo(route: string) {
     this.router.navigate([route]);
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }

@@ -15,13 +15,16 @@
           <p class="m-0 text-white-50">Centro Médico Especializado</p>
         </div>
       </div>
-      <div class="user-profile" *ngIf="config">
+      <div class="user-profile animate__animated animate__fadeInRight" *ngIf="profile">
         <div class="text-end me-3">
-          <h6 class="m-0 fw-bold">{{ config.nombreDoctor }}</h6>
-          <small class="text-white-50">{{ config.especialidad }}</small>
+          <h6 class="m-0 fw-bold">{{ profile.nombre }}</h6>
+          <small class="text-white-50 text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
+            {{ profile.rol }}
+            <span *ngIf="profile.rol === 'doctor' && profile.especialidad"> | {{ profile.especialidad }}</span>
+          </small>
         </div>
         <div class="avatar">
-          <img [src]="config.fotoUrl" alt="Profile">
+          <img [src]="profile.foto_url || 'assets/img/avatar-placeholder.png'" alt="Profile">
         </div>
       </div>
     </div>

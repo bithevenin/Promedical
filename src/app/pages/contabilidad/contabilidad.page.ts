@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CitasService, Transaccion } from '../../services/citas.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-contabilidad',
@@ -12,6 +13,7 @@ export class ContabilidadPage implements OnInit {
 
   transactions = signal<Transaccion[]>([]);
   resumenSeguros = signal<{ seguro: string; totalPendiente: number; totalFacturas: number }[]>([]);
+  currentProfile = signal<any>(null);
 
   // Modales
   showIngresoModal = false;
@@ -56,7 +58,8 @@ export class ContabilidadPage implements OnInit {
 
   constructor(
     private citasService: CitasService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
@@ -68,6 +71,8 @@ export class ContabilidadPage implements OnInit {
     this.citasService.facturasSeguro$.subscribe(() => {
       this.resumenSeguros.set(this.citasService.getResumenSeguros());
     });
+    
+    this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
   verReporteSeguros() {
@@ -121,6 +126,11 @@ export class ContabilidadPage implements OnInit {
       this.citasService.agregarTransaccion(transaccion);
       this.cerrarModalEgreso();
     }
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }
 
