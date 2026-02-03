@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, FacturaSeguro } from '../../../services/citas.service';
+import { CitasService, FacturaSeguro, ReportePagoSeguro } from '../../../services/citas.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -16,7 +16,9 @@ export class SegurosArsPage implements OnInit {
 
     seguroSeleccionado = signal<string>('todos');
     facturas = signal<FacturaSeguro[]>([]);
+    reportes = signal<ReportePagoSeguro[]>([]);
     mostrarSoloPendientes = signal<boolean>(true);
+    viewMode = signal<'facturas' | 'pagos'>('facturas');
 
     // Modal para agregar factura manual
     showAddModal = false;
@@ -27,6 +29,23 @@ export class SegurosArsPage implements OnInit {
         carnetSeguro: '',
         seguro: '',
         monto: 500
+    };
+
+    // Modales para reportes de pago
+    showReporteModal = false;
+    showPagoModal = false;
+    reporteSeleccionado: ReportePagoSeguro | null = null;
+
+    nuevoReporte = {
+        seguro: '',
+        mes: new Date().toISOString().substring(0, 7),
+        montoEnviado: 0,
+        comentario: ''
+    };
+
+    nuevoPago = {
+        montoRecibido: 0,
+        fechaPago: new Date().toISOString().split('T')[0]
     };
 
     facturasFiltradas = computed(() => {
@@ -43,9 +62,42 @@ export class SegurosArsPage implements OnInit {
         return result.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
     });
 
+    reportesFiltrados = computed(() => {
+        let result = this.reportes();
+
+        if (this.seguroSeleccionado() !== 'todos') {
+            result = result.filter(r => r.seguro === this.seguroSeleccionado());
+        }
+
+        if (this.mostrarSoloPendientes()) {
+            result = result.filter(r => r.estado === 'pendiente');
+        }
+
+        return result.sort((a, b) => b.mes.localeCompare(a.mes));
+    });
+
     totalMonto = computed(() =>
         this.facturasFiltradas().reduce((sum, f) => sum + f.monto, 0)
     );
+
+    totalEnviadoReportes = computed(() =>
+        this.reportesFiltrados().reduce((acc, r) => acc + r.montoEnviado, 0)
+    );
+
+    totalRecibidoReportes = computed(() =>
+        this.reportesFiltrados().reduce((acc, r) => acc + (r.montoRecibido || 0), 0)
+    );
+
+    balanceAcumulado = computed(() => {
+        const reportesTarget = this.seguroSeleccionado() === 'todos'
+            ? this.reportes()
+            : this.reportes().filter(r => r.seguro === this.seguroSeleccionado());
+
+        const totalEnviado = reportesTarget.reduce((acc, r) => acc + r.montoEnviado, 0);
+        const totalRecibido = reportesTarget.reduce((acc, r) => acc + (r.montoRecibido || 0), 0);
+
+        return totalEnviado - totalRecibido;
+    });
 
     totalPacientes = computed(() => this.facturasFiltradas().length);
 
@@ -59,6 +111,10 @@ export class SegurosArsPage implements OnInit {
             this.facturas.set(facturas);
         });
 
+        this.citasService.reportesPagosSeguro$.subscribe(reportes => {
+            this.reportes.set(reportes);
+        });
+
         this.citasService.config$.subscribe(config => {
             this.segurosDisponibles = [
                 { value: 'todos', label: 'Todos los Seguros' },
@@ -66,8 +122,13 @@ export class SegurosArsPage implements OnInit {
             ];
             if (this.nuevaFactura.seguro === '' && config.tarifasSeguros.length > 0) {
                 this.nuevaFactura.seguro = config.tarifasSeguros[0].seguro;
+                this.nuevoReporte.seguro = config.tarifasSeguros[0].seguro;
             }
         });
+    }
+
+    onViewModeChange(event: any) {
+        this.viewMode.set(event.detail.value);
     }
 
     onSeguroChange(event: any) {
@@ -95,7 +156,7 @@ export class SegurosArsPage implements OnInit {
             nombrePaciente: '',
             edad: 0,
             carnetSeguro: '',
-            seguro: this.seguroSeleccionado() !== 'todos' ? this.seguroSeleccionado() : 'ARS Humano',
+            seguro: this.seguroSeleccionado() !== 'todos' ? this.seguroSeleccionado() : (this.segurosDisponibles[1]?.value || 'ARS Humano'),
             monto: 500
         };
         this.showAddModal = true;
@@ -103,6 +164,8 @@ export class SegurosArsPage implements OnInit {
 
     cerrarModal() {
         this.showAddModal = false;
+        this.showReporteModal = false;
+        this.showPagoModal = false;
     }
 
     guardarFactura() {
@@ -120,6 +183,44 @@ export class SegurosArsPage implements OnInit {
             };
             this.citasService.agregarFacturaSeguro(factura);
             this.cerrarModal();
+        }
+    }
+
+    // --- Métodos para Reportes de Pagos ---
+    abrirModalReporte() {
+        this.nuevoReporte = {
+            seguro: this.seguroSeleccionado() !== 'todos' ? this.seguroSeleccionado() : (this.segurosDisponibles[1]?.value || 'ARS Humano'),
+            mes: new Date().toISOString().substring(0, 7),
+            montoEnviado: 0,
+            comentario: ''
+        };
+        this.showReporteModal = true;
+    }
+
+    guardarReporte() {
+        if (this.nuevoReporte.seguro && this.nuevoReporte.montoEnviado > 0) {
+            this.citasService.agregarReportePagoSeguro(this.nuevoReporte);
+            this.showReporteModal = false;
+        }
+    }
+
+    abrirModalPago(reporte: ReportePagoSeguro) {
+        this.reporteSeleccionado = reporte;
+        this.nuevoPago = {
+            montoRecibido: reporte.montoEnviado,
+            fechaPago: new Date().toISOString().split('T')[0]
+        };
+        this.showPagoModal = true;
+    }
+
+    guardarPago() {
+        if (this.reporteSeleccionado && this.nuevoPago.montoRecibido > 0) {
+            this.citasService.registrarPagoRecibido(
+                this.reporteSeleccionado.id,
+                this.nuevoPago.montoRecibido,
+                this.nuevoPago.fechaPago
+            );
+            this.showPagoModal = false;
         }
     }
 

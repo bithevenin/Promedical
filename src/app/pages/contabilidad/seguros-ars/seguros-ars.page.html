@@ -61,11 +61,23 @@
 
         <div class="content-body">
             <div class="container-fluid py-4">
-                <!-- Filters & Summary Row -->
+                <!-- Tabs & Filters Row -->
                 <div class="row g-4 mb-4">
-                    <div class="col-12 col-lg-4">
+                    <div class="col-12">
+                        <ion-segment [value]="viewMode()" (ionChange)="onViewModeChange($event)"
+                            class="custom-segment mb-3">
+                            <ion-segment-button value="facturas">
+                                <ion-label>Facturas Individuales</ion-label>
+                            </ion-segment-button>
+                            <ion-segment-button value="pagos">
+                                <ion-label>Pagos de Seguro (Reportados)</ion-label>
+                            </ion-segment-button>
+                        </ion-segment>
+                    </div>
+
+                    <div class="col-12 col-lg-3">
                         <div class="card border-0 shadow-sm p-4 rounded-4 filter-card">
-                            <label class="form-label small fw-bold text-light mb-2">Seleccionar Seguro</label>
+                            <label class="form-label small fw-bold text-light mb-2">Filtrar por Seguro</label>
                             <select class="form-select custom-input" [value]="seguroSeleccionado()"
                                 (change)="onSeguroChange($event)">
                                 @for (seguro of segurosDisponibles; track seguro.value) {
@@ -82,34 +94,53 @@
                         </div>
                     </div>
 
-                    <div class="col-6 col-lg-4">
+                    <div class="col-6 col-lg-3">
                         <div class="card border-0 shadow-sm p-4 rounded-4 summary-card bg-primary text-white">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="m-0 opacity-75">Total a Cobrar</h6>
+                                <h6 class="m-0 opacity-75">{{ viewMode() === 'facturas' ? 'Total Facturado' : 'Total
+                                    Enviado' }}</h6>
                                 <ion-icon name="cash-outline" class="fs-4"></ion-icon>
                             </div>
-                            <h2 class="fw-black m-0">RD$ {{ totalMonto().toLocaleString() }}</h2>
-                            <small class="opacity-75 mt-2 d-block">Del período actual</small>
+                            <h2 class="fw-black m-0">RD$ {{ (viewMode() === 'facturas' ? totalMonto() :
+                                totalEnviadoReportes()).toLocaleString() }}</h2>
+                            <small class="opacity-75 mt-2 d-block">Periodo actual</small>
                         </div>
                     </div>
 
-                    <div class="col-6 col-lg-4">
+                    <div class="col-6 col-lg-3">
                         <div class="card border-0 shadow-sm p-4 rounded-4 summary-card bg-info text-white">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="m-0 opacity-75">Total Pacientes</h6>
-                                <ion-icon name="people-outline" class="fs-4"></ion-icon>
+                                <h6 class="m-0 opacity-75">Recibido (Cheques)</h6>
+                                <ion-icon name="checkmark-circle-outline" class="fs-4"></ion-icon>
                             </div>
-                            <h2 class="fw-black m-0">{{ totalPacientes() }}</h2>
-                            <small class="opacity-75 mt-2 d-block">Facturas registradas</small>
+                            <h2 class="fw-black m-0">RD$ {{ totalRecibidoReportes().toLocaleString() }}</h2>
+                            <small class="opacity-75 mt-2 d-block">Monto total liquidado</small>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-3">
+                        <div class="card border-0 shadow-sm p-4 rounded-4 summary-card"
+                            [class.bg-danger]="balanceAcumulado() > 0" [class.bg-success]="balanceAcumulado() <= 0">
+                            <div class="d-flex justify-content-between align-items-center mb-2 text-white">
+                                <h6 class="m-0 opacity-75">Balance de Cuenta</h6>
+                                <ion-icon
+                                    [name]="balanceAcumulado() > 0 ? 'alert-circle-outline' : 'checkmark-done-circle-outline'"
+                                    class="fs-4"></ion-icon>
+                            </div>
+                            <h2 class="fw-black m-0 text-white">RD$ {{ balanceAcumulado().toLocaleString() }}</h2>
+                            <small class="opacity-75 mt-2 d-block text-white">{{ balanceAcumulado() > 0 ? 'Seguro
+                                adeuda' : 'Cuenta al día' }}</small>
                         </div>
                     </div>
                 </div>
 
+                <!-- Main Content Row -->
+                @if (viewMode() === 'facturas') {
                 <!-- Table Card -->
-                <div class="card border-0 shadow-sm p-4 rounded-4">
+                <div class="card border-0 shadow-sm p-4 rounded-4 animate__animated animate__fadeIn">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold m-0 text-white">
-                            Facturas
+                            Facturas Individuales
                             @if (seguroSeleccionado() !== 'todos') {
                             <span class="badge bg-primary-light text-primary ms-2">{{ seguroSeleccionado() }}</span>
                             }
@@ -197,11 +228,97 @@
                         </div>
                     </div>
                 </div>
+                } @else {
+                <!-- Reports Grid -->
+                <div class="animate__animated animate__fadeIn">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0 text-white">Comparativa de Pagos Recibidos</h5>
+                        <button class="btn btn-primary btn-sm rounded-pill px-3" (click)="abrirModalReporte()">
+                            <ion-icon name="cloud-upload-outline" class="me-1"></ion-icon>
+                            Reportar Envío de Seguro
+                        </button>
+                    </div>
+
+                    <div class="row g-4">
+                        @for (reporte of reportesFiltrados(); track reporte.id) {
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="card border-0 shadow-sm rounded-4 comparison-card h-100"
+                                [class.completed]="reporte.estado === 'completado'">
+                                <div class="card-header-report d-flex justify-content-between align-items-start p-4">
+                                    <div>
+                                        <span class="ars-badge mb-2 d-inline-block">{{ reporte.seguro }}</span>
+                                        <h5 class="m-0 fw-bold text-white">{{ reporte.mes }}</h5>
+                                    </div>
+                                    @if (reporte.estado === 'pendiente') {
+                                    <span class="badge bg-warning-light text-warning rounded-pill px-3">En
+                                        Proceso</span>
+                                    } @else {
+                                    <span class="badge bg-success-light text-success rounded-pill px-3">Liquidado</span>
+                                    }
+                                </div>
+                                <div class="card-body p-4 pt-0">
+                                    <div class="comparison-row mb-3">
+                                        <div class="label text-light opacity-75 small">Monto Enviado</div>
+                                        <div class="value fw-bold text-white fs-5">RD$ {{
+                                            reporte.montoEnviado.toLocaleString() }}</div>
+                                    </div>
+
+                                    @if (reporte.estado === 'completado') {
+                                    <div class="comparison-row mb-3">
+                                        <div class="label text-light opacity-75 small">Monto Recibido</div>
+                                        <div class="value fw-bold text-success fs-5">RD$ {{
+                                            reporte.montoRecibido?.toLocaleString() }}</div>
+                                    </div>
+                                    <div class="comparison-row mb-3">
+                                        <div class="label text-light opacity-75 small">Diferencia (Pendiente)</div>
+                                        <div class="value fw-bold"
+                                            [class.text-danger]="(reporte.montoEnviado - (reporte.montoRecibido || 0)) > 0">
+                                            RD$ {{ (reporte.montoEnviado - (reporte.montoRecibido ||
+                                            0)).toLocaleString()
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="comparison-divider mb-3"></div>
+                                    <div class="comparison-row">
+                                        <div class="label text-light opacity-75 small">Eficiencia de Cobro</div>
+                                        <div class="value fw-black"
+                                            [class.text-danger]="(reporte.montoRecibido! / reporte.montoEnviado) < 0.9"
+                                            [class.text-success]="(reporte.montoRecibido! / reporte.montoEnviado) >= 0.9">
+                                            {{ ((reporte.montoRecibido! / reporte.montoEnviado) * 100).toFixed(1) }}%
+                                        </div>
+                                    </div>
+                                    } @else {
+                                    <div class="placeholder-comparison py-3 text-center rounded-3 bg-dark-light">
+                                        <button class="btn btn-outline-primary btn-sm rounded-4"
+                                            (click)="abrirModalPago(reporte)">
+                                            <ion-icon name="wallet-outline" class="me-1"></ion-icon>
+                                            Registrar Pago/Cheque
+                                        </button>
+                                    </div>
+                                    }
+
+                                    @if (reporte.comentario) {
+                                    <div class="mt-3 p-3 rounded-3 bg-dark-light small text-light italic">
+                                        "{{ reporte.comentario }}"
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        } @empty {
+                        <div class="col-12 text-center py-5 text-light">
+                            <ion-icon name="analytics-outline" class="fs-1 opacity-25 d-block mb-2"></ion-icon>
+                            <p>No hay reportes de pago registrados</p>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
             </div>
         </div>
     </main>
 
-    <!-- Add Invoice Modal -->
+    <!-- Modal: Agregar Factura (Existente) -->
     @if (showAddModal) {
     <div class="custom-modal-backdrop animate__animated animate__fadeIn">
         <div class="custom-modal modal-add animate__animated animate__zoomIn">
@@ -250,6 +367,106 @@
                 <div class="d-grid mt-4">
                     <button class="btn btn-primary py-3 rounded-4 fw-bold shadow-md" (click)="guardarFactura()">
                         Guardar Factura
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Modal: Reportar Envío (Nuevo) -->
+    @if (showReporteModal) {
+    <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+        <div class="custom-modal modal-add animate__animated animate__zoomIn">
+            <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0 text-white">Reportar Envío Semanal/Mensual</h5>
+                <button class="btn btn-icon-action" (click)="cerrarModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4">
+                <p class="text-light small opacity-75 mb-4">Ingresa el monto total enviado al seguro (Consultas +
+                    Cirugías) para este periodo.</p>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-light">Seguro</label>
+                        <select class="form-select custom-input" [(ngModel)]="nuevoReporte.seguro">
+                            @for (seguro of segurosDisponibles; track seguro.value) {
+                            @if (seguro.value !== 'todos') {
+                            <option [value]="seguro.value">{{ seguro.label }}</option>
+                            }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Mes/Periodo</label>
+                        <input type="month" class="form-control custom-input" [(ngModel)]="nuevoReporte.mes">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Monto Enviado (RD$)</label>
+                        <input type="number" class="form-control custom-input" [(ngModel)]="nuevoReporte.montoEnviado"
+                            placeholder="0.00">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-light">Comentario (Opcional)</label>
+                        <textarea class="form-control custom-input" [(ngModel)]="nuevoReporte.comentario" rows="2"
+                            placeholder="Ej: Incluye 3 cirugías de próstata"></textarea>
+                    </div>
+                </div>
+                <div class="d-grid mt-4">
+                    <button class="btn btn-primary py-3 rounded-4 fw-bold shadow-md" (click)="guardarReporte()">
+                        Generar Reporte de Envío
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Modal: Registrar Pago Recibido (Nuevo) -->
+    @if (showPagoModal) {
+    <div class="custom-modal-backdrop animate__animated animate__fadeIn">
+        <div class="custom-modal modal-add animate__animated animate__zoomIn">
+            <div class="modal-header-custom border-bottom p-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0 text-white">Registrar Pago Recibido (Cheque)</h5>
+                <button class="btn btn-icon-action" (click)="cerrarModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4 text-center">
+                <div class="mb-4">
+                    <div class="ars-badge mb-2">{{ reporteSeleccionado?.seguro }}</div>
+                    <h4 class="text-white fw-bold">{{ reporteSeleccionado?.mes }}</h4>
+                    <p class="text-light opacity-50 small">Enviado: RD$ {{ (reporteSeleccionado?.montoEnviado ||
+                        0).toLocaleString() }}</p>
+                </div>
+
+                <div class="row g-3 text-start">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Monto Recibido (RD$)</label>
+                        <input type="number" class="form-control custom-input" [(ngModel)]="nuevoPago.montoRecibido">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-light">Fecha de Pago</label>
+                        <input type="date" class="form-control custom-input" [(ngModel)]="nuevoPago.fechaPago">
+                    </div>
+                </div>
+
+                <div class="alert bg-primary-light mt-4 text-start">
+                    <div class="d-flex gap-2 align-items-center text-primary fw-bold mb-1">
+                        <ion-icon name="information-circle"></ion-icon>
+                        Diferencia detectada
+                    </div>
+                    <div class="text-primary opacity-75 small">
+                        La diferencia con el monto enviado es de
+                        <span class="fw-bold">RD$ {{ ((reporteSeleccionado?.montoEnviado || 0) -
+                            nuevoPago.montoRecibido).toLocaleString() }}</span>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button class="btn btn-success py-3 rounded-4 fw-bold shadow-md" (click)="guardarPago()">
+                        Liquidar y Guardar Pago
                     </button>
                 </div>
             </div>

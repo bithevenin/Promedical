@@ -79,6 +79,18 @@ export interface FacturaSeguro {
   fechaPago?: string;
 }
 
+export interface ReportePagoSeguro {
+  id: number;
+  seguro: string;
+  mes: string; // Formato YYYY-MM
+  montoEnviado: number;
+  montoRecibido?: number;
+  fechaEnvio: string;
+  fechaPago?: string;
+  comentario?: string;
+  estado: 'pendiente' | 'completado';
+}
+
 export interface TarifaSeguro {
   seguro: string;
   montoCobertura: number; // Lo que paga el seguro
@@ -129,6 +141,9 @@ export class CitasService {
   private facturasSeguroSubject = new BehaviorSubject<FacturaSeguro[]>([]);
   facturasSeguro$ = this.facturasSeguroSubject.asObservable();
 
+  private reportesPagosSeguroSubject = new BehaviorSubject<ReportePagoSeguro[]>([]);
+  reportesPagosSeguro$ = this.reportesPagosSeguroSubject.asObservable();
+
   private consultationsSubject = new BehaviorSubject<Consulta[]>([]);
   consultations$ = this.consultationsSubject.asObservable();
 
@@ -146,6 +161,7 @@ export class CitasService {
       this.refreshAppointments(),
       this.refreshTransactions(),
       this.refreshFacturasSeguro(),
+      this.refreshReportesPagosSeguro(),
       this.refreshConsultas()
     ]);
   }
@@ -268,6 +284,24 @@ export class CitasService {
         fechaPago: f.fecha_pago
       }));
       this.facturasSeguroSubject.next(facturas);
+    }
+  }
+
+  async refreshReportesPagosSeguro() {
+    const { data } = await this.supabase.from('reportes_pagos_seguro').select('*');
+    if (data) {
+      const reportes: ReportePagoSeguro[] = data.map(r => ({
+        id: r.id,
+        seguro: r.seguro,
+        mes: r.mes,
+        montoEnviado: r.monto_enviado,
+        montoRecibido: r.monto_recibido,
+        fechaEnvio: r.fecha_envio,
+        fechaPago: r.fecha_pago,
+        comentario: r.comentario,
+        estado: r.estado
+      }));
+      this.reportesPagosSeguroSubject.next(reportes);
     }
   }
 
@@ -537,5 +571,27 @@ export class CitasService {
   async eliminarSeguro(nombreSeguro: string) {
     await this.supabase.from('tarifas_seguro').delete().eq('seguro', nombreSeguro);
     await this.refreshConfig();
+  }
+
+  // --- Reportes de Pagos de Seguro ---
+  async agregarReportePagoSeguro(reporte: Partial<ReportePagoSeguro>) {
+    await this.supabase.from('reportes_pagos_seguro').insert({
+      seguro: reporte.seguro,
+      mes: reporte.mes,
+      monto_enviado: reporte.montoEnviado,
+      fecha_envio: new Date().toISOString().split('T')[0],
+      comentario: reporte.comentario,
+      estado: 'pendiente'
+    });
+    await this.refreshReportesPagosSeguro();
+  }
+
+  async registrarPagoRecibido(id: number, montoRecibido: number, fechaPago: string) {
+    await this.supabase.from('reportes_pagos_seguro').update({
+      monto_recibido: montoRecibido,
+      fecha_pago: fechaPago,
+      estado: 'completado'
+    }).eq('id', id);
+    await this.refreshReportesPagosSeguro();
   }
 }

@@ -407,3 +407,145 @@
 .table-light {
     background: transparent !important;
 }
+
+// Custom Segment
+.custom-segment {
+    background: $glass-bg;
+    padding: 6px;
+    border-radius: 14px;
+    
+    ion-segment-button {
+        --background: transparent;
+        --background-checked: #3b82f6;
+        --color: #94a3b8;
+        --color-checked: #ffffff;
+        --indicator-color: transparent;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin: 0 4px;
+
+        &::part(native) {
+            border-radius: 10px;
+        }
+
+        &.segment-button-checked {
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+    }
+}
+
+// Comparison Cards
+.comparison-card {
+    transition: all 0.3s ease;
+    border: 1px solid $glass-border !important;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #f59e0b;
+    }
+
+    &.completed {
+        &::before {
+            background: #10b981;
+        }
+    }
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+    }
+}
+
+.ars-badge {
+    background: rgba($primary, 0.15);
+    color: $primary;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.comparison-divider {
+    height: 1px;
+    background: $glass-border;
+}
+
+.bg-dark-light {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.italic {
+    font-style: italic;
+}
+
+// Responsive
+@media (max-width: 991px) {
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px;
+        background: $sidebar-bg;
+        border-bottom: 1px solid $sidebar-border;
+        height: 60px;
+    }
+
+    .main-content {
+        padding-bottom: 70px;
+    }
+
+    .mobile-navbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        background: $sidebar-bg;
+        border-top: 1px solid $sidebar-border;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 100;
+        padding-bottom: env(safe-area-inset-bottom);
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: $text-muted;
+            font-size: 0.75rem;
+
+            ion-icon {
+                font-size: 1.4rem;
+                margin-bottom: 4px;
+            }
+
+            &.active {
+                color: $primary;
+            }
+        }
+    }
+
+    .hide-on-mobile {
+        display: none !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .mobile-header, .mobile-navbar {
+        display: none !important;
+    }
+    
+    .sidebar {
+        width: 90px;
+    }
+}
