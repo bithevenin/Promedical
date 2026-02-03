@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, Transaccion } from '../../services/citas.service';
+import { CitasService, Transaccion, ReportePagoSeguro } from '../../services/citas.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -13,6 +13,7 @@ export class ContabilidadPage implements OnInit {
 
   transactions = signal<Transaccion[]>([]);
   resumenSeguros = signal<{ seguro: string; totalPendiente: number; totalFacturas: number }[]>([]);
+  reportes = signal<ReportePagoSeguro[]>([]);
   currentProfile = signal<any>(null);
 
   // Modales
@@ -42,7 +43,7 @@ export class ContabilidadPage implements OnInit {
     'Otros'
   ];
 
-  totalIngresos = computed(() =>
+  ingresosCopagos = computed(() =>
     this.transactions()
       .filter(t => t.categoria === 'Ingreso')
       .reduce((sum, t) => sum + t.monto, 0)
@@ -54,7 +55,19 @@ export class ContabilidadPage implements OnInit {
       .reduce((sum, t) => sum + t.monto, 0)
   );
 
-  balanceNeto = computed(() => this.totalIngresos() - this.totalGastos());
+  totalSegurosRecibido = computed(() =>
+    this.reportes().reduce((acc, r) => acc + (r.montoRecibido || 0), 0)
+  );
+
+  ingresosTotalesUnificados = computed(() =>
+    this.ingresosCopagos() + this.totalSegurosRecibido()
+  );
+
+  balanceNeto = computed(() => this.ingresosTotalesUnificados() - this.totalGastos());
+
+  totalSegurosPendiente = computed(() =>
+    this.reportes().reduce((acc, r) => acc + (r.montoEnviado - (r.montoRecibido || 0)), 0)
+  );
 
   constructor(
     private citasService: CitasService,
@@ -71,7 +84,11 @@ export class ContabilidadPage implements OnInit {
     this.citasService.facturasSeguro$.subscribe(() => {
       this.resumenSeguros.set(this.citasService.getResumenSeguros());
     });
-    
+
+    this.citasService.reportesPagosSeguro$.subscribe(data => {
+      this.reportes.set(data);
+    });
+
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 

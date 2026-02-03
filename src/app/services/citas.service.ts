@@ -586,12 +586,24 @@ export class CitasService {
     await this.refreshReportesPagosSeguro();
   }
 
-  async registrarPagoRecibido(id: number, montoRecibido: number, fechaPago: string) {
+  async registrarPagoRecibido(reporte: ReportePagoSeguro, montoRecibido: number, fechaPago: string) {
+    // 1. Actualizar el reporte de pago
     await this.supabase.from('reportes_pagos_seguro').update({
       monto_recibido: montoRecibido,
       fecha_pago: fechaPago,
       estado: 'completado'
-    }).eq('id', id);
+    }).eq('id', reporte.id);
+
+    // 2. Registrar automáticamente la transacción en el libro mayor
+    const nuevaTrans: Transaccion = {
+      id: Date.now(),
+      fecha: fechaPago,
+      concepto: `Pago ARS: ${reporte.seguro} - ${reporte.mes}`,
+      categoria: 'Ingreso',
+      monto: montoRecibido
+    };
+    await this.agregarTransaccion(nuevaTrans);
+
     await this.refreshReportesPagosSeguro();
   }
 }

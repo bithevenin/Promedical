@@ -99,6 +99,14 @@ export class SegurosArsPage implements OnInit {
         return totalEnviado - totalRecibido;
     });
 
+    reportesConDeuda = computed(() => {
+        const filtered = this.seguroSeleccionado() === 'todos'
+            ? this.reportes()
+            : this.reportes().filter(r => r.seguro === this.seguroSeleccionado());
+
+        return filtered.filter(r => (r.montoEnviado - (r.montoRecibido || 0)) > 0);
+    });
+
     totalPacientes = computed(() => this.facturasFiltradas().length);
 
     constructor(
@@ -216,7 +224,7 @@ export class SegurosArsPage implements OnInit {
     guardarPago() {
         if (this.reporteSeleccionado && this.nuevoPago.montoRecibido > 0) {
             this.citasService.registrarPagoRecibido(
-                this.reporteSeleccionado.id,
+                this.reporteSeleccionado,
                 this.nuevoPago.montoRecibido,
                 this.nuevoPago.fechaPago
             );
