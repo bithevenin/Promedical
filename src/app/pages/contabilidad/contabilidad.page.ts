@@ -15,6 +15,9 @@ export class ContabilidadPage implements OnInit {
   resumenSeguros = signal<{ seguro: string; totalPendiente: number; totalFacturas: number }[]>([]);
   reportes = signal<ReportePagoSeguro[]>([]);
   currentProfile = signal<any>(null);
+  startDate = signal<string>('');
+  endDate = signal<string>('');
+
 
   // Modales
   showIngresoModal = false;
@@ -43,20 +46,52 @@ export class ContabilidadPage implements OnInit {
     'Otros'
   ];
 
+  filteredTransactions = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const data = this.transactions();
+
+    if (!start && !end) return data;
+
+    return data.filter(t => {
+      const fecha = t.fecha; // Ya normalizadas a YYYY-MM-DD
+      if (start && fecha < start) return false;
+      if (end && fecha > end) return false;
+      return true;
+    });
+  });
+
+  filteredReportes = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const data = this.reportes();
+
+    if (!start && !end) return data;
+
+    // Reportes tienen 'mes' (YYYY-MM) o 'fechaEnvio' (YYYY-MM-DD)
+    // Usaremos fechaEnvio para el filtro de rango exacto
+    return data.filter(r => {
+      const fecha = r.fechaEnvio;
+      if (start && fecha < start) return false;
+      if (end && fecha > end) return false;
+      return true;
+    });
+  });
+
   ingresosCopagos = computed(() =>
-    this.transactions()
+    this.filteredTransactions()
       .filter(t => t.categoria === 'Ingreso')
       .reduce((sum, t) => sum + t.monto, 0)
   );
 
   totalGastos = computed(() =>
-    this.transactions()
+    this.filteredTransactions()
       .filter(t => t.categoria === 'Gasto')
       .reduce((sum, t) => sum + t.monto, 0)
   );
 
   totalSegurosRecibido = computed(() =>
-    this.reportes().reduce((acc, r) => acc + (r.montoRecibido || 0), 0)
+    this.filteredReportes().reduce((acc, r) => acc + (r.montoRecibido || 0), 0)
   );
 
   ingresosTotalesUnificados = computed(() =>
@@ -66,8 +101,9 @@ export class ContabilidadPage implements OnInit {
   balanceNeto = computed(() => this.ingresosTotalesUnificados() - this.totalGastos());
 
   totalSegurosPendiente = computed(() =>
-    this.reportes().reduce((acc, r) => acc + (r.montoEnviado - (r.montoRecibido || 0)), 0)
+    this.filteredReportes().reduce((acc, r) => acc + (r.montoEnviado - (r.montoRecibido || 0)), 0)
   );
+
 
   constructor(
     private citasService: CitasService,
@@ -110,12 +146,13 @@ export class ContabilidadPage implements OnInit {
     if (this.nuevoIngreso.concepto && this.nuevoIngreso.monto > 0) {
       const transaccion: Transaccion = {
         id: Date.now(),
-        fecha: new Date().toLocaleDateString(),
+        fecha: new Date().toISOString().split('T')[0],
         concepto: this.nuevoIngreso.concepto,
         categoria: 'Ingreso',
         monto: this.nuevoIngreso.monto,
         paciente: this.nuevoIngreso.paciente || undefined
       };
+
       this.citasService.agregarTransaccion(transaccion);
       this.cerrarModalIngreso();
     }
@@ -135,17 +172,24 @@ export class ContabilidadPage implements OnInit {
     if (this.nuevoEgreso.concepto && this.nuevoEgreso.monto > 0) {
       const transaccion: Transaccion = {
         id: Date.now(),
-        fecha: new Date().toLocaleDateString(),
+        fecha: new Date().toISOString().split('T')[0],
         concepto: `${this.nuevoEgreso.categoria}: ${this.nuevoEgreso.concepto}`,
         categoria: 'Gasto',
         monto: this.nuevoEgreso.monto
       };
+
       this.citasService.agregarTransaccion(transaccion);
       this.cerrarModalEgreso();
     }
   }
 
+  limpiarFiltros() {
+    this.startDate.set('');
+    this.endDate.set('');
+  }
+
   async logout() {
+
     await this.authService.signOut();
     this.router.navigate(['/auth/login']);
   }

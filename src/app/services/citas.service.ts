@@ -479,6 +479,7 @@ export class CitasService {
         id: Date.now(),
         fecha: today,
         concepto: `Consulta Médica - ${cita.nombre}`,
+
         categoria: 'Ingreso',
         monto: monto,
         paciente: cita.nombre
