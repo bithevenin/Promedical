@@ -82,74 +82,86 @@ export class PrintRecetaService {
       font-size: 18px;
       color: #334155;
       font-style: italic;
-      margin-bottom: 15px;
+      margin-bottom: 0;
     }
-
+ 
     .logo-centro {
       height: 60px;
-      margin: 10px 0;
+      margin: 5px 0;
     }
-
+ 
     .contact-info {
       font-size: 11px;
       line-height: 1.6;
       color: #1e293b;
-      margin: 15px 0;
+      margin: 10px 0;
       padding: 10px;
       border-top: 2px solid #3b82f6;
       border-bottom: 2px solid #3b82f6;
     }
-
+ 
     .contact-row {
       display: flex;
       justify-content: space-between;
       margin-bottom: 4px;
     }
-
+ 
     .contact-label {
       font-weight: bold;
       min-width: 200px;
     }
-
+ 
     .rx-section {
       display: flex;
       align-items: flex-start;
       margin: 25px 0;
       gap: 20px;
     }
-
+ 
     .rx-symbol {
       width: 80px;
       height: 80px;
       flex-shrink: 0;
     }
-
+ 
+    .rx-section {
+      display: flex;
+      align-items: flex-start;
+      margin: 15px 0;
+      gap: 20px;
+    }
+ 
+    .rx-symbol {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+ 
     .patient-info {
       flex-grow: 1;
     }
-
+ 
     .patient-field {
       margin-bottom: 8px;
       font-size: 14px;
     }
-
+ 
     .patient-label {
       font-weight: bold;
       color: #1e40af;
     }
-
+ 
     .receta-content {
       min-height: 300px;
-      padding: 20px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.7);
-      margin: 20px 0;
-      font-size: 14px;
+      padding: 10px 0;
+      border: none;
+      background: transparent;
+      margin: 10px 0;
+      font-size: 15px;
       line-height: 1.8;
       white-space: pre-wrap;
     }
-
+ 
     .footer {
       position: absolute;
       bottom: 0.5in;
@@ -159,28 +171,28 @@ export class PrintRecetaService {
       justify-content: space-between;
       align-items: flex-end;
     }
-
+ 
     .sello {
       width: 150px;
       height: 150px;
     }
-
+ 
     .firma-box {
       text-align: center;
     }
-
+ 
     .firma-line {
       width: 250px;
       border-top: 2px solid #000;
       margin-top: 60px;
       margin-bottom: 5px;
     }
-
+ 
     .firma-text {
       font-size: 12px;
       color: #475569;
     }
-
+ 
     @media print {
       body {
         -webkit-print-color-adjust: exact;
@@ -196,7 +208,7 @@ export class PrintRecetaService {
     <div class="especialidad">Cirujano-Urólogo</div>
     <img class="logo-centro" src="data:image/png;base64,${this.getLogoCentro()}" alt="Centro Médico Padre Fantino">
   </div>
-
+ 
   <div class="contact-info">
     <div class="contact-row">
       <span class="contact-label">Calle Gral. Juan Rodríguez esquina padre Fantino.</span>
@@ -212,11 +224,11 @@ export class PrintRecetaService {
     </div>
     <div class="contact-row">
       <span class="contact-label">Egresado de Medicina en la Universidad Central del Este</span>
-      <span>drmiguelthevenin@hotmail.com</span>
+      <span>drmiguelthevenin@gmail.com</span>
     </div>
     <div class="contact-row">
       <span class="contact-label">Postgrado Urología HRUJMCYB, Ministerio de Salud Pública.</span>
-      <span>drmiguelthevenin@gmail.com</span>
+      <span></span>
     </div>
     <div class="contact-row">
       <span class="contact-label">Pontificia Universidad Católica Madre y Maestra.</span>
