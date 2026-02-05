@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
 export class PacientesPage implements OnInit {
   pacientes: Paciente[] = [];
   filtroNombre: string = '';
-  
+
   currentProfile = signal<any>(null);
 
   // Modals state
@@ -40,6 +40,7 @@ export class PacientesPage implements OnInit {
     cedula: '',
     nombre: '',
     edad: 0,
+    fecha_nacimiento: '',
     profesion: '',
     seguro: '',
     sexo: 'M',
@@ -64,7 +65,7 @@ export class PacientesPage implements OnInit {
     this.citasService.patients$.subscribe(patients => {
       this.pacientes = patients;
     });
-    
+
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
 
     this.citasService.config$.subscribe(config => {
@@ -93,6 +94,9 @@ export class PacientesPage implements OnInit {
 
   async guardarCambios() {
     if (this.editData.nombre) {
+      if (this.editData.fecha_nacimiento) {
+        this.editData.edad = this.citasService.calcularEdad(this.editData.fecha_nacimiento);
+      }
       await this.citasService.savePatient(this.editData);
       this.closeModals();
     }

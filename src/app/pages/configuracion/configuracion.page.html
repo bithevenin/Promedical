@@ -35,7 +35,8 @@
             </nav>
             <div class="sidebar-footer">
                 <div class="avatar-box">
-                    <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre">
+                    <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'"
+                        [alt]="currentProfile()?.nombre">
                 </div>
             </div>
         </aside>
@@ -61,6 +62,9 @@
                     </ion-segment-button>
                     <ion-segment-button value="usuarios">
                         <ion-label>Gestión de Usuarios</ion-label>
+                    </ion-segment-button>
+                    <ion-segment-button value="datos">
+                        <ion-label>Gestión de Datos</ion-label>
                     </ion-segment-button>
                 </ion-segment>
             </div>
@@ -169,7 +173,7 @@
 
             <!-- SECCIÓN GESTIÓN DE USUARIOS -->
             <div *ngIf="selectedSegment === 'usuarios'" class="usuarios-panel animate__animated animate__fadeIn">
-                
+
                 <!-- Registrar Nuevo Usuario -->
                 <div class="config-card mb-4">
                     <div class="card-header">
@@ -186,7 +190,8 @@
                                     <div class="photo-actions mt-3">
                                         <label class="btn btn-secondary btn-sm">
                                             <ion-icon name="camera-outline"></ion-icon> Subir Foto
-                                            <input type="file" accept="image/*" (change)="actualizarFotoNuevoUsuario($event)" hidden>
+                                            <input type="file" accept="image/*"
+                                                (change)="actualizarFotoNuevoUsuario($event)" hidden>
                                         </label>
                                     </div>
                                 </div>
@@ -196,38 +201,45 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Nombre Completo</label>
-                                            <input type="text" [(ngModel)]="nuevoUsuario.nombre" (keyup)="actualizarNombreAvatar()" class="form-control" placeholder="Nombre Apellido">
+                                            <input type="text" [(ngModel)]="nuevoUsuario.nombre"
+                                                (keyup)="actualizarNombreAvatar()" class="form-control"
+                                                placeholder="Nombre Apellido">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Correo Electrónico (Login)</label>
-                                            <input type="email" [(ngModel)]="nuevoUsuario.email" class="form-control" placeholder="usuario@promedical.com">
+                                            <input type="email" [(ngModel)]="nuevoUsuario.email" class="form-control"
+                                                placeholder="usuario@promedical.com">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Rol</label>
                                             <select [(ngModel)]="nuevoUsuario.rol" class="form-control">
-                                                <option *ngFor="let rol of roles" [value]="rol.value">{{ rol.label }}</option>
+                                                <option *ngFor="let rol of roles" [value]="rol.value">{{ rol.label }}
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6" *ngIf="nuevoUsuario.rol === 'doctor'">
                                         <div class="form-group animate__animated animate__fadeIn">
                                             <label>Especialidad</label>
-                                            <input type="text" [(ngModel)]="nuevoUsuario.especialidad" class="form-control" placeholder="Ej. Cardiología">
+                                            <input type="text" [(ngModel)]="nuevoUsuario.especialidad"
+                                                class="form-control" placeholder="Ej. Cardiología">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Contraseña (Mínimo 8 caracteres)</label>
-                                            <input type="password" [(ngModel)]="nuevoUsuario.password" class="form-control" placeholder="********" maxlength="8">
+                                            <input type="password" [(ngModel)]="nuevoUsuario.password"
+                                                class="form-control" placeholder="********" maxlength="8">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end mt-3">
-                                    <button class="btn btn-primary" (click)="guardarNuevoUsuario()" [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
+                                    <button class="btn btn-primary" (click)="guardarNuevoUsuario()"
+                                        [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
                                         <ion-icon name="save-outline"></ion-icon>
                                         Crear Usuario
                                     </button>
@@ -242,22 +254,112 @@
                 <div class="users-grid">
                     <div class="user-card" *ngFor="let user of usuarios">
                         <div class="user-avatar">
-                            <img [src]="user.foto_url || 'https://ui-avatars.com/api/?name=' + user.nombre" alt="{{user.nombre}}">
+                            <img [src]="user.foto_url || 'https://ui-avatars.com/api/?name=' + user.nombre"
+                                alt="{{user.nombre}}">
                             <label class="edit-photo-btn">
                                 <ion-icon name="pencil-outline"></ion-icon>
-                                <input type="file" accept="image/*" (change)="actualizarFotoUsuarioExistente($event, user)" hidden>
+                                <input type="file" accept="image/*"
+                                    (change)="actualizarFotoUsuarioExistente($event, user)" hidden>
                             </label>
                         </div>
                         <div class="user-info">
-                            <input type="text" [(ngModel)]="user.nombre" class="form-control bare-input" placeholder="Nombre">
+                            <input type="text" [(ngModel)]="user.nombre" class="form-control bare-input"
+                                placeholder="Nombre">
                             <p class="user-email">{{user.correo}}</p>
                             <select [(ngModel)]="user.rol" class="form-control bare-select mt-1">
                                 <option *ngFor="let rol of roles" [value]="rol.value">{{ rol.label }}</option>
                             </select>
-                            <input *ngIf="user.rol === 'doctor'" type="text" [(ngModel)]="user.especialidad" class="form-control bare-input mt-1 animate__animated animate__fadeIn" placeholder="Especialidad">
+                            <input *ngIf="user.rol === 'doctor'" type="text" [(ngModel)]="user.especialidad"
+                                class="form-control bare-input mt-1 animate__animated animate__fadeIn"
+                                placeholder="Especialidad">
                             <button class="btn btn-sm btn-outline-primary mt-2" (click)="guardarEdicionUsuario(user)">
                                 <ion-icon name="save-outline"></ion-icon> Actualizar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN GESTIÓN DE DATOS -->
+            <div *ngIf="selectedSegment === 'datos'" class="data-panel animate__animated animate__fadeIn">
+                <div class="row g-4">
+                    <!-- Exportación de Datos -->
+                    <div class="col-md-6">
+                        <div class="config-card h-100">
+                            <div class="card-header">
+                                <ion-icon name="download-outline"></ion-icon>
+                                <h3>Exportar Información</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">Descarga una copia de seguridad de toda tu información en
+                                    formato Excel.</p>
+                                <div class="d-grid gap-3 mt-4">
+                                    <button
+                                        class="btn btn-outline-primary py-3 d-flex align-items-center justify-content-center gap-2"
+                                        (click)="exportarPacientes()">
+                                        <ion-icon name="people-outline"></ion-icon>
+                                        Exportar Pacientes (XLSX)
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-info py-3 d-flex align-items-center justify-content-center gap-2"
+                                        (click)="exportarHistorias()">
+                                        <ion-icon name="library-outline"></ion-icon>
+                                        Exportar Historias Clínicas (XLSX)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Importación de Datos -->
+                    <div class="col-md-6">
+                        <div class="config-card h-100">
+                            <div class="card-header">
+                                <ion-icon name="cloud-upload-outline"></ion-icon>
+                                <h3>Migración / Importar Datos</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">Sube tus datos desde otros sistemas usando nuestras
+                                    plantillas de Excel.</p>
+
+                                <div class="templates-box mb-4 p-3 bg-light rounded-3 border">
+                                    <label class="d-block small fw-bold mb-2">1. Descarga la plantilla primero:</label>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                                            (click)="descargarPlantilla('pacientes')">
+                                            <ion-icon name="download-outline"></ion-icon> Plantilla Pacientes
+                                        </button>
+                                        <div class="vr"></div>
+                                        <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                                            (click)="descargarPlantilla('historias')">
+                                            <ion-icon name="download-outline"></ion-icon> Plantilla Historias
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="import-actions d-grid gap-3">
+                                    <div class="import-item">
+                                        <label class="form-label small fw-bold">2. Importar Pacientes</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control"
+                                                (change)="importarArchivo($event, 'pacientes')" accept=".xlsx, .xls">
+                                        </div>
+                                    </div>
+                                    <div class="import-item">
+                                        <label class="form-label small fw-bold">3. Importar Historias Clínicas</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control"
+                                                (change)="importarArchivo($event, 'historias')" accept=".xlsx, .xls">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info mt-4 small border-0 bg-info-light">
+                                    <ion-icon name="information-circle-outline" class="me-2"></ion-icon>
+                                    Asegúrese de que el campo <strong>Cédula</strong> coincida entre ambos archivos para
+                                    vincular las historias a los pacientes.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

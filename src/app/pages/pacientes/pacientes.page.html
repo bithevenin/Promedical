@@ -49,7 +49,8 @@
           <span class="user-name">{{ currentProfile()?.nombre || 'Administración' }}</span>
           <span class="user-role text-uppercase">
             {{ currentProfile()?.rol || 'Control de Pacientes' }}
-            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad"> | {{ currentProfile()?.especialidad }}</span>
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad"> | {{
+              currentProfile()?.especialidad }}</span>
           </span>
         </div>
       </div>
@@ -277,7 +278,11 @@
             <label class="form-label small fw-bold text-muted">Nombre Completo</label>
             <input type="text" class="form-control custom-input" [(ngModel)]="editData.nombre">
           </div>
-          <div class="col-12">
+          <div class="col-6">
+            <label class="form-label small fw-bold text-muted">Fecha de Nacimiento</label>
+            <input type="date" class="form-control custom-input" [(ngModel)]="editData.fecha_nacimiento">
+          </div>
+          <div class="col-6">
             <label class="form-label small fw-bold text-muted">Profesión / Ocupación</label>
             <input type="text" class="form-control custom-input" [(ngModel)]="editData.profesion">
           </div>

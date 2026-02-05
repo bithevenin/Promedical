@@ -2,6 +2,9 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CitasService, Transaccion, ReportePagoSeguro } from '../../services/citas.service';
 import { AuthService } from '../../services/auth.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-contabilidad',
@@ -192,6 +195,101 @@ export class ContabilidadPage implements OnInit {
 
     await this.authService.signOut();
     this.router.navigate(['/auth/login']);
+  }
+
+  // --- Exportación PDF ---
+  exportarPDF() {
+    const doc = new jsPDF();
+    const transactions = this.filteredTransactions();
+    const start = this.startDate();
+    const end = this.endDate();
+    const fecha = new Date().toLocaleDateString();
+
+    // Título
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Reporte de Transacciones', 14, 22);
+
+    // Subtítulo (Fechas de filtro)
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    let subtitulo = 'Periodo: Todas las transacciones';
+    if (start && end) {
+      subtitulo = `Periodo: ${start} hasta ${end}`;
+    } else if (start) {
+      subtitulo = `Desde: ${start}`;
+    } else if (end) {
+      subtitulo = `Hasta: ${end}`;
+    }
+    doc.text(subtitulo, 14, 30);
+    doc.text(`Generado: ${fecha}`, 14, 36);
+
+    // Tabla
+    const tableData = transactions.map(t => [
+      t.fecha,
+      t.concepto,
+      t.categoria,
+      `${t.categoria === 'Ingreso' ? '+' : '-'}${t.monto.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}`
+    ]);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Fecha', 'Concepto', 'Categoría', 'Monto']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 4
+      }
+    });
+
+    // Guardar
+    const fileName = `Transacciones_${fecha.replace(/\//g, '-')}.pdf`;
+    doc.save(fileName);
+  }
+
+  // --- Exportación Excel ---
+  exportarExcel() {
+    const transactions = this.filteredTransactions();
+    const start = this.startDate();
+    const end = this.endDate();
+    const fecha = new Date().toLocaleDateString();
+
+    // Preparar datos para Excel
+    const wsData = [
+      ['REPORTE DE TRANSACCIONES'],
+      [start && end ? `Periodo: ${start} - ${end}` : 'Periodo: Todos'],
+      [`Generado: ${fecha}`],
+      [],
+      ['Fecha', 'Concepto', 'Categoría', 'Monto'],
+      ...transactions.map(t => [
+        t.fecha,
+        t.concepto,
+        t.categoria,
+        t.monto
+      ])
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Ajustar anchos de columna
+    ws['!cols'] = [
+      { wch: 15 }, // Fecha
+      { wch: 40 }, // Concepto
+      { wch: 15 }, // Categoría
+      { wch: 15 }  // Monto
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Transacciones');
+
+    const fileName = `Transacciones_${fecha.replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   }
 }
 

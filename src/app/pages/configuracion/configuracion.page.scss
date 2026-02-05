@@ -797,6 +797,60 @@
     animation: spin 1s linear infinite;
 }
 
+// Data Panel Styles
+.data-panel {
+    .config-card {
+        transition: all 0.3s ease;
+        &:hover {
+            border-color: rgba($primary, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+    }
+
+    .templates-box {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+        
+        .btn-link {
+            color: $primary;
+            transition: all 0.2s;
+            &:hover {
+                color: lighten($primary, 10%);
+                transform: translateX(3px);
+            }
+        }
+    }
+
+    .bg-info-light {
+        background: rgba(14, 165, 233, 0.1) !important;
+        color: #7dd3fc;
+    }
+
+    .import-item {
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border-style: solid;
+            cursor: pointer;
+            
+            &::-webkit-file-upload-button {
+                background: $primary;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                margin-right: 1rem;
+                cursor: pointer;
+                font-weight: 600;
+                transition: background 0.2s;
+                
+                &:hover {
+                    background: darken($primary, 10%);
+                }
+            }
+        }
+    }
+}
+
 // ==================== RESPONSIVE ====================
 
 // Tablet

@@ -16,6 +16,7 @@ export interface Paciente {
   cedula: string;
   nombre: string;
   edad: number;
+  fecha_nacimiento?: string;
   profesion: string;
   seguro: string;
   sexo: 'M' | 'F';
@@ -36,6 +37,7 @@ export interface Cita {
   nombre: string;
   cedula: string;
   edad: number;
+  fecha_nacimiento?: string;
   seguro: string;
   sexo: 'M' | 'F';
   fecha: string; // YYYY-MM-DD
@@ -209,7 +211,8 @@ export class CitasService {
       const patients: Paciente[] = data.map(p => ({
         cedula: p.cedula,
         nombre: p.nombre,
-        edad: p.edad,
+        edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
+        fecha_nacimiento: p.fecha_nacimiento,
         profesion: p.profesion,
         seguro: p.seguro,
         sexo: p.sexo,
@@ -221,7 +224,7 @@ export class CitasService {
         antecedentesPersonales: p.antecedentes_personales,
         antecedentesFamiliares: p.antecedentes_familiares,
         alergias: p.alergias,
-        signosVitales: p.signos_vitales.map((sv: any) => ({
+        signosVitales: (p.signos_vitales || []).map((sv: any) => ({
           fecha: sv.fecha,
           presionArterial: sv.presion_arterial,
           frecuenciaCardiaca: sv.frecuencia_cardiaca,
@@ -243,7 +246,8 @@ export class CitasService {
         turno: Number(c.turno),
         nombre: c.nombre,
         cedula: c.cedula,
-        edad: c.edad,
+        edad: c.fecha_nacimiento ? this.calcularEdad(c.fecha_nacimiento) : c.edad,
+        fecha_nacimiento: c.fecha_nacimiento,
         seguro: c.seguro,
         sexo: c.sexo,
         fecha: c.fecha,
@@ -352,6 +356,7 @@ export class CitasService {
       nombre: cita.nombre,
       cedula: cita.cedula,
       edad: cita.edad,
+      fecha_nacimiento: cita.fecha_nacimiento,
       seguro: cita.seguro,
       sexo: cita.sexo,
       fecha: cita.fecha,
@@ -395,6 +400,7 @@ export class CitasService {
       cedula: paciente.cedula,
       nombre: paciente.nombre,
       edad: paciente.edad,
+      fecha_nacimiento: paciente.fecha_nacimiento,
       profesion: paciente.profesion,
       seguro: paciente.seguro,
       sexo: paciente.sexo,
@@ -408,6 +414,47 @@ export class CitasService {
       alergias: paciente.alergias
     });
     await this.refreshPatients();
+  }
+
+  async importPatients(pacientes: Paciente[]) {
+    const dataToUpsert = pacientes.map(p => ({
+      cedula: p.cedula,
+      nombre: p.nombre,
+      edad: p.edad || (p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : 0),
+      fecha_nacimiento: p.fecha_nacimiento,
+      profesion: p.profesion,
+      seguro: p.seguro,
+      sexo: p.sexo,
+      altura: p.altura,
+      peso: p.peso,
+      telefono: p.telefono,
+      email: p.email,
+      carnet_seguro: p.carnetSeguro,
+      antecedentes_personales: p.antecedentesPersonales,
+      antecedentes_familiares: p.antecedentesFamiliares,
+      alergias: p.alergias
+    }));
+
+    const { error } = await this.supabase
+      .from('pacientes')
+      .upsert(dataToUpsert, { onConflict: 'cedula' });
+
+    if (!error) {
+      await this.refreshPatients();
+    }
+    return error;
+  }
+
+  calcularEdad(fechaNacimiento: string): number {
+    if (!fechaNacimiento) return 0;
+    const today = new Date();
+    const birthDate = new Date(fechaNacimiento);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
   }
 
   findPatientByCedula(cedula: string): Paciente | undefined {
@@ -427,6 +474,37 @@ export class CitasService {
       receta: consulta.receta
     });
     await this.refreshConsultas();
+  }
+
+  async importConsultations(consultas: Consulta[]) {
+    const { error } = await this.supabase
+      .from('consultas')
+      .insert(consultas.map(c => ({
+        paciente_cedula: c.cedula,
+        fecha: c.fecha,
+        diagnostico: c.diagnostico,
+        receta: c.receta
+      })));
+
+    if (!error) {
+      await this.refreshConsultas();
+    }
+    return error;
+  }
+
+  async getAllConsultations(): Promise<Consulta[]> {
+    const { data, error } = await this.supabase
+      .from('consultas')
+      .select('*')
+      .order('fecha', { ascending: false });
+
+    if (error) return [];
+    return data.map(c => ({
+      cedula: c.paciente_cedula,
+      fecha: c.fecha,
+      diagnostico: c.diagnostico,
+      receta: c.receta
+    }));
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {

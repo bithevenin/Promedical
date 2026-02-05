@@ -103,10 +103,9 @@
 
                 <div class="row mb-3">
                   <div class="col-6">
-                    <label class="form-label small fw-bold text-light">Edad</label>
-                    <input type="number" class="form-control custom-input" [(ngModel)]="nuevoPaciente.edad"
-                      placeholder="Años"
-                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.edad !== null">
+                    <label class="form-label small fw-bold text-light">Fecha de Nacimiento</label>
+                    <input type="date" class="form-control custom-input" [(ngModel)]="nuevoPaciente.fecha_nacimiento"
+                      [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.fecha_nacimiento !== ''">
                   </div>
                   <div class="col-6">
                     <label class="form-label small fw-bold text-light">Profesión / Ocupación</label>
@@ -169,7 +168,7 @@
                 </div>
 
                 <button class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-sm" (click)="registrarCita()"
-                  [disabled]="!nuevoPaciente.nombre || !nuevoPaciente.cedula || !nuevoPaciente.edad">
+                  [disabled]="!nuevoPaciente.nombre || !nuevoPaciente.cedula || !nuevoPaciente.fecha_nacimiento">
                   Confirmar y Asignar Turno
                 </button>
               </div>

@@ -67,7 +67,8 @@
                 <span class="input-group-text bg-dark border-0 text-primary">
                   <ion-icon name="calendar-outline"></ion-icon>
                 </span>
-                <input type="date" class="form-control custom-input border-0" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)">
+                <input type="date" class="form-control custom-input border-0" [ngModel]="startDate()"
+                  (ngModelChange)="startDate.set($event)">
               </div>
             </div>
             <div class="col-12 col-md-4">
@@ -76,11 +77,13 @@
                 <span class="input-group-text bg-dark border-0 text-primary">
                   <ion-icon name="calendar-outline"></ion-icon>
                 </span>
-                <input type="date" class="form-control custom-input border-0" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)">
+                <input type="date" class="form-control custom-input border-0" [ngModel]="endDate()"
+                  (ngModelChange)="endDate.set($event)">
               </div>
             </div>
             <div class="col-12 col-md-4">
-              <button class="btn btn-outline-light w-100 rounded-pill" (click)="limpiarFiltros()" [disabled]="!startDate() && !endDate()">
+              <button class="btn btn-outline-light w-100 rounded-pill" (click)="limpiarFiltros()"
+                [disabled]="!startDate() && !endDate()">
                 <ion-icon name="refresh-outline" class="me-1"></ion-icon>
                 Limpiar Filtros
               </button>
@@ -174,6 +177,16 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
               <h5 class="fw-bold m-0 text-white">Transacciones Recientes</h5>
               <div class="d-flex gap-2">
+                <div class="export-group me-3 d-none d-md-flex gap-2">
+                  <button class="btn btn-outline-info btn-sm rounded-pill px-3" (click)="exportarExcel()">
+                    <ion-icon name="document-text-outline" class="me-1"></ion-icon>
+                    Excel
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm rounded-pill px-3" (click)="exportarPDF()">
+                    <ion-icon name="download-outline" class="me-1"></ion-icon>
+                    PDF
+                  </button>
+                </div>
                 <button class="btn btn-danger btn-sm rounded-pill px-3" (click)="abrirModalEgreso()">
                   <ion-icon name="remove-circle-outline" class="me-1"></ion-icon>
                   Nuevo Egreso

@@ -18,6 +18,7 @@ export class CitasPage implements OnInit {
     nombre: '',
     cedula: '',
     edad: null as number | null,
+    fecha_nacimiento: '' as string,
     altura: '',
     peso: '',
     profesion: '',
@@ -39,14 +40,14 @@ export class CitasPage implements OnInit {
   // Modal de Seguro (Nuevo)
   mostrarModalSeguro = false;
   carnetSeguroTemp = '';
-  
+
   currentProfile = signal<any>(null);
 
   // Exponer Math para el template
   Math = Math;
 
   constructor(
-    public citasService: CitasService, 
+    public citasService: CitasService,
     private authService: AuthService,
     private router: Router
   ) {
@@ -67,7 +68,7 @@ export class CitasPage implements OnInit {
     this.citasService.appointments$.subscribe(appointments => {
       this.actualizarListas(appointments);
     });
-    
+
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
@@ -221,6 +222,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         ...this.nuevoPaciente,
         nombre: paciente.nombre,
         edad: paciente.edad,
+        fecha_nacimiento: paciente.fecha_nacimiento || '',
         profesion: paciente.profesion,
         seguro: paciente.seguro,
         sexo: paciente.sexo || 'M',
@@ -235,12 +237,16 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
   }
 
   async registrarCita() {
-    if (this.nuevoPaciente.nombre && this.nuevoPaciente.cedula && this.nuevoPaciente.edad) {
+    if (this.nuevoPaciente.nombre && this.nuevoPaciente.cedula && this.nuevoPaciente.fecha_nacimiento) {
+      // Calcular edad automáticamente si se tiene la fecha de nacimiento
+      this.nuevoPaciente.edad = this.citasService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+
       // 1. Guardar/Actualizar en el registro de pacientes
       const datosPaciente: Paciente = {
         cedula: this.nuevoPaciente.cedula,
         nombre: this.nuevoPaciente.nombre,
         edad: this.nuevoPaciente.edad,
+        fecha_nacimiento: this.nuevoPaciente.fecha_nacimiento,
         profesion: this.nuevoPaciente.profesion,
         seguro: this.nuevoPaciente.seguro,
         sexo: this.nuevoPaciente.sexo,
@@ -257,6 +263,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         nombre: this.nuevoPaciente.nombre,
         cedula: this.nuevoPaciente.cedula,
         edad: this.nuevoPaciente.edad,
+        fecha_nacimiento: this.nuevoPaciente.fecha_nacimiento,
         seguro: this.nuevoPaciente.seguro,
         sexo: this.nuevoPaciente.sexo,
         fecha: this.fechaSeleccionada,
@@ -285,6 +292,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
       nombre: '',
       cedula: '',
       edad: null,
+      fecha_nacimiento: '',
       altura: '',
       peso: '',
       profesion: '',
