@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CitasService, Paciente, Consulta } from '../../services/citas.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-pacientes',
@@ -58,7 +59,8 @@ export class PacientesPage implements OnInit {
   constructor(
     private citasService: CitasService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private toastController: ToastController
   ) { }
 
   ngOnInit() {
@@ -111,9 +113,12 @@ export class PacientesPage implements OnInit {
 
   // Clinical History Logic
   calcularIMC() {
-    if (this.nuevosSignos.peso > 0 && this.nuevosSignos.talla > 0) {
+    if (this.nuevosSignos.peso > 0 && this.nuevosSignos.talla > 30) {
       const tallaMeters = this.nuevosSignos.talla / 100;
-      this.nuevosSignos.imc = Number((this.nuevosSignos.peso / (tallaMeters * tallaMeters)).toFixed(1));
+      const imcVal = this.nuevosSignos.peso / (tallaMeters * tallaMeters);
+      this.nuevosSignos.imc = Number(Math.min(imcVal, 99.9).toFixed(1));
+    } else {
+      this.nuevosSignos.imc = 0;
     }
   }
 
@@ -123,12 +128,30 @@ export class PacientesPage implements OnInit {
         ...this.nuevosSignos,
         fecha: new Date().toLocaleDateString()
       };
-      await this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
+      const error = await this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
+
+      if (error) {
+        this.presentToast('Error al guardar signos vitales: ' + (error.message || 'Error desconocido'), 'danger');
+        return;
+      }
+
+      this.presentToast('Signos vitales guardados con éxito', 'success');
       // Actualizar paciente seleccionado para reflejar cambios
       this.pacienteSeleccionado = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula) || null;
       // Reset form
       this.nuevosSignos = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0 };
     }
+  }
+
+  async presentToast(message: string, color: 'success' | 'danger') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color,
+      position: 'bottom',
+      cssClass: 'custom-toast'
+    });
+    await toast.present();
   }
 
   consultarPaciente(paciente: Paciente) {

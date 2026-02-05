@@ -34,7 +34,8 @@
     </nav>
     <div class="sidebar-footer">
       <div class="avatar-box">
-        <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=doctor'" [alt]="currentProfile()?.nombre">
+        <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=doctor'"
+          [alt]="currentProfile()?.nombre">
       </div>
     </div>
   </aside>
@@ -49,7 +50,8 @@
           <span class="user-name">{{ currentProfile()?.nombre || 'Dr. Martínez' }}</span>
           <span class="user-role text-uppercase">
             {{ currentProfile()?.rol || 'Médico General' }}
-            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad"> | {{ currentProfile()?.especialidad }}</span>
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad"> | {{
+              currentProfile()?.especialidad }}</span>
           </span>
         </div>
       </div>
@@ -106,8 +108,27 @@
                       {{ pacienteSeleccionado.edad }} años • {{ pacienteSeleccionado.profesion ||
                       'Profesión no especificada' }} • Cédula: {{ pacienteSeleccionado.cedula }}
                     </p>
+                    <div class="mt-2" *ngIf="pacienteSeleccionado.alergias">
+                      <span
+                        class="badge bg-danger text-white rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                        <ion-icon name="alert-circle"></ion-icon>
+                        ALERGIAS: {{ pacienteSeleccionado.alergias }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="vital-signs d-flex gap-3">
+                  <div class="vital-signs d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-info btn-sm rounded-pill d-flex align-items-center gap-2 px-3 py-2"
+                      (click)="abrirModalSignos()">
+                      <ion-icon name="pulse-outline"></ion-icon>
+                      <span class="fw-bold">Signos Vitales</span>
+                    </button>
+                    <button
+                      class="btn btn-outline-primary btn-sm rounded-pill d-flex align-items-center gap-2 px-3 py-2"
+                      (click)="abrirModalAntecedentes()">
+                      <ion-icon name="clipboard-outline"></ion-icon>
+                      <span class="fw-bold">Antecedentes</span>
+                    </button>
+                    <div class="vr bg-light opacity-25"></div>
                     <div class="vital-item text-center">
                       <small class="d-block fw-bold label-peso">PESO</small>
                       <span class="fw-bold text-white">{{ pacienteSeleccionado.peso || '--' }} kg</span>
@@ -230,4 +251,163 @@
       <span>Consulta</span>
     </div>
   </nav>
+
+  <!-- MODAL SIGNOS VITALES (REDISEÑADO) -->
+  <div class="custom-modal-backdrop" *ngIf="showVitalSignsModal">
+    <div class="custom-modal wide animate__animated animate__zoomIn">
+      <div class="modal-header-custom">
+        <div class="d-flex align-items-center gap-3">
+          <div class="modal-icon bg-info-light">
+            <ion-icon name="pulse-outline" class="text-info"></ion-icon>
+          </div>
+          <div>
+            <h5 class="fw-bold m-0 text-white">Signos Vitales y Evolución</h5>
+            <small class="text-light opacity-75">{{ pacienteSeleccionado?.nombre }}</small>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="cerrarModalSignos()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="modal-body-custom p-0">
+        <div class="row g-0">
+          <!-- Columna Izquierda: Formulario -->
+          <div class="col-12 col-lg-5 p-4 border-end-custom">
+            <h6 class="fw-bold text-white mb-3">Nuevo Registro</h6>
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>Presión Arterial</label>
+                  <input type="text" class="form-control custom-input" placeholder="120/80"
+                    [(ngModel)]="signosForm.presionArterial">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>Pulso (lpm)</label>
+                  <input type="number" class="form-control custom-input" placeholder="72"
+                    [(ngModel)]="signosForm.frecuenciaCardiaca">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>Temperatura (°C)</label>
+                  <input type="number" class="form-control custom-input" placeholder="37.0"
+                    [(ngModel)]="signosForm.temperatura">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>Peso (kg)</label>
+                  <input type="number" class="form-control custom-input" placeholder="0" (ngModelChange)="calcularIMC()"
+                    [(ngModel)]="signosForm.peso">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>Talla (cm)</label>
+                  <input type="number" class="form-control custom-input" placeholder="0" (ngModelChange)="calcularIMC()"
+                    [(ngModel)]="signosForm.talla">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group-custom">
+                  <label>IMC (Auto)</label>
+                  <div class="imc-display p-2 text-center rounded-3 fw-bold"
+                    [class.bg-success]="signosForm.imc < 25 && signosForm.imc > 0"
+                    [class.bg-warning]="signosForm.imc >= 25">
+                    {{ signosForm.imc }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-info text-white w-100 mt-4 py-2 fw-bold" (click)="guardarSignos()"
+              [disabled]="!signosForm.peso">
+              Guardar Signos
+            </button>
+          </div>
+
+          <!-- Columna Derecha: Historial -->
+          <div class="col-12 col-lg-7 p-4 bg-dark-subtle">
+            <h6 class="fw-bold text-white mb-3">Historial de Evolución</h6>
+            <div class="table-responsive-modal overflow-auto" style="max-height: 280px;">
+              <table class="table table-dark table-sm table-hover small">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>P.A.</th>
+                    <th>Pulso</th>
+                    <th>Peso</th>
+                    <th>IMC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (sv of pacienteSeleccionado?.signosVitales?.slice()?.reverse(); track sv.fecha) {
+                  <tr>
+                    <td>{{ sv.fecha }}</td>
+                    <td>{{ sv.presionArterial }}</td>
+                    <td>{{ sv.frecuenciaCardiaca }}</td>
+                    <td>{{ sv.peso }}kg</td>
+                    <td><span class="badge" [class.bg-success]="sv.imc < 25" [class.bg-warning]="sv.imc >= 25">{{ sv.imc
+                        }}</span></td>
+                  </tr>
+                  } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center py-4 opacity-50">Sin registros previos</td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ANTECEDENTES Y ALERGIAS -->
+  <div class="custom-modal-backdrop" *ngIf="showAntecedentesModal">
+    <div class="custom-modal animate__animated animate__zoomIn">
+      <div class="modal-header-custom">
+        <div class="d-flex align-items-center gap-3">
+          <div class="modal-icon bg-primary-light">
+            <ion-icon name="clipboard-outline" class="text-primary"></ion-icon>
+          </div>
+          <div>
+            <h5 class="fw-bold m-0 text-white">Antecedentes Clínicos</h5>
+            <small class="text-light opacity-75">{{ pacienteSeleccionado?.nombre }}</small>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="cerrarModalAntecedentes()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="modal-body-custom">
+        <div class="mb-3">
+          <label class="small fw-bold text-muted uppercase mb-2 d-block">Alergias Conocidas</label>
+          <textarea class="form-control custom-input bg-danger-subtle border-danger-subtle" rows="2"
+            [(ngModel)]="antecedentesForm.alergias" placeholder="Lacteos, Penicilina, etc."></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="small fw-bold text-muted uppercase mb-2 d-block">Antecedentes Personales</label>
+          <textarea class="form-control custom-input" rows="3" [(ngModel)]="antecedentesForm.personales"
+            placeholder="Cirugías previas, condiciones crónicas..."></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="small fw-bold text-muted uppercase mb-2 d-block">Antecedentes Familiares</label>
+          <textarea class="form-control custom-input" rows="3" [(ngModel)]="antecedentesForm.familiares"
+            placeholder="Diabetes en padres, hipertensión..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer-custom">
+        <button class="btn btn-light rounded-3 px-4" (click)="cerrarModalAntecedentes()">Cancelar</button>
+        <button class="btn btn-primary text-white rounded-3 px-4 fw-bold" (click)="guardarAntecedentes()">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

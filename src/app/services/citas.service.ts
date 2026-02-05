@@ -50,6 +50,10 @@ export interface Cita {
   montoCobrado?: number;
   carnetSeguro?: string;
   telefono?: string;
+  signosVitales?: SignoVital[];
+  antecedentesPersonales?: string;
+  antecedentesFamiliares?: string;
+  alergias?: string;
 }
 
 export interface Consulta {
@@ -508,17 +512,29 @@ export class CitasService {
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
-    await this.supabase.from('signos_vitales').insert({
+    // Asegurar que los números no tengan demasiados decimales y no enviar ceros si no son necesarios
+    const dataToInsert = {
       paciente_cedula: cedula,
-      fecha: new Date().toISOString(),
-      presion_arterial: signos.presionArterial,
-      frecuencia_cardiaca: signos.frecuenciaCardiaca,
-      temperatura: signos.temperatura,
-      peso: signos.peso,
-      talla: signos.talla,
-      imc: signos.imc
-    });
+      fecha: new Date().toISOString().split('T')[0],
+      presion_arterial: signos.presionArterial || '',
+      frecuencia_cardiaca: signos.frecuenciaCardiaca ? Math.round(signos.frecuenciaCardiaca) : null,
+      temperatura: signos.temperatura ? Number(Math.min(Number(signos.temperatura), 99.9).toFixed(1)) : null,
+      peso: signos.peso ? Number(Math.min(Number(signos.peso), 999.9).toFixed(1)) : null,
+      talla: signos.talla ? Number(Math.min(Number(signos.talla), 999.9).toFixed(1)) : null,
+      imc: signos.imc ? Number(Math.min(Number(signos.imc), 99.9).toFixed(1)) : null
+    };
+
+    console.log('Insertando signos vitales:', dataToInsert);
+
+    const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
+
+    if (error) {
+      console.error('Error al guardar signos vitales en Supabase:', error);
+      return error;
+    }
+
     await this.refreshPatients();
+    return null;
   }
 
   async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
