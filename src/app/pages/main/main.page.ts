@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CitasService, ConfiguracionDoctor } from '../../services/citas.service';
+import { ConfigService, ConfiguracionDoctor } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -13,12 +13,12 @@ export class MainPage implements OnInit {
   profile: any = null;
 
   constructor(
-      private citasService: CitasService,
+      private configService: ConfigService,
       private authService: AuthService
   ) { }
 
   ngOnInit() {
-    this.citasService.config$.subscribe(config => {
+    this.configService.config$.subscribe(config => {
       this.config = config;
     });
     

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from './supabase.service';
 import { environment } from 'src/environments/environment';
 import { BehaviorSubject } from 'rxjs';
 
@@ -10,9 +11,9 @@ export class AuthService {
   private supabase: SupabaseClient;
   private userSession = new BehaviorSubject<any>(null);
 
-  constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
-    this.supabase.auth.onAuthStateChange((event, session) => {
+  constructor(private supabaseService: SupabaseService) {
+    this.supabase = this.supabaseService.client;
+    this.supabase.auth.onAuthStateChange((event: any, session: any) => {
       this.userSession.next(session);
       if (session?.user) {
         this.loadProfile(session.user.id);
@@ -35,13 +36,23 @@ export class AuthService {
     return this.userProfile.asObservable();
   }
 
+  get currentProfile() {
+    return this.userProfile.value;
+  }
+
+  hasRole(allowedRoles: string[]): boolean {
+    const profile = this.currentProfile;
+    if (!profile) return false;
+    return allowedRoles.includes(profile.rol);
+  }
+
   async loadProfile(uid: string) {
     const { data, error } = await this.supabase
       .from('usuarios')
       .select('*')
       .eq('id', uid)
       .single();
-    
+
     if (data) {
       this.userProfile.next(data);
     }
@@ -52,7 +63,7 @@ export class AuthService {
       .from('usuarios')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   }
@@ -105,7 +116,7 @@ export class AuthService {
     if (authError) throw authError;
 
     // Ya no es necesario insertar manualmente en 'usuarios', el Trigger lo hace automáticamente.
-    
+
     return authData;
   }
 

@@ -176,7 +176,7 @@ export class CitasService {
   async refreshConsultas() {
     const { data } = await this.supabase.from('consultas').select('*');
     if (data) {
-      const consultas: Consulta[] = data.map(c => ({
+      const consultas: Consulta[] = data.map((c: any) => ({
         cedula: c.paciente_cedula,
         fecha: c.fecha,
         diagnostico: c.diagnostico,
@@ -196,7 +196,7 @@ export class CitasService {
         email: configRows.email,
         fotoUrl: configRows.foto_url,
         montoConsultaParticular: configRows.monto_consulta_particular,
-        tarifasSeguros: (tarifas || []).map(t => ({
+        tarifasSeguros: (tarifas || []).map((t: any) => ({
           seguro: t.seguro,
           montoCobertura: t.monto_cobertura,
           copago: t.copago
@@ -212,7 +212,7 @@ export class CitasService {
   async refreshPatients() {
     const { data } = await this.supabase.from('pacientes').select('*, signos_vitales(*)');
     if (data) {
-      const patients: Paciente[] = data.map(p => ({
+      const patients: Paciente[] = data.map((p: any) => ({
         cedula: p.cedula,
         nombre: p.nombre,
         edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
@@ -245,7 +245,7 @@ export class CitasService {
   async refreshAppointments() {
     const { data } = await this.supabase.from('citas').select('*');
     if (data) {
-      const appointments: Cita[] = data.map(c => ({
+      const appointments: Cita[] = data.map((c: any) => ({
         id: c.id,
         turno: Number(c.turno),
         nombre: c.nombre,
@@ -279,7 +279,7 @@ export class CitasService {
   async refreshFacturasSeguro() {
     const { data } = await this.supabase.from('facturas_seguro').select('*');
     if (data) {
-      const facturas: FacturaSeguro[] = data.map(f => ({
+      const facturas: FacturaSeguro[] = data.map((f: any) => ({
         id: f.id,
         cedula: f.cedula,
         nombrePaciente: f.nombre_paciente,
@@ -298,7 +298,7 @@ export class CitasService {
   async refreshReportesPagosSeguro() {
     const { data } = await this.supabase.from('reportes_pagos_seguro').select('*');
     if (data) {
-      const reportes: ReportePagoSeguro[] = data.map(r => ({
+      const reportes: ReportePagoSeguro[] = data.map((r: any) => ({
         id: r.id,
         seguro: r.seguro,
         mes: r.mes,
@@ -389,8 +389,13 @@ export class CitasService {
       });
     }
 
-    // Usar turno y fecha para encontrar la cita correcta si no hay ID
-    await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
+    // Priorizar el ID si está presente para evitar colisiones por turno/fecha
+    if (extraData?.id) {
+      await this.supabase.from('citas').update(updateData).eq('id', extraData.id);
+    } else {
+      await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
+    }
+    
     await this.refreshAppointments();
   }
 
@@ -503,7 +508,7 @@ export class CitasService {
       .order('fecha', { ascending: false });
 
     if (error) return [];
-    return data.map(c => ({
+    return data.map((c: any) => ({
       cedula: c.paciente_cedula,
       fecha: c.fecha,
       diagnostico: c.diagnostico,
@@ -524,17 +529,13 @@ export class CitasService {
       imc: signos.imc ? Number(Math.min(Number(signos.imc), 99.9).toFixed(1)) : null
     };
 
-    console.log('Insertando signos vitales:', dataToInsert);
-
     const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
 
-    if (error) {
-      console.error('Error al guardar signos vitales en Supabase:', error);
-      return error;
+    if (!error) {
+      await this.refreshPatients();
     }
-
-    await this.refreshPatients();
-    return null;
+    
+    return error;
   }
 
   async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {

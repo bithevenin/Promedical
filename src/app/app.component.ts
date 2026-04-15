@@ -1,7 +1,6 @@
 import { Component, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
-import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { environment } from 'src/environments/environment';
+import { SupabaseService } from './services/supabase.service';
 
 @Component({
   selector: 'app-root',
@@ -10,18 +9,16 @@ import { environment } from 'src/environments/environment';
   standalone: false,
 })
 export class AppComponent {
-  private supabase: SupabaseClient;
-
   constructor(
     private router: Router,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private supabaseService: SupabaseService
   ) {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
     this.initializeApp();
   }
 
   initializeApp() {
-    this.supabase.auth.onAuthStateChange((event, session) => {
+    this.supabaseService.client.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth Event:', event);
       
       if (event === 'PASSWORD_RECOVERY') {

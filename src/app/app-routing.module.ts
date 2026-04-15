@@ -1,13 +1,13 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { RoleGuard } from './guards/role.guard';
 import { AutoLoginGuard } from './guards/auto-login.guard';
 
 const routes: Routes = [
   {
     path: 'update-password',
     loadChildren: () => import('./pages/update-password/update-password.module').then(m => m.UpdatePasswordPageModule)
-    // Removed AuthGuard to allow recovery token processing
   },
   {
     path: 'auth',
@@ -32,7 +32,8 @@ const routes: Routes = [
   {
     path: 'consulta',
     loadChildren: () => import('./pages/consulta/consulta.module').then(m => m.ConsultaPageModule),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['doctor', 'admin'] }
   },
   {
     path: 'pacientes',
@@ -42,12 +43,14 @@ const routes: Routes = [
   {
     path: 'contabilidad',
     loadChildren: () => import('./pages/contabilidad/contabilidad.module').then(m => m.ContabilidadPageModule),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['doctor', 'admin'] }
   },
   {
     path: 'configuracion',
     loadChildren: () => import('./pages/configuracion/configuracion.module').then(m => m.ConfiguracionPageModule),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['doctor', 'admin'] }
   },
   {
     path: '',

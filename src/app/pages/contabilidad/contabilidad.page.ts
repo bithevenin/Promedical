@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, Transaccion, ReportePagoSeguro } from '../../services/citas.service';
+import { FinancialService, Transaccion, ReportePagoSeguro } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -109,22 +109,22 @@ export class ContabilidadPage implements OnInit {
 
 
   constructor(
-    private citasService: CitasService,
+    private financialService: FinancialService,
     private router: Router,
     private authService: AuthService
   ) { }
 
   ngOnInit() {
-    this.citasService.transactions$.subscribe(data => {
+    this.financialService.transactions$.subscribe(data => {
       this.transactions.set(data.slice().reverse()); // Mostrar más recientes primero
     });
 
     // Cargar resumen de seguros
-    this.citasService.facturasSeguro$.subscribe(() => {
-      this.resumenSeguros.set(this.citasService.getResumenSeguros());
+    this.financialService.facturasSeguro$.subscribe(() => {
+      this.resumenSeguros.set(this.financialService.getResumenSeguros());
     });
 
-    this.citasService.reportesPagosSeguro$.subscribe(data => {
+    this.financialService.reportesPagosSeguro$.subscribe(data => {
       this.reportes.set(data);
     });
 
@@ -156,7 +156,7 @@ export class ContabilidadPage implements OnInit {
         paciente: this.nuevoIngreso.paciente || undefined
       };
 
-      this.citasService.agregarTransaccion(transaccion);
+      this.financialService.agregarTransaccion(transaccion);
       this.cerrarModalIngreso();
     }
   }
@@ -181,7 +181,7 @@ export class ContabilidadPage implements OnInit {
         monto: this.nuevoEgreso.monto
       };
 
-      this.citasService.agregarTransaccion(transaccion);
+      this.financialService.agregarTransaccion(transaccion);
       this.cerrarModalEgreso();
     }
   }

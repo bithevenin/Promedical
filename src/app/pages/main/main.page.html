@@ -1,141 +1,159 @@
-<div class="main-hub-wrapper">
-  <div class="background-decor">
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
+<div class="main-hub-wrapper min-h-screen bg-medical-dark text-white font-inter relative overflow-x-hidden">
+  
+  <!-- Background Elements -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+     <div class="absolute -top-20 -left-20 w-96 h-96 bg-primary/20 blur-[120px] rounded-full animate-pulse-slow"></div>
+     <div class="absolute top-1/2 -right-20 w-80 h-80 bg-emerald-500/10 blur-[150px] rounded-full"></div>
+     <div class="absolute -bottom-20 left-1/2 w-64 h-64 bg-sky-500/10 blur-[100px] rounded-full"></div>
+     <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E')] opacity-20 mix-blend-overlay"></div>
   </div>
 
-  <header class="hub-header">
-    <div class="header-content animate__animated animate__fadeInDown">
-      <div class="brand">
-        <div class="logo-icon">
+  <!-- Hub Header -->
+  <header class="hub-header pt-6 pb-4 px-5 lg:px-10 relative z-10 animate-fade-in">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="brand flex items-center gap-3 group cursor-pointer" routerLink="/main">
+        <div class="logo-icon w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-lg shadow-xl shadow-primary/30 group-hover:scale-110 transition-transform">
           <ion-icon name="pulse-outline"></ion-icon>
         </div>
         <div class="brand-info">
-          <h1 class="m-0">ProMedical</h1>
-          <p class="m-0 text-white-50">Centro Médico Especializado</p>
+          <h1 class="text-base font-black tracking-tighter leading-none uppercase">ProMedical</h1>
+          <p class="text-[8px] font-black uppercase text-text-muted tracking-[0.3em] mt-0.5">Clinical Ecosystem</p>
         </div>
       </div>
-      <div class="user-profile animate__animated animate__fadeInRight" *ngIf="profile">
-        <div class="text-end me-3">
-          <h6 class="m-0 fw-bold">{{ profile.nombre }}</h6>
-          <small class="text-white-50 text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
-            {{ profile.rol }}
-            <span *ngIf="profile.rol === 'doctor' && profile.especialidad"> | {{ profile.especialidad }}</span>
-          </small>
+
+      <div class="user-profile flex items-center gap-3 bg-slate-800 border border-slate-700 p-1.5 pr-4 rounded-xl shadow-lg group hover:border-primary transition-all cursor-pointer" *ngIf="profile">
+        <div class="avatar w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:ring-2 ring-primary/30 transition-all">
+          <img [src]="profile.foto_url || 'https://i.pravatar.cc/150?u=' + profile.id" alt="Profile" class="w-full h-full object-cover">
         </div>
-        <div class="avatar">
-          <img [src]="profile.foto_url || 'assets/img/avatar-placeholder.png'" alt="Profile">
+        <div class="text-left hidden sm:block">
+          <h6 class="text-[11px] font-black text-white leading-none uppercase">{{ profile.nombre }}</h6>
+          <p class="text-[8px] font-black text-primary uppercase tracking-widest mt-0.5">
+            {{ profile.rol }}
+          </p>
         </div>
       </div>
     </div>
   </header>
 
-  <main class="hub-content container">
-    <div class="welcome-text mb-5 animate__animated animate__fadeInUp">
-      <h2 class="fw-black text-white">¡Bienvenido de nuevo!</h2>
-      <p class="text-white-50">Seleccione el módulo que desea gestionar hoy.</p>
+  <!-- Hub Content -->
+  <main class="hub-content px-5 lg:px-10 pb-10 relative z-10 max-w-7xl mx-auto w-full">
+    
+    <!-- Welcome Text — tamaño optimizado -->
+    <div class="welcome-text mb-6 mt-2 animate-fade-in-up">
+      <h2 class="text-xl lg:text-2xl font-black text-white tracking-tighter leading-tight mb-1">
+        Hola, <span class="text-primary">{{ profile?.nombre?.split(' ')[0] }}</span>
+      </h2>
+      <p class="text-sm lg:text-base text-white/30 font-black tracking-tight">¿Qué gestionaremos hoy?</p>
+      <div class="w-10 h-1 bg-primary rounded-full mt-2"></div>
     </div>
 
-    <div class="modules-grid animate__animated animate__fadeInUp">
-      <!-- Dashboard -->
-      <div class="module-card" routerLink="/dashboard">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-blue">
+    <!-- Cards Grid — responsive y compacto -->
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 animate-fade-in-up">
+
+      <!-- Dashboard Card -->
+      <article class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-primary rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/dashboard">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-2xl text-primary mb-5 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-500">
             <ion-icon name="grid-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Dashboard</h3>
-            <p>Resumen analítico y estadísticas generales.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Dashboard</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Métricas en tiempo real y analítica clínica avanzada.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Explorar <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
 
-      <!-- Gestión de Citas -->
-      <div class="module-card" routerLink="/citas">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-purple">
+      <!-- Citas Card -->
+      <article class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-sky-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/citas">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-sky-500/10 rounded-2xl flex items-center justify-center text-2xl text-sky-400 mb-5 group-hover:scale-110 group-hover:bg-sky-500 group-hover:text-white transition-all duration-500">
             <ion-icon name="calendar-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Gestión de Citas</h3>
-            <p>Control de turnos y recepción de pacientes.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Agendamiento</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Control de recepción, turnos y flujo de pacientes.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-sky-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Agenda <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-sky-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
 
-      <!-- Registro de Pacientes -->
-      <div class="module-card" routerLink="/pacientes">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-orange">
+      <!-- Pacientes Card -->
+      <article class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/pacientes">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-2xl text-amber-500 mb-5 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
             <ion-icon name="people-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Pacientes</h3>
-            <p>Base de datos histórica y expedientes.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Pacientes</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Base de datos unificada y expedientes clínicos.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-amber-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Expedientes <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
 
-      <!-- Consulta Médica -->
-      <div class="module-card" routerLink="/consulta">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-green">
+      <!-- Consulta Card -->
+      <article *ngIf="profile?.rol === 'doctor' || profile?.rol === 'admin'" class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/consulta">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-2xl text-emerald-400 mb-5 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500">
             <ion-icon name="medical-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Consulta Médica</h3>
-            <p>Atención, diagnósticos y recetas.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Atención</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Módulo de consulta clínica y prescripciones.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Consulta <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
 
-      <!-- Contabilidad -->
-      <div class="module-card" routerLink="/contabilidad">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-gold">
+      <!-- Contabilidad Card -->
+      <article *ngIf="profile?.rol === 'doctor' || profile?.rol === 'admin'" class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-rose-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/contabilidad">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-2xl text-rose-500 mb-5 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-500">
             <ion-icon name="wallet-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Contabilidad</h3>
-            <p>Ingresos, gastos y reportes financieros.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Finanzas</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Control de ingresos, gastos y ARS.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-rose-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Financiero <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
 
-      <!-- Configuración -->
-      <div class="module-card" routerLink="/configuracion">
-        <div class="card-inner">
-          <div class="icon-box bg-gradient-gray">
+      <!-- Configuración Card -->
+      <article *ngIf="profile?.rol === 'doctor' || profile?.rol === 'admin'" class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/configuracion">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl text-text-muted mb-5 group-hover:scale-110 group-hover:bg-white group-hover:text-dark-deep transition-all duration-500">
             <ion-icon name="settings-outline"></ion-icon>
           </div>
-          <div class="card-info">
-            <h3>Configuración</h3>
-            <p>Ajustes del sistema y perfiles de usuario.</p>
-          </div>
-          <div class="arrow">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Opciones</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Ajustes del sistema y perfiles de usuarios.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-text-muted uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Configurar <ion-icon name="arrow-forward"></ion-icon>
           </div>
         </div>
-      </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
+
     </div>
   </main>
 
-  <footer class="hub-footer text-center py-4 text-white-50 animate__animated animate__fadeIn">
-    <small>© 2026 ProMedical Clinic • Versión 2.0</small>
+  <footer class="hub-footer py-6 px-5 lg:px-10 relative z-10">
+     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between border-t border-glass-border pt-5 gap-3">
+        <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">© 2026 ProMedical Ecosystem • Advanced Intelligence</p>
+        <div class="flex items-center gap-4">
+           <div class="flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+              <div class="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></div>
+              <span class="text-[8px] font-black text-primary uppercase tracking-widest">System Online</span>
+           </div>
+           <span class="text-[9px] font-black text-text-muted uppercase tracking-tighter">v 2.0.4-premium</span>
+        </div>
+     </div>
   </footer>
+
 </div>

@@ -1,6 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, ConfiguracionDoctor, TarifaSeguro, Paciente, Consulta } from '../../services/citas.service';
+import { ConfigService, ConfiguracionDoctor, TarifaSeguro } from '../../services/config.service';
+import { PatientService, Paciente } from '../../services/patient.service';
+import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { AuthService } from '../../services/auth.service';
 import * as XLSX from 'xlsx';
 
@@ -41,8 +43,7 @@ export class ConfiguracionPage implements OnInit {
     roles = [
         { value: 'admin', label: 'Administrador' },
         { value: 'doctor', label: 'Doctor' },
-        { value: 'recepcion', label: 'Recepción' },
-        { value: 'enfermera', label: 'Enfermera' }
+        { value: 'secretaria', label: 'Secretaria' }
     ];
 
     nuevoSeguro: TarifaSeguro = {
@@ -52,7 +53,9 @@ export class ConfiguracionPage implements OnInit {
     };
 
     constructor(
-        private citasService: CitasService,
+        private configService: ConfigService,
+        private patientService: PatientService,
+        private consultationService: ConsultationService,
         private authService: AuthService,
         private router: Router
     ) { }
@@ -64,7 +67,7 @@ export class ConfiguracionPage implements OnInit {
     }
 
     cargarConfiguracion() {
-        this.config = { ...this.citasService.getConfig() };
+        this.config = { ...this.configService.getConfig() };
         // Clonar tarifas para evitar mutación directa
         this.config.tarifasSeguros = this.config.tarifasSeguros.map(t => ({ ...t }));
     }
@@ -81,7 +84,7 @@ export class ConfiguracionPage implements OnInit {
         this.guardando = true;
         try {
             // 1. Guardar configuración básica en la DB
-            await this.citasService.saveConfig(this.config);
+            await this.configService.saveConfig(this.config);
 
             // 2. Si se proporcionó una contraseña y email, intentar registrar/actualizar el usuario en Auth
             // (Esta lógica se moverá a la gestión de usuarios, pero mantenemos compatibilidad por ahora si edita su propio perfil)
@@ -241,7 +244,7 @@ export class ConfiguracionPage implements OnInit {
     // --- Gestión de Datos (Import/Export) ---
 
     async exportarPacientes() {
-        const patients = this.citasService.getPatients();
+        const patients = this.patientService.getPatients();
         const ws = XLSX.utils.json_to_sheet(patients.map(p => ({
             'Cédula': p.cedula,
             'Nombre': p.nombre,
@@ -261,7 +264,7 @@ export class ConfiguracionPage implements OnInit {
     }
 
     async exportarHistorias() {
-        const historias = await this.citasService.getAllConsultations();
+        const historias = await this.consultationService.getAllConsultations();
         const ws = XLSX.utils.json_to_sheet(historias.map(h => ({
             'Cédula Paciente': h.cedula,
             'Fecha': h.fecha,
@@ -348,7 +351,7 @@ export class ConfiguracionPage implements OnInit {
                         altura: String(row.altura || row['Altura (cm)'] || '').trim(),
                         email: String(row.email || row.Email || '').trim(),
                         carnetSeguro: String(row.carnet_seguro || row['Carnet Seguro'] || '').trim()
-                    })).filter(p => p.cedula && p.nombre);
+                    })).filter((p: any) => p.cedula && p.nombre);
 
                     if (pacientes.length === 0) {
                         alert('No se encontraron pacientes válidos. Verifique que las columnas "cedula" y "nombre" tengan datos.');
@@ -356,9 +359,9 @@ export class ConfiguracionPage implements OnInit {
                         return;
                     }
 
-                    const error = await this.citasService.importPatients(pacientes);
+                    const error = await this.patientService.importPatients(pacientes);
                     if (error) {
-                        alert('Error al guardar pacientes: ' + (error.message || JSON.stringify(error)));
+                        alert('Error al guardar pacientes: ' + ((error as any).message || JSON.stringify(error)));
                         this.guardando = false;
                         return;
                     }
@@ -369,7 +372,7 @@ export class ConfiguracionPage implements OnInit {
                         fecha: formatExcelDate(row.fecha || row.Fecha || new Date().toISOString().split('T')[0]),
                         diagnostico: String(row.diagnostico || row.Diagnóstico || '').trim(),
                         receta: String(row.receta || row.Receta || '').trim()
-                    })).filter(c => c.cedula && c.diagnostico);
+                    })).filter((c: any) => c.cedula && c.diagnostico);
 
                     if (consultas.length === 0) {
                         alert('No se encontraron historias clínicas válidas.');
@@ -377,9 +380,9 @@ export class ConfiguracionPage implements OnInit {
                         return;
                     }
 
-                    const error = await this.citasService.importConsultations(consultas);
+                    const error = await this.consultationService.importConsultations(consultas);
                     if (error) {
-                        alert('Error al guardar historias: ' + (error.message || JSON.stringify(error)));
+                        alert('Error al guardar historias: ' + ((error as any).message || JSON.stringify(error)));
                         this.guardando = false;
                         return;
                     }

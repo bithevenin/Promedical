@@ -28,7 +28,6 @@
     "@capacitor/status-bar": "8.0.0",
     "@ionic/angular": "^8.0.0",
     "@supabase/supabase-js": "^2.93.3",
-    "bootstrap": "^5.3.8",
     "ionicons": "^7.0.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
@@ -49,9 +48,11 @@
     "@angular/language-service": "^20.0.0",
     "@capacitor/cli": "8.0.0",
     "@ionic/angular-toolkit": "^12.0.0",
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/jasmine": "~5.1.0",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
+    "autoprefixer": "^10.4.27",
     "eslint": "^9.16.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsdoc": "^48.2.1",
@@ -63,6 +64,8 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.9.0"
   },
   "description": "An Ionic project"

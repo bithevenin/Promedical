@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CitasService, Cita, Consulta, Paciente } from '../../services/citas.service';
+import { AppointmentService, Cita } from '../../services/appointment.service';
+import { PatientService, Paciente } from '../../services/patient.service';
+import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { PrintRecetaService } from '../../services/print-receta.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastController } from '@ionic/angular';
@@ -49,7 +51,9 @@ export class ConsultaPage implements OnInit {
   };
 
   constructor(
-    private citasService: CitasService,
+    private appointmentService: AppointmentService,
+    private patientService: PatientService,
+    private consultationService: ConsultationService,
     private printRecetaService: PrintRecetaService,
     private route: ActivatedRoute,
     private authService: AuthService,
@@ -65,7 +69,7 @@ export class ConsultaPage implements OnInit {
       }
     });
 
-    this.citasService.appointments$.subscribe(appointments => {
+    this.appointmentService.appointments$.subscribe(appointments => {
       this.pacientesEspera = appointments.filter(c => c.estado === 'espera' || c.estado === 'consulta');
       // Si hay uno en 'consulta' y no hemos seleccionado ninguno (y no es consulta directa), seleccionarlo automáticamente
       const enConsulta = this.pacientesEspera.find(c => c.estado === 'consulta');
@@ -78,7 +82,7 @@ export class ConsultaPage implements OnInit {
   }
 
   cargarPacienteDirecto(cedula: string) {
-    const paciente = this.citasService.findPatientByCedula(cedula);
+    const paciente = this.patientService.findPatientByCedula(cedula);
     if (paciente) {
       // Crear una cita temporal para este paciente (consulta directa)
       const citaTemporal: Cita = {
@@ -98,21 +102,21 @@ export class ConsultaPage implements OnInit {
 
       this.esConsultaDirecta = true;
       this.pacienteSeleccionado = citaTemporal;
-      this.historialPasado = this.citasService.getPatientHistory(cedula);
+      this.historialPasado = this.consultationService.getPatientHistory(cedula);
     }
   }
 
   async seleccionarPaciente(paciente: Cita) {
     this.pacienteSeleccionado = paciente;
-    this.historialPasado = this.citasService.getPatientHistory(paciente.cedula);
+    this.historialPasado = this.consultationService.getPatientHistory(paciente.cedula);
 
     // Si estaba en espera, pasarlo a consulta
     if (paciente.estado === 'espera') {
-      await this.citasService.updateAppointmentStatus(paciente.turno, 'consulta');
+      await this.appointmentService.updateAppointmentStatus(paciente.turno, 'consulta');
     }
 
     // Asegurarnos de que el paciente seleccionado tenga todos los datos clínicos (signos vitales, antecedentes)
-    const fullPatient = this.citasService.findPatientByCedula(paciente.cedula);
+    const fullPatient = this.patientService.findPatientByCedula(paciente.cedula);
     if (fullPatient) {
       this.pacienteSeleccionado = {
         ...this.pacienteSeleccionado,
@@ -133,12 +137,12 @@ export class ConsultaPage implements OnInit {
         receta: this.nuevaConsulta.receta
       };
 
-      await this.citasService.saveConsultation(consulta);
+      await this.consultationService.saveConsultation(consulta);
 
       // Si es consulta directa (desde página de pacientes), no hay cita que actualizar
       if (!this.esConsultaDirecta) {
         // Pasar a por_pagar con la instrucción de cobro
-        await this.citasService.updateAppointmentStatus(this.pacienteSeleccionado.turno, 'por_pagar', {
+        await this.appointmentService.updateAppointmentStatus(this.pacienteSeleccionado.turno, 'por_pagar', {
           instruccionCobro: this.nuevaConsulta.instruccionCobro
         });
       }
@@ -185,18 +189,18 @@ export class ConsultaPage implements OnInit {
 
   async guardarSignos() {
     if (this.pacienteSeleccionado) {
-      const error = await this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, {
+      const error = await this.patientService.addSignosVitales(this.pacienteSeleccionado.cedula, {
         ...this.signosForm,
         fecha: new Date().toLocaleDateString()
       });
 
       if (error) {
-        this.presentToast('Error al guardar signos vitales: ' + (error.message || 'Error desconocido'), 'danger');
+        this.presentToast('Error al guardar signos vitales: ' + ((error as any).message || 'Error desconocido'), 'danger');
       } else {
         this.presentToast('Signos vitales guardados con éxito', 'success');
         this.cerrarModalSignos();
         // Recargar datos del paciente para ver el historial actualizado
-        const fullPatient = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+        const fullPatient = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
         if (fullPatient && this.pacienteSeleccionado) {
           this.pacienteSeleccionado.signosVitales = fullPatient.signosVitales;
         }
@@ -211,7 +215,7 @@ export class ConsultaPage implements OnInit {
     if (!this.pacienteSeleccionado) return;
 
     // Cargar datos actuales del paciente al formulario
-    const p = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+    const p = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
     if (p) {
       this.antecedentesForm = {
         personales: p.antecedentesPersonales || '',
@@ -229,7 +233,7 @@ export class ConsultaPage implements OnInit {
 
   async guardarAntecedentes() {
     if (this.pacienteSeleccionado) {
-      await this.citasService.updateAntecedentes(this.pacienteSeleccionado.cedula, {
+      await this.patientService.updateAntecedentes(this.pacienteSeleccionado.cedula, {
         personales: this.antecedentesForm.personales,
         familiares: this.antecedentesForm.familiares,
         alergias: this.antecedentesForm.alergias

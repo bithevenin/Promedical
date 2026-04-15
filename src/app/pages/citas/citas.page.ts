@@ -1,5 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CitasService, Cita, Paciente } from '../../services/citas.service';
+import { AppointmentService, Cita } from '../../services/appointment.service';
+import { PatientService, Paciente } from '../../services/patient.service';
+import { ConfigService } from '../../services/config.service';
+import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
@@ -47,9 +50,12 @@ export class CitasPage implements OnInit {
   Math = Math;
 
   constructor(
-    public citasService: CitasService,
+    public appointmentService: AppointmentService,
+    private patientService: PatientService,
+    private configService: ConfigService,
+    private financialService: FinancialService,
     private authService: AuthService,
-    private router: Router
+    public router: Router
   ) {
     const now = new Date();
     const offset = now.getTimezoneOffset();
@@ -61,11 +67,11 @@ export class CitasPage implements OnInit {
   }
 
   ngOnInit() {
-    this.citasService.config$.subscribe(config => {
+    this.configService.config$.subscribe(config => {
       this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
     });
 
-    this.citasService.appointments$.subscribe(appointments => {
+    this.appointmentService.appointments$.subscribe(appointments => {
       this.actualizarListas(appointments);
     });
 
@@ -88,7 +94,7 @@ export class CitasPage implements OnInit {
 
   cambiarFechaFiltro(event: any) {
     this.fechaFiltro = event.detail.value.split('T')[0];
-    this.actualizarListas(this.citasService.getAppointments());
+    this.actualizarListas(this.appointmentService.getAppointments());
   }
 
   actualizarListas(appointments: Cita[]) {
@@ -121,7 +127,7 @@ export class CitasPage implements OnInit {
     this.citaParaCobrar = cita;
     this.mostrarModalCobro = true;
 
-    const tarifa = this.citasService.getTarifaSeguro(cita.seguro);
+    const tarifa = this.configService.getTarifaSeguro(cita.seguro);
     const montoSeguroConfig = tarifa ? tarifa.montoCobertura : 0;
     const copagoConfig = tarifa ? tarifa.copago : 0;
 
@@ -131,7 +137,7 @@ export class CitasPage implements OnInit {
         this.datosCobro.montoSeguro = montoSeguroConfig;
         this.datosCobro.diferencia = copagoConfig; // Sugerir el copago configurado
       } else {
-        const config = this.citasService.getConfig();
+        const config = this.configService.getConfig();
         this.datosCobro.montoSeguro = 0;
         this.datosCobro.diferencia = config.montoConsultaParticular;
       }
@@ -160,7 +166,7 @@ export class CitasPage implements OnInit {
   async confirmarCobro() {
     if (this.citaParaCobrar) {
       const montoTotal = this.datosCobro.diferencia; // Solo se registra lo que pagó el paciente
-      await this.citasService.registrarCobro(this.citaParaCobrar.turno, montoTotal);
+      await this.financialService.registrarCobro(this.citaParaCobrar.turno, montoTotal);
 
       // Preparar mensaje interno
       this.mensajeExito = `Cobro registrado exitosamente!
@@ -216,7 +222,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
     this.errorBusqueda = '';
     if (!this.nuevoPaciente.cedula) return;
 
-    const paciente = this.citasService.findPatientByCedula(this.nuevoPaciente.cedula);
+    const paciente = this.patientService.findPatientByCedula(this.nuevoPaciente.cedula);
     if (paciente) {
       this.nuevoPaciente = {
         ...this.nuevoPaciente,
@@ -239,7 +245,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
   async registrarCita() {
     if (this.nuevoPaciente.nombre && this.nuevoPaciente.cedula && this.nuevoPaciente.fecha_nacimiento) {
       // Calcular edad automáticamente si se tiene la fecha de nacimiento
-      this.nuevoPaciente.edad = this.citasService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+      this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
 
       // 1. Guardar/Actualizar en el registro de pacientes
       const datosPaciente: Paciente = {
@@ -255,7 +261,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         telefono: this.nuevoPaciente.telefono,
         carnetSeguro: this.carnetSeguroTemp
       };
-      await this.citasService.savePatient(datosPaciente);
+      await this.patientService.savePatient(datosPaciente);
 
       // 2. Crear la cita
       const nuevaCita: Cita = {
@@ -276,7 +282,7 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         carnetSeguro: this.carnetSeguroTemp
       };
 
-      await this.citasService.addAppointment(nuevaCita);
+      await this.appointmentService.addAppointment(nuevaCita);
       this.limpiarFormulario();
       this.carnetSeguroTemp = '';
 

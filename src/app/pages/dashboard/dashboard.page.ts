@@ -1,6 +1,8 @@
 import { Component, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, Cita } from '../../services/citas.service';
+import { AppointmentService, Cita } from '../../services/appointment.service';
+import { PatientService } from '../../services/patient.service';
+import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 
 interface NavItem {
@@ -28,14 +30,21 @@ interface StatCard {
 })
 export class DashboardPage implements OnInit {
 
-  navigationItems = signal<NavItem[]>([
-    { icon: 'home-outline', label: 'Inicio', route: '/main' },
-    { icon: 'grid-outline', label: 'Panel', active: true, route: '/dashboard' },
-    { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
-    { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' },
-    { icon: 'medical-outline', label: 'Consulta', route: '/consulta' },
-    { icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' }
-  ]);
+  navigationItems = computed<NavItem[]>(() => {
+    const base = [
+      { icon: 'home-outline', label: 'Inicio', route: '/main' },
+      { icon: 'grid-outline', label: 'Panel', active: true, route: '/dashboard' },
+      { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+      { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+    ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+      base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+    }
+
+    return base;
+  });
 
   allCitas = signal<Cita[]>([]);
   allPatients = signal<any[]>([]);
@@ -68,12 +77,20 @@ export class DashboardPage implements OnInit {
 
     const citasEsperaHoy = this.allCitas().filter(c => c.estado === 'espera' && c.fecha === today).length;
 
-    return [
+    const carts: StatCard[] = [
       { title: 'Pacientes Totales', value: pacientesTotales.toString(), trend: '+3%', isPositive: true, icon: 'people', colorClass: 'blue' },
-      { title: 'Consultas Hoy', value: citasHoy.toString(), trend: '+5%', isPositive: true, icon: 'medical', colorClass: 'indigo' },
-      { title: 'Ingresos Mensuales', value: `$${ingresosMes.toLocaleString()}`, trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' },
-      { title: 'Citas en Espera', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'time', colorClass: 'orange' }
+      { title: 'Consultas Hoy', value: citasHoy.toString(), trend: '+5%', isPositive: true, icon: 'medical', colorClass: 'indigo' }
     ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      carts.push({ title: 'Ingresos Mensuales', value: `$${ingresosMes.toLocaleString()}`, trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' });
+    } else {
+      carts.push({ title: 'Consultas Pendientes', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'calendar', colorClass: 'green' });
+    }
+
+    carts.push({ title: 'Citas en Espera', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'time', colorClass: 'orange' });
+
+    return carts;
   });
 
   recentActivity = computed(() => {
@@ -92,14 +109,16 @@ export class DashboardPage implements OnInit {
 
   constructor(
     private router: Router,
-    private citasService: CitasService,
+    private appointmentService: AppointmentService,
+    private patientService: PatientService,
+    private financialService: FinancialService,
     private authService: AuthService
   ) { }
 
   ngOnInit() {
-    this.citasService.appointments$.subscribe(data => this.allCitas.set(data));
-    this.citasService.patients$.subscribe(data => this.allPatients.set(data));
-    this.citasService.transactions$.subscribe(data => this.allTransactions.set(data));
+    this.appointmentService.appointments$.subscribe(data => this.allCitas.set(data));
+    this.patientService.patients$.subscribe(data => this.allPatients.set(data));
+    this.financialService.transactions$.subscribe(data => this.allTransactions.set(data));
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 

@@ -1,6 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, Paciente, Consulta } from '../../services/citas.service';
+import { PatientService, Paciente } from '../../services/patient.service';
+import { ConsultationService, Consulta } from '../../services/consultation.service';
+import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastController } from '@ionic/angular';
 
@@ -57,20 +59,22 @@ export class PacientesPage implements OnInit {
   listaSeguros: string[] = ['Particular'];
 
   constructor(
-    private citasService: CitasService,
+    private patientService: PatientService,
+    private consultationService: ConsultationService,
+    private configService: ConfigService,
     private router: Router,
     private authService: AuthService,
     private toastController: ToastController
   ) { }
 
   ngOnInit() {
-    this.citasService.patients$.subscribe(patients => {
+    this.patientService.patients$.subscribe(patients => {
       this.pacientes = patients;
     });
 
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
 
-    this.citasService.config$.subscribe(config => {
+    this.configService.config$.subscribe(config => {
       this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
     });
   }
@@ -84,7 +88,7 @@ export class PacientesPage implements OnInit {
 
   verHistorial(paciente: Paciente) {
     this.pacienteSeleccionado = paciente;
-    this.historialPaciente = this.citasService.getPatientHistory(paciente.cedula);
+    this.historialPaciente = this.consultationService.getPatientHistory(paciente.cedula);
     this.showHistoryModal = true;
   }
 
@@ -97,9 +101,9 @@ export class PacientesPage implements OnInit {
   async guardarCambios() {
     if (this.editData.nombre) {
       if (this.editData.fecha_nacimiento) {
-        this.editData.edad = this.citasService.calcularEdad(this.editData.fecha_nacimiento);
+        this.editData.edad = this.patientService.calcularEdad(this.editData.fecha_nacimiento);
       }
-      await this.citasService.savePatient(this.editData);
+      await this.patientService.savePatient(this.editData);
       this.closeModals();
     }
   }
@@ -128,16 +132,16 @@ export class PacientesPage implements OnInit {
         ...this.nuevosSignos,
         fecha: new Date().toLocaleDateString()
       };
-      const error = await this.citasService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
+      const error = await this.patientService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
 
       if (error) {
-        this.presentToast('Error al guardar signos vitales: ' + (error.message || 'Error desconocido'), 'danger');
+        this.presentToast('Error al guardar signos vitales: ' + ((error as any).message || 'Error desconocido'), 'danger');
         return;
       }
 
       this.presentToast('Signos vitales guardados con éxito', 'success');
       // Actualizar paciente seleccionado para reflejar cambios
-      this.pacienteSeleccionado = this.citasService.findPatientByCedula(this.pacienteSeleccionado.cedula) || null;
+      this.pacienteSeleccionado = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula) || null;
       // Reset form
       this.nuevosSignos = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0 };
     }

@@ -15,6 +15,56 @@
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
+  <!-- Tailwind CSS v4 via CDN with custom theme -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#4361ee',
+            'primary-deep': '#3f37c9',
+            'primary-light': '#4895ef',
+            'medical-dark': '#0f172a',
+            'dark-deep': '#020617',
+            'dark-secondary': '#1e293b',
+            'dark-card': '#0f172a',
+            'glass-light': 'rgba(255,255,255,0.03)',
+            'glass-heavy': 'rgba(255,255,255,0.07)',
+            'glass-border': 'rgba(255,255,255,0.1)',
+            'text-primary': '#f8fafc',
+            'text-secondary': '#94a3b8',
+            'text-muted': '#64748b',
+          },
+          fontFamily: {
+            'inter': ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'fade-in-up': 'fadeInUp 0.6s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shimmer': 'shimmer 2.5s infinite linear',
+            'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+            fadeInUp: { from: { opacity: '0', transform: 'translateY(20px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            scaleIn: { from: { opacity: '0', transform: 'scale(0.95)' }, to: { opacity: '1', transform: 'scale(1)' } },
+            shimmer: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(100%)' } },
+            bounceIn: { '0%': { opacity: '0', transform: 'scale(0.3)' }, '50%': { opacity: '0.9', transform: 'scale(1.1)' }, '80%': { opacity: '1', transform: 'scale(0.89)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+          },
+          backdropBlur: {
+            '3xl': '64px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <!-- add to homescreen for ios -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />

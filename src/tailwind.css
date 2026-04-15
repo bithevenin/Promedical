@@ -1,0 +1,6 @@
+/*
+  ProMedical - Tailwind CSS Integration
+  
+  Tailwind styles are loaded via global.scss to ensure 
+  correct processing in the Angular build pipeline.
+*/

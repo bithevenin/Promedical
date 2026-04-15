@@ -1,974 +1,114 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4361ee;
+  --color-primary-deep: #3f37c9;
+  --color-primary-light: #4895ef;
+  --color-medical-dark: #0f172a;
+  --color-dark-deep: #020617;
+  --color-dark-secondary: #1e293b;
+  --color-dark-card: #0f172a;
+  --color-glass-light: rgba(255, 255, 255, 0.03);
+  --color-glass-heavy: rgba(255, 255, 255, 0.07);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --font-inter: "Inter", sans-serif;
+
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-fade-in-up: fadeInUp 0.6s ease-out;
+  --animate-scale-in: scaleIn 0.3s ease-out;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 2.5s infinite linear;
+  --animate-bounce-in: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { opacity: 0.9; transform: scale(1.1); }
+    80% { opacity: 1; transform: scale(0.89); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+}
+
 /*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
- */
+  ProMedical Global Styles - Clean Architecture
+*/
 
-/* Core CSS required for Ionic components to work properly */
+/* Ionic Core */
 @import "@ionic/angular/css/core.css";
-
-/* Basic CSS for apps built with Ionic */
 @import "@ionic/angular/css/normalize.css";
 @import "@ionic/angular/css/structure.css";
 @import "@ionic/angular/css/typography.css";
 @import "@ionic/angular/css/display.css";
-
-/* Optional CSS utils that can be commented out */
 @import "@ionic/angular/css/padding.css";
 @import "@ionic/angular/css/float-elements.css";
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+/* Ionic Dark Mode */
 @import "@ionic/angular/css/palettes/dark.system.css";
 
-/* Importar fuentes si no las tienes */
+/* Custom Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ========================================
-   ANIMACIONES DE TRANSICIÓN DE PÁGINA
-   ======================================== */
-
-/* Keyframes para animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Animación para el contenido principal al entrar */
-.dashboard-wrapper {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.content-body {
-  animation: slideInUp 0.4s ease-out;
-}
-
-/* Animación para cards al cargar */
-.card,
-.stat-card {
-  animation: scaleIn 0.3s ease-out;
-  animation-fill-mode: both;
-}
-
-/* Delay escalonado para múltiples cards */
-.row>.col-12:nth-child(1) .card,
-.row>.col-6:nth-child(1) .stat-card,
-.row>.col-md-6:nth-child(1) .stat-card,
-.row>.col-xl-3:nth-child(1) .stat-card {
-  animation-delay: 0.05s;
-}
-
-.row>.col-12:nth-child(2) .card,
-.row>.col-6:nth-child(2) .stat-card,
-.row>.col-md-6:nth-child(2) .stat-card,
-.row>.col-xl-3:nth-child(2) .stat-card {
-  animation-delay: 0.1s;
-}
-
-.row>.col-12:nth-child(3) .card,
-.row>.col-6:nth-child(3) .stat-card,
-.row>.col-md-4:nth-child(3) .stat-card,
-.row>.col-xl-3:nth-child(3) .stat-card {
-  animation-delay: 0.15s;
-}
-
-.row>.col-12:nth-child(4) .card,
-.row>.col-6:nth-child(4) .stat-card,
-.row>.col-xl-3:nth-child(4) .stat-card {
-  animation-delay: 0.2s;
-}
-
-/* Transición suave para elementos de tabla */
-.table tbody tr {
-  animation: slideInRight 0.3s ease-out;
-  animation-fill-mode: both;
-}
-
-.table tbody tr:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.table tbody tr:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.table tbody tr:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.table tbody tr:nth-child(4) {
-  animation-delay: 0.2s;
-}
-
-.table tbody tr:nth-child(5) {
-  animation-delay: 0.25s;
-}
-
-.table tbody tr:nth-child(n+6) {
-  animation-delay: 0.3s;
-}
-
-/* ========================================
-   VARIABLES GLOBALES - TEMA OSCURO
-   ======================================== */
-:root {
-  /* Colores principales */
-  --color-primary: #4361ee;
-  --color-secondary: #3f37c9;
-  --color-accent: #4cc9f0;
-
-  /* Fondos oscuros */
-  --bg-dark: #0f172a;
-  --bg-dark-secondary: #1e293b;
-  --bg-dark-tertiary: #334155;
-
-  /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-hover: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-hover: rgba(255, 255, 255, 0.3);
-
-  /* Textos */
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-tertiary: rgba(255, 255, 255, 0.5);
-  --text-muted: rgba(255, 255, 255, 0.3);
-
-  /* Cards y contenedores */
-  --card-bg: rgba(30, 41, 59, 0.6);
-  --card-border: rgba(255, 255, 255, 0.08);
-
-  /* Sombras */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 10px 20px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
-
-  /* Border radius */
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-}
-
-/* ========================================
-   ESTILOS BASE
-   ======================================== */
+/* Basic Resets to allow Tailwind full control */
 body {
-  font-family: 'Inter', sans-serif !important;
-  background: var(--bg-dark) !important;
-  color: var(--text-primary) !important;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Aplicar fondo oscuro a toda la app */
-ion-app {
-  background: var(--bg-dark) !important;
-}
-
-/* Fondo oscuro para todo el contenido */
+/* Ionic Component Overrides for Glassmorphism */
 ion-content {
-  --background: var(--bg-dark) !important;
-  --color: var(--text-primary) !important;
+  --background: transparent;
 }
 
-/* Headers oscuros */
-ion-header {
-  background: var(--bg-dark) !important;
-
-  ion-toolbar {
-    --background: var(--bg-dark) !important;
-    --color: var(--text-primary) !important;
-    --border-color: var(--glass-border) !important;
-  }
-
-  ion-title {
-    color: var(--text-primary) !important;
-  }
+ion-toolbar {
+  --background: transparent;
+  --border-style: none;
 }
 
-/* ========================================
-   CARDS Y CONTENEDORES
-   ======================================== */
-
-/* Cards con efecto glassmorphism */
-.card,
-ion-card,
-.card-custom {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: var(--radius-lg) !important;
-  color: var(--text-primary) !important;
-  box-shadow: var(--shadow-sm) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-
-  &:hover {
-    background: var(--glass-bg-hover) !important;
-    border-color: var(--glass-border-hover) !important;
-    box-shadow: var(--shadow-md) !important;
-    transform: translateY(-2px);
-  }
-}
-
-/* Card headers */
-.card-header,
-ion-card-header {
-  background: transparent !important;
-  border-bottom: 1px solid var(--glass-border) !important;
-  color: var(--text-primary) !important;
-}
-
-/* Card titles */
-.card-title,
-ion-card-title {
-  color: var(--text-primary) !important;
-  font-weight: 700 !important;
-}
-
-/* Card subtitles */
-.card-subtitle,
-ion-card-subtitle {
-  color: var(--text-secondary) !important;
-}
-
-/* Card body/content */
-.card-body,
-ion-card-content {
-  color: var(--text-secondary) !important;
-}
-
-/* ========================================
-   LISTAS
-   ======================================== */
-ion-list {
-  background: transparent !important;
-
-  ion-item {
-    --background: var(--glass-bg) !important;
-    --color: var(--text-primary) !important;
-    --border-color: var(--glass-border) !important;
-    border-radius: var(--radius-md) !important;
-    margin-bottom: 8px !important;
-
-    &:hover {
-      --background: var(--glass-bg-hover) !important;
-    }
-
-    ion-label {
-      color: var(--text-primary) !important;
-
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-        color: var(--text-primary) !important;
-      }
-
-      p {
-        color: var(--text-secondary) !important;
-      }
-    }
-  }
-}
-
-/* ========================================
-   BOTONES
-   ======================================== */
-ion-button,
-.btn {
-  --border-radius: var(--radius-md) !important;
-  font-weight: 600 !important;
-  transition: all 0.3s ease !important;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md) !important;
-  }
-}
-
-/* Botón primario */
-.btn-primary,
-ion-button[color="primary"] {
-  --background: var(--color-primary) !important;
-  --color: white !important;
-}
-
-/* ========================================
-   INPUTS Y FORMULARIOS
-   ======================================== */
-ion-input,
-ion-textarea,
-ion-select,
-.form-control {
-  --background: var(--glass-bg) !important;
-  --color: var(--text-primary) !important;
-  --placeholder-color: var(--text-tertiary) !important;
-  --border-color: var(--glass-border) !important;
-  border-radius: var(--radius-md) !important;
-
-  &:focus,
-  &:focus-within {
-    --border-color: var(--color-primary) !important;
-    --background: var(--glass-bg-hover) !important;
-  }
-}
-
-/* Labels de formularios */
-.form-label,
-ion-label {
-  color: var(--text-primary) !important;
-  font-weight: 500 !important;
-}
-
-/* ========================================
-   TABLAS
-   ======================================== */
-.table {
-  color: var(--text-primary) !important;
-  background: transparent !important;
-
-  thead {
-    background: var(--glass-bg) !important;
-
-    th {
-      color: var(--text-primary) !important;
-      font-weight: 700 !important;
-      border-color: var(--glass-border) !important;
-      background: var(--glass-bg) !important;
-    }
-  }
-
-  tbody {
-    background: transparent !important;
-
-    tr {
-      background: transparent !important;
-      border-color: var(--glass-border) !important;
-
-      &:hover {
-        background: var(--glass-bg-hover) !important;
-      }
-
-      td {
-        color: var(--text-primary) !important;
-        background: transparent !important;
-        border-color: var(--glass-border) !important;
-      }
-    }
-  }
-}
-
-// Clases de Bootstrap que hay que sobrescribir
-.table-light {
-  background: var(--glass-bg) !important;
-  color: var(--text-primary) !important;
-
-  th,
-  td {
-    background: var(--glass-bg) !important;
-    color: var(--text-primary) !important;
-  }
-}
-
-// Forzar que las filas no tengan fondo blanco
-tbody tr,
-tbody td {
-  background: transparent !important;
-}
-
-
-/* ========================================
-   MODALS Y POPOVERS
-   ======================================== */
-ion-modal,
-ion-popover {
-  --background: var(--bg-dark-secondary) !important;
-  --color: var(--text-primary) !important;
-  border: 1px solid var(--glass-border) !important;
-}
-
-/* ========================================
-   TEXTOS
-   ======================================== */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--text-primary) !important;
-  font-weight: 700 !important;
-}
-
-p {
-  color: var(--text-secondary) !important;
-}
-
-.text-muted {
-  color: var(--text-muted) !important;
-}
-
-/* ========================================
-   UTILIDADES
-   ======================================== */
-
-/* Ajuste para que Bootstrap no rompa el layout de Ionic */
-.container-fluid {
-  --bs-gutter-x: 1.5rem;
-}
-
-/* Scrollbar personalizado */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-dark-secondary);
-  border-radius: 10px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-
-  &:hover {
-    background: var(--glass-border-hover);
-  }
 }
 
-/* Decoración de fondo (círculos borrosos) - opcional para páginas */
-.background-decor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-
-  .circle {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.1;
-  }
-
-  .circle-1 {
-    width: 400px;
-    height: 400px;
-    background: var(--color-primary);
-    top: -100px;
-    right: -100px;
-  }
-
-  .circle-2 {
-    width: 300px;
-    height: 300px;
-    background: #7209b7;
-    bottom: 50px;
-    left: -50px;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* ========================================
-   ESTILOS RESPONSIVOS GLOBALES
-   ======================================== */
-
-/* Breakpoints */
-$breakpoint-sm: 576px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 992px;
-$breakpoint-xl: 1200px;
-
-/* Sidebar responsivo */
-.sidebar {
-  transition: all 0.3s ease;
-
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    position: fixed;
-    left: -100%;
-    top: 0;
-    height: 100vh;
-    z-index: 1000;
-    width: 80px;
-
-    &.open {
-      left: 0;
-    }
-  }
-
-  /* Colores para los iconos del sidebar en desktop */
-  .sidebar-nav .nav-item {
-    &:nth-child(1) ion-icon {
-      color: #4cc9f0;
-    }
-
-    /* Home - Cyan */
-    &:nth-child(2) ion-icon {
-      color: #f72585;
-    }
-
-    /* Dashboard - Rosa */
-    &:nth-child(3) ion-icon {
-      color: #4361ee;
-    }
-
-    /* Citas - Azul */
-    &:nth-child(4) ion-icon {
-      color: #7209b7;
-    }
-
-    /* Pacientes - Violeta */
-    &:nth-child(5) ion-icon {
-      color: #06d6a0;
-    }
-
-    /* Consulta - Verde */
-    &:nth-child(6) ion-icon {
-      color: #ffd60a;
-    }
-
-    /* Contabilidad - Amarillo */
-
-    &.active ion-icon {
-      filter: brightness(1.2);
-      transform: scale(1.1);
-    }
-  }
-}
-
-/* Mobile navbar - solo visible en móvil */
-.mobile-navbar {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: var(--bg-dark-secondary);
-  border-top: 1px solid var(--glass-border);
-  z-index: 999;
-  padding: 8px 0;
-
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-  }
-
-  .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-size: 1.3rem;
-    padding: 8px 16px;
-    border-radius: 12px;
-    transition: all 0.2s;
-
-    span {
-      font-size: 0.65rem;
-      margin-top: 4px;
-      font-weight: 500;
-    }
-
-    /* Colores específicos para cada icono */
-    &:nth-child(1) ion-icon {
-      color: #4cc9f0;
-    }
-
-    /* Inicio - Cyan */
-    &:nth-child(2) ion-icon {
-      color: #f72585;
-    }
-
-    /* Dashboard - Rosa */
-    &:nth-child(3) ion-icon {
-      color: #4361ee;
-    }
-
-    /* Citas - Azul */
-    &:nth-child(4) ion-icon {
-      color: #7209b7;
-    }
-
-    /* Pacientes - Violeta */
-    &:nth-child(5) ion-icon {
-      color: #06d6a0;
-    }
-
-    /* Finanzas/Consulta - Verde */
-
-    &.active {
-      background: rgba(67, 97, 238, 0.15);
-
-      span {
-        color: var(--text-primary);
-        font-weight: 600;
-      }
-    }
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-  }
-}
-
-/* Mobile header - solo visible en móvil */
-.mobile-header {
-  display: none;
-
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: var(--bg-dark-secondary);
-    border-bottom: 1px solid var(--glass-border);
-    z-index: 998;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      .logo-icon {
-        width: 36px;
-        height: 36px;
-        background: var(--color-primary);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.2rem;
-      }
-
-      .logo-text {
-        font-weight: 700;
-        color: var(--text-primary);
-        font-size: 1.1rem;
-      }
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 12px;
-
-      .header-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 1.3rem;
-        padding: 8px;
-      }
-    }
-  }
-}
-
-/* Ajustar dashboard-wrapper para responsivo */
-.dashboard-wrapper {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    flex-direction: column;
-    padding-top: 60px;
-    /* Espacio para mobile-header */
-    padding-bottom: 70px;
-    /* Espacio para mobile-navbar */
-
-    .sidebar {
-      display: none;
-    }
-
-    .main-content {
-      width: 100%;
-    }
-  }
-}
-
-/* Top bar responsivo */
-.top-bar {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: none !important;
-  }
-
-  @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1px}) {
-    padding: 0 20px;
-
-    .search-container {
-      width: 250px !important;
-    }
-
-    .user-info {
-      display: none;
-    }
-  }
-}
-
-/* Content body responsivo */
-.content-body {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding: 10px !important;
-  }
-
-  @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1px}) {
-    padding: 15px !important;
-  }
-}
-
-/* Cards responsivos */
-.card {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding: 16px !important;
-    border-radius: 16px !important;
-
-    h2 {
-      font-size: 1.5rem !important;
-    }
-
-    h5 {
-      font-size: 1rem !important;
-    }
-  }
-}
-
-/* Tablas responsivas */
-.table-responsive {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    font-size: 0.85rem;
-
-    th,
-    td {
-      padding: 10px 8px !important;
-    }
-
-    /* Ocultar columnas menos importantes en móvil */
-    .hide-mobile {
-      display: none !important;
-    }
-  }
-}
-
-/* Botones responsivos */
-.btn {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    font-size: 0.85rem !important;
-    padding: 8px 14px !important;
-  }
-}
-
-/* Modal responsivo */
-.custom-modal-backdrop {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    align-items: flex-end;
-  }
-}
-
-.custom-modal {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 24px 24px 0 0 !important;
-    max-height: 90vh !important;
-  }
-}
-
-/* Grids responsivos - Bootstrap override */
-.container-fluid {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-}
-
-.row {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    --bs-gutter-x: 0.75rem;
-    --bs-gutter-y: 0.75rem;
-  }
-}
-
-/* Stat cards en móvil */
-.stat-card {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding: 16px !important;
-
-    h2 {
-      font-size: 1.4rem !important;
-    }
-
-    .icon-wrapper {
-      width: 38px !important;
-      height: 38px !important;
-      font-size: 1rem !important;
-    }
-  }
-}
-
-/* Activity items en móvil */
-.activity-item {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding: 12px !important;
-
-    .avatar-img {
-      width: 38px !important;
-      height: 38px !important;
-    }
-  }
-}
-
-/* Ocultar en móvil/tablet/desktop */
-.hide-on-mobile {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: none !important;
-  }
-}
-
-.hide-on-tablet {
-  @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1px}) {
-    display: none !important;
-  }
-}
-
-.hide-on-desktop {
-  @media (min-width: #{$breakpoint-lg}) {
-    display: none !important;
-  }
-}
-
-.show-on-mobile {
-  display: none !important;
-
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: block !important;
-  }
-}
-
-.show-on-mobile-flex {
-  display: none !important;
-
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    display: flex !important;
-  }
-}
-
-/* Padding y margin responsivos */
-.py-4 {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-}
-
-.mb-4 {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    margin-bottom: 0.75rem !important;
-  }
-}
-
-/* Textos responsivos */
-.fw-black {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    font-size: 1.5rem !important;
-  }
-}
-
-/* Forms responsivos */
-.form-control,
-.form-select,
-.custom-input {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    font-size: 16px !important;
-    /* Previene zoom en iOS */
-    padding: 12px !important;
-  }
-}
-
-/* ARS items responsivos */
-.ars-item {
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    flex-direction: column;
-    text-align: center;
-    gap: 8px;
-
-    .text-end {
-      text-align: center !important;
-    }
-  }
-}
-
-/* Modal Transparente (Glassmorphism) */
-.auto-height-modal {
-  --background: transparent;
-  --box-shadow: none;
-  
-  &::part(backdrop) {
-    backdrop-filter: blur(5px);
-  }
-  
-  .ion-page {
-    background: transparent;
-  }
-}
+/* Utility Animations */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+.animate-delay-500 { animation-delay: 500ms; }

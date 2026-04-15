@@ -11,7 +11,16 @@ export class SupabaseService {
     constructor() {
         this.supabase = createClient(
             environment.supabaseUrl,
-            environment.supabaseKey
+            environment.supabaseKey,
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    flowType: 'pkce',
+                    storageKey: 'promedical-auth-token'
+                }
+            }
         );
     }
 

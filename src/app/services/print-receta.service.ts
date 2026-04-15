@@ -81,7 +81,6 @@ export class PrintRecetaService {
     .especialidad {
       font-size: 18px;
       color: #334155;
-      font-style: italic;
       margin-bottom: 0;
     }
  
