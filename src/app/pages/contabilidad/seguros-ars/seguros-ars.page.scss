@@ -25,11 +25,11 @@ $text-dim: rgba(255, 255, 255, 0.9);
 
 // Modal Overrides because modal HTML wasn't entirely rewritten to Tailwind yet
 .modal-body-custom {
-    background: #0f172a;
+    background: $bg-dark-secondary;
 }
 .modal-header-custom {
-    background: #1e293b;
-    border-color: #334155 !important;
+    background: $glass-bg;
+    border-color: $glass-border !important;
 }
 
 // Hide sidebar and top bar effectively on mobile

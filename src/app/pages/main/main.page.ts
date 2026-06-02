@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfigService, ConfiguracionDoctor } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-main',
@@ -14,7 +15,8 @@ export class MainPage implements OnInit {
 
   constructor(
       private configService: ConfigService,
-      private authService: AuthService
+      private authService: AuthService,
+      public themeService: ThemeService
   ) { }
 
   ngOnInit() {

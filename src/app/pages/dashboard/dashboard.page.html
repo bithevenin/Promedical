@@ -15,40 +15,53 @@
   </div>
 
   <!-- Sidebar (Desktop) -->
-  <aside class="sidebar hidden lg:flex flex-col items-center w-24 py-8 bg-slate-900 border-r border-slate-700 fixed h-screen z-50 transition-all duration-300">
-    <div class="sidebar-header mb-12">
-      <div class="logo-box w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white text-2xl shadow-xl shadow-primary/30 cursor-pointer hover:scale-105 transition-transform" routerLink="/main">
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
         <ion-icon name="pulse-outline"></ion-icon>
       </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
     </div>
 
-    <nav class="sidebar-nav flex-grow flex flex-col gap-6">
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
       @for (item of navigationItems(); track item.label) {
-      <div class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300" 
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
            [class.bg-primary/10]="item.active" 
            [class.text-primary]="item.active"
-           [class.text-text-muted]="!item.active"
-           (click)="navigateTo(item.route!)">
-        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-110 transition-transform"></ion-icon>
-        <span class="absolute left-20 px-3 py-1 bg-dark-secondary border border-glass-border rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-          {{ item.label }}
-        </span>
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
       </div>
       }
-      <div class="nav-item mt-auto group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300" (click)="logout()">
-        <ion-icon name="log-out-outline" class="text-2xl group-hover:scale-110 transition-transform"></ion-icon>
-      </div>
     </nav>
 
-    <div class="sidebar-footer mt-8">
-      <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden hover:border-primary transition-colors cursor-pointer ring-4 ring-primary/5">
-        <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
       </div>
     </div>
   </aside>
 
   <!-- Main Content -->
-  <main class="main-content lg:ml-24 flex-grow relative overflow-x-hidden pt-16 lg:pt-0">
+  <main class="main-content lg:ml-64 flex-grow relative overflow-x-hidden pt-16 lg:pt-0">
     <!-- Top Bar (Desktop) -->
     <header class="top-bar hidden lg:flex items-center justify-between h-20 px-10 bg-medical-dark border-b border-slate-700 sticky top-0 z-40">
       <div class="search-container flex items-center gap-4 bg-slate-800 px-5 py-2.5 rounded-xl w-96 border border-slate-700 hover:border-primary transition-all focus-within:ring-2 focus-within:ring-primary/20">
@@ -56,7 +69,11 @@
         <input type="text" placeholder="Buscar pacientes, citas..." class="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-text-muted">
       </div>
 
-      <div class="top-actions flex items-center gap-8">
+      <div class="top-actions flex items-center gap-6">
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
         <button class="relative p-2 text-text-muted hover:text-white transition-colors">
           <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
           <span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-medical-dark"></span>

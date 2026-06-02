@@ -1,6 +1,9 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CitasService, FacturaSeguro, ReportePagoSeguro } from '../../../services/citas.service';
+import { FinancialService, FacturaSeguro, ReportePagoSeguro } from '../../../services/financial.service';
+import { ConfigService } from '../../../services/config.service';
+import { AuthService } from '../../../services/auth.service';
+import { ThemeService } from '../../../services/theme.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -19,6 +22,24 @@ export class SegurosArsPage implements OnInit {
     reportes = signal<ReportePagoSeguro[]>([]);
     mostrarSoloPendientes = signal<boolean>(true);
     viewMode = signal<'facturas' | 'pagos'>('facturas');
+    currentProfile = signal<any>(null);
+
+    navigationItems = computed(() => {
+        const base: any[] = [
+            { icon: 'home-outline', label: 'Inicio', route: '/main' },
+            { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+            { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+            { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+        ];
+
+        if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+            base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+            base.push({ icon: 'wallet-outline', label: 'Contabilidad', active: true, route: '/contabilidad' });
+            base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
+        }
+
+        return base;
+    });
 
     // Modal para agregar factura manual
     showAddModal = false;
@@ -110,20 +131,27 @@ export class SegurosArsPage implements OnInit {
     totalPacientes = computed(() => this.facturasFiltradas().length);
 
     constructor(
-        private citasService: CitasService,
+        private financialService: FinancialService,
+        private configService: ConfigService,
+        private authService: AuthService,
+        public themeService: ThemeService,
         private router: Router
     ) { }
 
     ngOnInit() {
-        this.citasService.facturasSeguro$.subscribe(facturas => {
+        this.authService.profile$.subscribe(p => {
+            this.currentProfile.set(p);
+        });
+
+        this.financialService.facturasSeguro$.subscribe(facturas => {
             this.facturas.set(facturas);
         });
 
-        this.citasService.reportesPagosSeguro$.subscribe(reportes => {
+        this.financialService.reportesPagosSeguro$.subscribe(reportes => {
             this.reportes.set(reportes);
         });
 
-        this.citasService.config$.subscribe(config => {
+        this.configService.config$.subscribe(config => {
             this.segurosDisponibles = [
                 { value: 'todos', label: 'Todos los Seguros' },
                 ...config.tarifasSeguros.map(t => ({ value: t.seguro, label: t.seguro }))
@@ -149,12 +177,17 @@ export class SegurosArsPage implements OnInit {
 
     marcarPagada(factura: FacturaSeguro) {
         if (confirm(`¿Confirmar pago de factura de ${factura.nombrePaciente}?`)) {
-            this.citasService.marcarFacturaPagada(factura.id);
+            this.financialService.marcarFacturaPagada(factura.id);
         }
     }
 
     volver() {
         this.router.navigate(['/contabilidad']);
+    }
+
+    async logout() {
+        await this.authService.signOut();
+        this.router.navigate(['/auth/login']);
     }
 
     // --- Modal de Agregar Factura ---
@@ -189,7 +222,7 @@ export class SegurosArsPage implements OnInit {
                 monto: this.nuevaFactura.monto,
                 estado: 'pendiente'
             };
-            this.citasService.agregarFacturaSeguro(factura);
+            this.financialService.agregarFacturaSeguro(factura);
             this.cerrarModal();
         }
     }
@@ -207,7 +240,7 @@ export class SegurosArsPage implements OnInit {
 
     guardarReporte() {
         if (this.nuevoReporte.seguro && this.nuevoReporte.montoEnviado > 0) {
-            this.citasService.agregarReportePagoSeguro(this.nuevoReporte);
+            this.financialService.agregarReportePagoSeguro(this.nuevoReporte);
             this.showReporteModal = false;
         }
     }
@@ -223,7 +256,7 @@ export class SegurosArsPage implements OnInit {
 
     guardarPago() {
         if (this.reporteSeleccionado && this.nuevoPago.montoRecibido > 0) {
-            this.citasService.registrarPagoRecibido(
+            this.financialService.registrarPagoRecibido(
                 this.reporteSeleccionado,
                 this.nuevoPago.montoRecibido,
                 this.nuevoPago.fechaPago

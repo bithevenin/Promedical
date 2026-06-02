@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService, Cita } from '../../services/appointment.service';
 import { PatientService, Paciente } from '../../services/patient.service';
@@ -6,7 +6,7 @@ import { ConsultationService, Consulta } from '../../services/consultation.servi
 import { PrintRecetaService } from '../../services/print-receta.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastController } from '@ionic/angular';
-import { signal } from '@angular/core';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-consulta',
@@ -20,6 +20,23 @@ export class ConsultaPage implements OnInit {
   historialPasado: Consulta[] = [];
 
   currentProfile = signal<any>(null);
+
+  navigationItems = computed(() => {
+    const base: any[] = [
+      { icon: 'home-outline', label: 'Inicio', route: '/main' },
+      { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+      { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+      { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+    ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'medical-outline', label: 'Consulta', active: true, route: '/consulta' });
+      base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+      base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
+    }
+
+    return base;
+  });
 
   // Flag para indicar si es consulta directa (sin cita previa)
   esConsultaDirecta = false;
@@ -58,7 +75,8 @@ export class ConsultaPage implements OnInit {
     private route: ActivatedRoute,
     private authService: AuthService,
     private toastController: ToastController,
-    private router: Router
+    private router: Router,
+    public themeService: ThemeService
   ) { }
 
   ngOnInit() {
@@ -132,7 +150,7 @@ export class ConsultaPage implements OnInit {
     if (this.pacienteSeleccionado && this.nuevaConsulta.diagnostico) {
       const consulta: Consulta = {
         cedula: this.pacienteSeleccionado.cedula,
-        fecha: new Date().toLocaleDateString(),
+        fecha: new Date().toISOString().split('T')[0],
         diagnostico: this.nuevaConsulta.diagnostico,
         receta: this.nuevaConsulta.receta
       };
@@ -191,7 +209,7 @@ export class ConsultaPage implements OnInit {
     if (this.pacienteSeleccionado) {
       const error = await this.patientService.addSignosVitales(this.pacienteSeleccionado.cedula, {
         ...this.signosForm,
-        fecha: new Date().toLocaleDateString()
+        fecha: new Date().toISOString().split('T')[0]
       });
 
       if (error) {

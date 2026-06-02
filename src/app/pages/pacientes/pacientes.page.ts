@@ -1,10 +1,11 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { PatientService, Paciente } from '../../services/patient.service';
 import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastController } from '@ionic/angular';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-pacientes',
@@ -17,6 +18,23 @@ export class PacientesPage implements OnInit {
   filtroNombre: string = '';
 
   currentProfile = signal<any>(null);
+
+  navigationItems = computed(() => {
+    const base: any[] = [
+      { icon: 'home-outline', label: 'Inicio', route: '/main' },
+      { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+      { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+      { icon: 'people-outline', label: 'Pacientes', active: true, route: '/pacientes' }
+    ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+      base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+      base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
+    }
+
+    return base;
+  });
 
   // Modals state
   showHistoryModal = false;
@@ -64,7 +82,8 @@ export class PacientesPage implements OnInit {
     private configService: ConfigService,
     private router: Router,
     private authService: AuthService,
-    private toastController: ToastController
+    private toastController: ToastController,
+    public themeService: ThemeService
   ) { }
 
   ngOnInit() {

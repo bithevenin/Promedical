@@ -21,15 +21,22 @@
         </div>
       </div>
 
-      <div class="user-profile flex items-center gap-3 bg-slate-800 border border-slate-700 p-1.5 pr-4 rounded-xl shadow-lg group hover:border-primary transition-all cursor-pointer" *ngIf="profile">
-        <div class="avatar w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:ring-2 ring-primary/30 transition-all">
-          <img [src]="profile.foto_url || 'https://i.pravatar.cc/150?u=' + profile.id" alt="Profile" class="w-full h-full object-cover">
-        </div>
-        <div class="text-left hidden sm:block">
-          <h6 class="text-[11px] font-black text-white leading-none uppercase">{{ profile.nombre }}</h6>
-          <p class="text-[8px] font-black text-primary uppercase tracking-widest mt-0.5">
-            {{ profile.rol }}
-          </p>
+      <div class="flex items-center gap-3">
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center justify-center text-lg text-yellow-400 hover:text-yellow-300 transition-all shadow-md" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
+
+        <div class="user-profile flex items-center gap-3 bg-slate-800 border border-slate-700 p-1.5 pr-4 rounded-xl shadow-lg group hover:border-primary transition-all cursor-pointer" *ngIf="profile">
+          <div class="avatar w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:ring-2 ring-primary/30 transition-all">
+            <img [src]="profile.foto_url || 'https://i.pravatar.cc/150?u=' + profile.id" alt="Profile" class="w-full h-full object-cover">
+          </div>
+          <div class="text-left hidden sm:block">
+            <h6 class="text-[11px] font-black text-white leading-none uppercase">{{ profile.nombre }}</h6>
+            <p class="text-[8px] font-black text-primary uppercase tracking-widest mt-0.5">
+              {{ profile.rol }}
+            </p>
+          </div>
         </div>
       </div>
     </div>

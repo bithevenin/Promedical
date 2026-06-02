@@ -11,17 +11,13 @@ export class AutoLoginGuard implements CanActivate {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  canActivate(): Observable<boolean | UrlTree> {
-    return this.authService.user$.pipe(
-      take(1),
-      map(user => {
-        if (user) {
-          // If logged in, redirect away from login page to main
-          return this.router.createUrlTree(['/main']);
-        } else {
-          return true;
-        }
-      })
-    );
+  async canActivate(): Promise<boolean | UrlTree> {
+    const isActive = await this.authService.isSessionActive();
+    if (isActive) {
+      // If logged in, redirect away from login page to main
+      return this.router.createUrlTree(['/main']);
+    } else {
+      return true;
+    }
   }
 }

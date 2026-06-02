@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { FinancialService, Transaccion, ReportePagoSeguro } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -18,6 +19,24 @@ export class ContabilidadPage implements OnInit {
   resumenSeguros = signal<{ seguro: string; totalPendiente: number; totalFacturas: number }[]>([]);
   reportes = signal<ReportePagoSeguro[]>([]);
   currentProfile = signal<any>(null);
+
+  navigationItems = computed(() => {
+    const base: any[] = [
+      { icon: 'home-outline', label: 'Inicio', route: '/main' },
+      { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+      { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+      { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+    ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+      base.push({ icon: 'wallet-outline', label: 'Contabilidad', active: true, route: '/contabilidad' });
+      base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
+    }
+
+    return base;
+  });
+
   startDate = signal<string>('');
   endDate = signal<string>('');
 
@@ -111,7 +130,8 @@ export class ContabilidadPage implements OnInit {
   constructor(
     private financialService: FinancialService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    public themeService: ThemeService
   ) { }
 
   ngOnInit() {

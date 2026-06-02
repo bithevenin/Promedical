@@ -1,10 +1,11 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { AppointmentService, Cita } from '../../services/appointment.service';
 import { PatientService, Paciente } from '../../services/patient.service';
 import { ConfigService } from '../../services/config.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-citas',
@@ -15,7 +16,7 @@ import { Router } from '@angular/router';
 export class CitasPage implements OnInit {
   // Modo de registro: 'nuevo' o 'registrado'
   modoRegistro: 'nuevo' | 'registrado' = 'nuevo';
-
+  
   // Datos del formulario
   nuevoPaciente = {
     nombre: '',
@@ -46,6 +47,23 @@ export class CitasPage implements OnInit {
 
   currentProfile = signal<any>(null);
 
+  navigationItems = computed(() => {
+    const base: any[] = [
+      { icon: 'home-outline', label: 'Inicio', route: '/main' },
+      { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+      { icon: 'calendar-outline', label: 'Citas', active: true, route: '/citas' },
+      { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+    ];
+
+    if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+      base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+      base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
+    }
+
+    return base;
+  });
+
   // Exponer Math para el template
   Math = Math;
 
@@ -55,7 +73,8 @@ export class CitasPage implements OnInit {
     private configService: ConfigService,
     private financialService: FinancialService,
     private authService: AuthService,
-    public router: Router
+    public router: Router,
+    public themeService: ThemeService
   ) {
     const now = new Date();
     const offset = now.getTimezoneOffset();

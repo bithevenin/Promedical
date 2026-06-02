@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { OfflineService } from './offline.service';
 
 export interface TarifaSeguro {
+  id?: string;
   seguro: string;
   montoCobertura: number;
   copago: number;
@@ -43,68 +45,109 @@ export class ConfigService {
   private configSubject = new BehaviorSubject<ConfiguracionDoctor>(this.defaultConfig);
   config$ = this.configSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private offlineService: OfflineService
+  ) {
     this.refreshConfig();
   }
 
   async refreshConfig() {
     try {
-      const { data: configRows, error: configError } = await this.supabase.from('configuracion_doctor').select('*').single();
-      const { data: tarifas, error: tarifasError } = await this.supabase.from('tarifas_seguro').select('*');
+      if (navigator.onLine) {
+        const { data: configRows, error: configError } = await this.supabase.from('configuracion_doctor').select('*').single();
+        const { data: tarifas, error: tarifasError } = await this.supabase.from('tarifas_seguro').select('*');
 
-      if (configRows) {
-        const config: ConfiguracionDoctor = {
-          nombreDoctor: configRows.nombre_doctor,
-          especialidad: configRows.especialidad,
-          email: configRows.email,
-          fotoUrl: configRows.foto_url,
-          montoConsultaParticular: configRows.monto_consulta_particular,
-          tarifasSeguros: (tarifas || []).map((t: any) => ({
-            seguro: t.seguro,
-            montoCobertura: t.monto_cobertura,
-            copago: t.copago
-          }))
-        };
-        this.configSubject.next(config);
-      } else {
-        this.configSubject.next(this.defaultConfig);
+        if (configError && configError.code !== 'PGRST116') throw configError; // PGRST116 is empty table
+        if (tarifasError) throw tarifasError;
+
+        if (configRows) {
+          const config: ConfiguracionDoctor = {
+            nombreDoctor: configRows.nombre_doctor,
+            especialidad: configRows.especialidad,
+            email: configRows.email,
+            fotoUrl: configRows.foto_url,
+            montoConsultaParticular: configRows.monto_consulta_particular,
+            tarifasSeguros: (tarifas || []).map((t: any) => ({
+              id: t.id,
+              seguro: t.seguro,
+              montoCobertura: t.monto_cobertura,
+              copago: t.copago
+            }))
+          };
+
+          await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
+          this.configSubject.next(config);
+          return;
+        }
       }
     } catch (error) {
-      console.error('Error fetching config:', error);
+      console.warn('Network issue, fetching config from offline storage:', error);
+    }
+
+    const localConfigList = await this.offlineService.getLocalData('configuracion_doctor');
+    if (localConfigList && localConfigList.length > 0) {
+      this.configSubject.next(localConfigList[0]);
+    } else {
       this.configSubject.next(this.defaultConfig);
     }
   }
 
   async saveConfig(config: ConfiguracionDoctor) {
     try {
-      // 1. Update doctor basic info
-      const { error: updateError } = await this.supabase.from('configuracion_doctor').update({
+      // 1. Save locally
+      await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
+      this.configSubject.next(config);
+
+      // 2. Sync Configuration Info
+      const dbConfigPayload = {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
         email: config.email,
         foto_url: config.fotoUrl,
         monto_consulta_particular: config.montoConsultaParticular
-      }).eq('id', 1);
-      
-      if (updateError) throw updateError;
+      };
 
-      // 2. Manage insurance rates
-      await this.supabase.from('tarifas_seguro').delete().neq('seguro', 'NONE');
-
-      if (config.tarifasSeguros.length > 0) {
-        const inserts = config.tarifasSeguros.map(t => ({
-          seguro: t.seguro,
-          monto_cobertura: t.montoCobertura,
-          copago: t.copago
-        }));
-        const { error: insertError } = await this.supabase.from('tarifas_seguro').insert(inserts);
-        if (insertError) throw insertError;
+      if (navigator.onLine) {
+        const { error: updateError } = await this.supabase.from('configuracion_doctor').update(dbConfigPayload).eq('id', 1);
+        if (updateError) throw updateError;
+        
+        // Sincronizar tarifas: borrar y re-insertar
+        await this.supabase.from('tarifas_seguro').delete().neq('seguro', 'NONE');
+        if (config.tarifasSeguros.length > 0) {
+          const inserts = config.tarifasSeguros.map(t => ({
+            seguro: t.seguro,
+            monto_cobertura: t.montoCobertura,
+            copago: t.copago
+          }));
+          const { error: insertError } = await this.supabase.from('tarifas_seguro').insert(inserts);
+          if (insertError) throw insertError;
+        }
+      } else {
+        await this.offlineService.addToQueue('configuracion_doctor', 'update', dbConfigPayload, 'id', 1);
+        // Sincronizar tarifas offline
+        await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', 'NONE');
+        if (config.tarifasSeguros.length > 0) {
+          for (const t of config.tarifasSeguros) {
+            await this.offlineService.addToQueue('tarifas_seguro', 'insert', {
+              seguro: t.seguro,
+              monto_cobertura: t.montoCobertura,
+              copago: t.copago
+            });
+          }
+        }
       }
-
       await this.refreshConfig();
     } catch (error) {
-      console.error('Error saving config:', error);
-      throw error;
+      console.warn('Error saving config, queueing updates:', error);
+      const dbConfigPayload = {
+        nombre_doctor: config.nombreDoctor,
+        especialidad: config.especialidad,
+        email: config.email,
+        foto_url: config.fotoUrl,
+        monto_consulta_particular: config.montoConsultaParticular
+      };
+      await this.offlineService.addToQueue('configuracion_doctor', 'update', dbConfigPayload, 'id', 1);
     }
   }
 
@@ -118,27 +161,56 @@ export class ConfigService {
 
   async agregarSeguro(nuevaTarifa: TarifaSeguro) {
     try {
-      const { error } = await this.supabase.from('tarifas_seguro').insert({
+      // 1. Save locally
+      const current = this.getConfig();
+      current.tarifasSeguros.push(nuevaTarifa);
+      await this.offlineService.saveLocalData('configuracion_doctor', { ...current, id: 1 });
+      this.configSubject.next(current);
+
+      // 2. Sync
+      const dbData = {
         seguro: nuevaTarifa.seguro,
         monto_cobertura: nuevaTarifa.montoCobertura,
         copago: nuevaTarifa.copago
-      });
-      if (error) throw error;
+      };
+
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('tarifas_seguro').insert(dbData);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('tarifas_seguro', 'insert', dbData);
+      }
       await this.refreshConfig();
     } catch (error) {
-      console.error('Error adding insurance:', error);
-      throw error;
+      console.warn('Error adding insurance, queueing write:', error);
+      const dbData = {
+        seguro: nuevaTarifa.seguro,
+        monto_cobertura: nuevaTarifa.montoCobertura,
+        copago: nuevaTarifa.copago
+      };
+      await this.offlineService.addToQueue('tarifas_seguro', 'insert', dbData);
     }
   }
 
   async eliminarSeguro(nombreSeguro: string) {
     try {
-      const { error } = await this.supabase.from('tarifas_seguro').delete().eq('seguro', nombreSeguro);
-      if (error) throw error;
+      // 1. Save locally
+      const current = this.getConfig();
+      current.tarifasSeguros = current.tarifasSeguros.filter(t => t.seguro !== nombreSeguro);
+      await this.offlineService.saveLocalData('configuracion_doctor', { ...current, id: 1 });
+      this.configSubject.next(current);
+
+      // 2. Sync
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('tarifas_seguro').delete().eq('seguro', nombreSeguro);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', nombreSeguro);
+      }
       await this.refreshConfig();
     } catch (error) {
-      console.error('Error removing insurance:', error);
-      throw error;
+      console.warn('Error removing insurance, queueing deletion:', error);
+      await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', nombreSeguro);
     }
   }
 }

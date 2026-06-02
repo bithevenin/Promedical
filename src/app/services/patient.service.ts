@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { OfflineService } from './offline.service';
 
 export interface SignoVital {
   fecha: string;
@@ -39,47 +40,61 @@ export class PatientService {
   private patientsSubject = new BehaviorSubject<Paciente[]>([]);
   patients$ = this.patientsSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private offlineService: OfflineService
+  ) {
     this.refreshPatients();
   }
 
   async refreshPatients() {
     try {
-      const { data, error } = await this.supabase.from('pacientes').select('*, signos_vitales(*)');
-      if (error) throw error;
+      if (navigator.onLine) {
+        const { data, error } = await this.supabase.from('pacientes').select('*, signos_vitales(*)');
+        if (error) throw error;
 
-      if (data) {
-        const patients: Paciente[] = data.map((p: any) => ({
-          cedula: p.cedula,
-          nombre: p.nombre,
-          edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
-          fecha_nacimiento: p.fecha_nacimiento,
-          profesion: p.profesion,
-          seguro: p.seguro,
-          sexo: p.sexo,
-          telefono: p.telefono,
-          email: p.email,
-          altura: p.altura,
-          peso: p.peso,
-          carnetSeguro: p.carnet_seguro,
-          antecedentesPersonales: p.antecedentes_personales,
-          antecedentesFamiliares: p.antecedentes_familiares,
-          alergias: p.alergias,
-          signosVitales: (p.signos_vitales || []).map((sv: any) => ({
-            fecha: sv.fecha,
-            presionArterial: sv.presion_arterial,
-            frecuenciaCardiaca: sv.frecuencia_cardiaca,
-            temperatura: sv.temperatura,
-            peso: sv.peso,
-            talla: sv.talla,
-            imc: sv.imc
-          }))
-        }));
-        this.patientsSubject.next(patients);
+        if (data) {
+          await this.offlineService.clearStore('pacientes');
+          const patients: Paciente[] = data.map((p: any) => ({
+            cedula: p.cedula,
+            nombre: p.nombre,
+            edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
+            fecha_nacimiento: p.fecha_nacimiento,
+            profesion: p.profesion || '',
+            seguro: p.seguro || 'Particular',
+            sexo: p.sexo,
+            telefono: p.telefono || '',
+            email: p.email || '',
+            altura: p.altura || '',
+            peso: p.peso || '',
+            carnetSeguro: p.carnet_seguro || '',
+            antecedentesPersonales: p.antecedentes_personales || '',
+            antecedentesFamiliares: p.antecedentes_familiares || '',
+            alergias: p.alergias || '',
+            signosVitales: (p.signos_vitales || []).map((sv: any) => ({
+              fecha: sv.fecha,
+              presionArterial: sv.presion_arterial,
+              frecuenciaCardiaca: sv.frecuencia_cardiaca,
+              temperatura: sv.temperatura,
+              peso: sv.peso,
+              talla: sv.talla,
+              imc: sv.imc
+            }))
+          }));
+
+          for (const patient of patients) {
+            await this.offlineService.saveLocalData('pacientes', patient);
+          }
+          this.patientsSubject.next(patients);
+          return;
+        }
       }
     } catch (error) {
-      console.error('Error fetching patients:', error);
+      console.warn('Network issue, fetching patients from offline storage:', error);
     }
+
+    const local = await this.offlineService.getLocalData('pacientes');
+    this.patientsSubject.next(local);
   }
 
   getPatients(): Paciente[] {
@@ -88,10 +103,19 @@ export class PatientService {
 
   async savePatient(paciente: Paciente) {
     try {
-      const { error } = await this.supabase.from('pacientes').upsert({
+      // 1. Save locally first
+      const fullPatient = {
+        ...paciente,
+        edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad
+      };
+      await this.offlineService.saveLocalData('pacientes', fullPatient);
+      this.refreshPatients();
+
+      // 2. Prepare payload for Supabase
+      const dbData = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
-        edad: paciente.edad,
+        edad: fullPatient.edad,
         fecha_nacimiento: paciente.fecha_nacimiento,
         profesion: paciente.profesion,
         seguro: paciente.seguro,
@@ -104,41 +128,42 @@ export class PatientService {
         antecedentes_personales: paciente.antecedentesPersonales,
         antecedentes_familiares: paciente.antecedentesFamiliares,
         alergias: paciente.alergias
-      });
-      if (error) throw error;
-      await this.refreshPatients();
+      };
+
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('pacientes').upsert(dbData);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
+      }
     } catch (error) {
-      console.error('Error saving patient:', error);
-      throw error;
+      console.warn('Supabase save error, queueing write:', error);
+      const dbData = {
+        cedula: paciente.cedula,
+        nombre: paciente.nombre,
+        edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad,
+        fecha_nacimiento: paciente.fecha_nacimiento,
+        profesion: paciente.profesion,
+        seguro: paciente.seguro,
+        sexo: paciente.sexo,
+        telefono: paciente.telefono,
+        email: paciente.email,
+        altura: paciente.altura,
+        peso: paciente.peso,
+        carnet_seguro: paciente.carnetSeguro,
+        antecedentes_personales: paciente.antecedentesPersonales,
+        antecedentes_familiares: paciente.antecedentesFamiliares,
+        alergias: paciente.alergias
+      };
+      await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
     }
   }
 
   async importPatients(pacientes: Paciente[]) {
     try {
-      const dataToUpsert = pacientes.map(p => ({
-        cedula: p.cedula,
-        nombre: p.nombre,
-        edad: p.edad || (p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : 0),
-        fecha_nacimiento: p.fecha_nacimiento,
-        profesion: p.profesion,
-        seguro: p.seguro,
-        sexo: p.sexo,
-        altura: p.altura,
-        peso: p.peso,
-        telefono: p.telefono,
-        email: p.email,
-        carnet_seguro: p.carnetSeguro,
-        antecedentes_personales: p.antecedentesPersonales,
-        antecedentes_familiares: p.antecedentesFamiliares,
-        alergias: p.alergias
-      }));
-
-      const { error } = await this.supabase
-        .from('pacientes')
-        .upsert(dataToUpsert, { onConflict: 'cedula' });
-
-      if (error) throw error;
-      await this.refreshPatients();
+      for (const p of pacientes) {
+        await this.savePatient(p);
+      }
       return null;
     } catch (error) {
       console.error('Error importing patients:', error);
@@ -175,29 +200,73 @@ export class PatientService {
         imc: signos.imc ? Number(Math.min(Number(signos.imc), 99.9).toFixed(1)) : null
       };
 
-      const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
-      if (error) throw error;
+      // 1. Save locally inside the patient object
+      const patient = this.findPatientByCedula(cedula);
+      if (patient) {
+        if (!patient.signosVitales) patient.signosVitales = [];
+        patient.signosVitales.push(signos);
+        await this.offlineService.saveLocalData('pacientes', patient);
+        this.patientsSubject.next(this.getPatients());
+      }
 
-      await this.refreshPatients();
+      // 2. Queue or write to Supabase
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('signos_vitales', 'insert', dataToInsert);
+      }
       return null;
     } catch (error) {
-      console.error('Error adding vital signs:', error);
-      return error;
+      console.warn('Error saving signs, queueing write:', error);
+      const dataToInsert = {
+        paciente_cedula: cedula,
+        fecha: new Date().toISOString().split('T')[0],
+        presion_arterial: signos.presionArterial || '',
+        frecuencia_cardiaca: signos.frecuenciaCardiaca ? Math.round(signos.frecuenciaCardiaca) : null,
+        temperatura: signos.temperatura ? Number(Math.min(Number(signos.temperatura), 99.9).toFixed(1)) : null,
+        peso: signos.peso ? Number(Math.min(Number(signos.peso), 999.9).toFixed(1)) : null,
+        talla: signos.talla ? Number(Math.min(Number(signos.talla), 999.9).toFixed(1)) : null,
+        imc: signos.imc ? Number(Math.min(Number(signos.imc), 99.9).toFixed(1)) : null
+      };
+      await this.offlineService.addToQueue('signos_vitales', 'insert', dataToInsert);
+      return null;
     }
   }
 
   async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
     try {
-      const { error } = await this.supabase.from('pacientes').update({
+      // 1. Update locally
+      const patient = this.findPatientByCedula(cedula);
+      if (patient) {
+        patient.antecedentesPersonales = data.personales;
+        patient.antecedentesFamiliares = data.familiares;
+        patient.alergias = data.alergias;
+        await this.offlineService.saveLocalData('pacientes', patient);
+        this.patientsSubject.next(this.getPatients());
+      }
+
+      // 2. Sync
+      const dbPayload = {
         antecedentes_personales: data.personales,
         antecedentes_familiares: data.familiares,
         alergias: data.alergias
-      }).eq('cedula', cedula);
-      if (error) throw error;
-      await this.refreshPatients();
+      };
+
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('pacientes').update(dbPayload).eq('cedula', cedula);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
+      }
     } catch (error) {
-      console.error('Error updating antecedents:', error);
-      throw error;
+      console.warn('Error updating antecedents, queueing write:', error);
+      const dbPayload = {
+        antecedentes_personales: data.personales,
+        antecedentes_familiares: data.familiares,
+        alergias: data.alergias
+      };
+      await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
     }
   }
 }

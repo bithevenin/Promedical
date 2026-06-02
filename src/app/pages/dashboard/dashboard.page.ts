@@ -4,6 +4,7 @@ import { AppointmentService, Cita } from '../../services/appointment.service';
 import { PatientService } from '../../services/patient.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 interface NavItem {
   icon: string;
@@ -41,6 +42,7 @@ export class DashboardPage implements OnInit {
     if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
       base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
       base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+      base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
     return base;
@@ -64,14 +66,33 @@ export class DashboardPage implements OnInit {
     const añoActual = new Date().getFullYear();
     const ingresosMes = this.allTransactions()
       .filter(t => {
-        // Manejar formato YYYY-MM-DD de Supabase o DD/MM/YYYY antiguo
-        let m, y;
+        let dateObj: Date;
         if (t.fecha.includes('-')) {
-          [y, m] = t.fecha.split('-');
+          const [y, m, d] = t.fecha.split('-');
+          dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+        } else if (t.fecha.includes('/')) {
+          const parts = t.fecha.split('/');
+          if (parts[0].length === 4) {
+            dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          } else {
+            const p0 = Number(parts[0]);
+            const p1 = Number(parts[1]);
+            const p2 = Number(parts[2]);
+            if (p0 > 12) {
+              dateObj = new Date(p2, p1 - 1, p0);
+            } else if (p1 > 12) {
+              dateObj = new Date(p2, p0 - 1, p1);
+            } else {
+              dateObj = new Date(p2, p1 - 1, p0);
+            }
+          }
         } else {
-          [, m, y] = t.fecha.split('/');
+          dateObj = new Date(t.fecha);
         }
-        return t.categoria === 'Ingreso' && (Number(m) - 1) === mesActual && Number(y) === añoActual;
+        return t.categoria === 'Ingreso' && 
+               !isNaN(dateObj.getTime()) && 
+               dateObj.getMonth() === mesActual && 
+               dateObj.getFullYear() === añoActual;
       })
       .reduce((sum, t) => sum + t.monto, 0);
 
@@ -112,7 +133,8 @@ export class DashboardPage implements OnInit {
     private appointmentService: AppointmentService,
     private patientService: PatientService,
     private financialService: FinancialService,
-    private authService: AuthService
+    private authService: AuthService,
+    public themeService: ThemeService
   ) { }
 
   ngOnInit() {

@@ -1,9 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfigService, ConfiguracionDoctor, TarifaSeguro } from '../../services/config.service';
 import { PatientService, Paciente } from '../../services/patient.service';
 import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -27,6 +28,23 @@ export class ConfiguracionPage implements OnInit {
     mensajeExito = '';
 
     currentProfile = signal<any>(null);
+
+    navigationItems = computed(() => {
+        const base: any[] = [
+            { icon: 'home-outline', label: 'Inicio', route: '/main' },
+            { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
+            { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
+            { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+        ];
+
+        if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+            base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
+            base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
+            base.push({ icon: 'settings-outline', label: 'Ajustes', active: true, route: '/configuracion' });
+        }
+
+        return base;
+    });
 
     // Gestión de Usuarios
     selectedSegment = 'consultorio';
@@ -57,7 +75,8 @@ export class ConfiguracionPage implements OnInit {
         private patientService: PatientService,
         private consultationService: ConsultationService,
         private authService: AuthService,
-        private router: Router
+        private router: Router,
+        public themeService: ThemeService
     ) { }
 
     ngOnInit() {

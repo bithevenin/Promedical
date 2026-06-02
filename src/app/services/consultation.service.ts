@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { OfflineService } from './offline.service';
 
 export interface Consulta {
+  id?: string;
   cedula: string;
-  fecha: string;
+  fecha: string; // YYYY-MM-DD
   diagnostico: string;
   receta: string;
 }
@@ -17,27 +19,42 @@ export class ConsultationService {
   private consultationsSubject = new BehaviorSubject<Consulta[]>([]);
   consultations$ = this.consultationsSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private offlineService: OfflineService
+  ) {
     this.refreshConsultas();
   }
 
   async refreshConsultas() {
     try {
-      const { data, error } = await this.supabase.from('consultas').select('*');
-      if (error) throw error;
-      
-      if (data) {
-        const consultas: Consulta[] = data.map((c: any) => ({
-          cedula: c.paciente_cedula,
-          fecha: c.fecha,
-          diagnostico: c.diagnostico,
-          receta: c.receta
-        }));
-        this.consultationsSubject.next(consultas);
+      if (navigator.onLine) {
+        const { data, error } = await this.supabase.from('consultas').select('*');
+        if (error) throw error;
+        
+        if (data) {
+          await this.offlineService.clearStore('consultas');
+          const consultas: Consulta[] = data.map((c: any) => ({
+            id: c.id,
+            cedula: c.paciente_cedula,
+            fecha: c.fecha,
+            diagnostico: c.diagnostico || '',
+            receta: c.receta || ''
+          }));
+
+          for (const c of consultas) {
+            await this.offlineService.saveLocalData('consultas', c);
+          }
+          this.consultationsSubject.next(consultas);
+          return;
+        }
       }
     } catch (error) {
-      console.error('Error fetching consultations:', error);
+      console.warn('Network issue, fetching consultations from offline storage:', error);
     }
+
+    const local = await this.offlineService.getLocalData('consultas');
+    this.consultationsSubject.next(local);
   }
 
   getPatientHistory(cedula: string): Consulta[] {
@@ -45,33 +62,50 @@ export class ConsultationService {
   }
 
   async saveConsultation(consulta: Consulta) {
+    // Generate temporary UUID if not provided
+    const localConsulta = {
+      ...consulta,
+      id: consulta.id || crypto.randomUUID()
+    };
+
     try {
-      const { error } = await this.supabase.from('consultas').insert({
+      // 1. Save locally
+      await this.offlineService.saveLocalData('consultas', localConsulta);
+      await this.refreshConsultas();
+
+      // 2. Prepare payload
+      const dbData = {
+        id: localConsulta.id,
         paciente_cedula: consulta.cedula,
         fecha: consulta.fecha,
         diagnostico: consulta.diagnostico,
         receta: consulta.receta
-      });
-      if (error) throw error;
-      await this.refreshConsultas();
+      };
+
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('consultas').insert(dbData);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('consultas', 'insert', dbData);
+      }
     } catch (error) {
-      console.error('Error saving consultation:', error);
-      throw error;
+      console.warn('Error saving consultation, queueing write:', error);
+      const dbData = {
+        id: localConsulta.id,
+        paciente_cedula: consulta.cedula,
+        fecha: consulta.fecha,
+        diagnostico: consulta.diagnostico,
+        receta: consulta.receta
+      };
+      await this.offlineService.addToQueue('consultas', 'insert', dbData);
     }
   }
 
   async importConsultations(consultas: Consulta[]) {
     try {
-      const { error } = await this.supabase
-        .from('consultas')
-        .insert(consultas.map(c => ({
-          paciente_cedula: c.cedula,
-          fecha: c.fecha,
-          diagnostico: c.diagnostico,
-          receta: c.receta
-        })));
-      if (error) throw error;
-      await this.refreshConsultas();
+      for (const c of consultas) {
+        await this.saveConsultation(c);
+      }
       return null;
     } catch (error) {
       console.error('Error importing consultations:', error);
@@ -81,21 +115,11 @@ export class ConsultationService {
 
   async getAllConsultations(): Promise<Consulta[]> {
     try {
-      const { data, error } = await this.supabase
-        .from('consultas')
-        .select('*')
-        .order('fecha', { ascending: false });
-      if (error) throw error;
-      
-      return data.map((c: any) => ({
-        cedula: c.paciente_cedula,
-        fecha: c.fecha,
-        diagnostico: c.diagnostico,
-        receta: c.receta
-      }));
+      await this.refreshConsultas();
+      return this.consultationsSubject.value;
     } catch (error) {
       console.error('Error getting all consultations:', error);
-      return [];
+      return this.consultationsSubject.value;
     }
   }
 }

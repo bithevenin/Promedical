@@ -20,13 +20,14 @@ export class PrintRecetaService {
   constructor() { }
 
   imprimirReceta(datos: DatosReceta) {
-    const fecha = new Date().toLocaleDateString('es-DO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    try {
+      const fecha = new Date().toLocaleDateString('es-DO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
-    const htmlContent = `
+      const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -242,7 +243,7 @@ export class PrintRecetaService {
       <span></span>
     </div>
   </div>
-
+ 
   <div class="rx-section">
     <img class="rx-symbol" src="data:image/png;base64,${this.getRxSymbol()}" alt="Rx">
     <div class="patient-info">
@@ -257,11 +258,11 @@ export class PrintRecetaService {
       </div>
     </div>
   </div>
-
+ 
   <div class="receta-content">
 ${datos.receta}
   </div>
-
+ 
   <div class="footer">
     <img class="sello" src="data:image/png;base64,${this.getSelloDoctor()}" alt="Sello">
     <div class="firma-box">
@@ -273,17 +274,24 @@ ${datos.receta}
 </html>
     `;
 
-    // Crear ventana de impresión
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+      // Crear ventana de impresión
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
 
-      // Esperar a que carguen las imágenes base64
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 500);
+        // Esperar a que carguen las imágenes base64
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+        }, 500);
+      } else {
+        console.error('No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes (popups) para este sitio.');
+        alert('No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes (popups) en la configuración de su navegador para imprimir la receta.');
+      }
+    } catch (error) {
+      console.error('Error al intentar imprimir la receta:', error);
+      alert('Ocurrió un error inesperado al intentar generar la impresión de la receta médica.');
     }
   }
 

@@ -23,6 +23,18 @@ export class AuthService {
     });
   }
 
+  async isSessionActive(): Promise<boolean> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    if (session?.user) {
+      this.userSession.next(session);
+      if (!this.userProfile.value) {
+        await this.loadProfile(session.user.id);
+      }
+      return true;
+    }
+    return false;
+  }
+
   get user$() {
     return this.userSession.asObservable();
   }
@@ -47,14 +59,20 @@ export class AuthService {
   }
 
   async loadProfile(uid: string) {
-    const { data, error } = await this.supabase
-      .from('usuarios')
-      .select('*')
-      .eq('id', uid)
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('usuarios')
+        .select('*')
+        .eq('id', uid)
+        .single();
 
-    if (data) {
-      this.userProfile.next(data);
+      if (error) throw error;
+
+      if (data) {
+        this.userProfile.next(data);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
   }
 

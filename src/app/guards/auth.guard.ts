@@ -11,16 +11,12 @@ export class AuthGuard implements CanActivate {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  canActivate(): Observable<boolean | UrlTree> {
-    return this.authService.user$.pipe(
-      take(1),
-      map(user => {
-        if (user) {
-          return true;
-        } else {
-          return this.router.createUrlTree(['/auth/login'], { queryParams: { authWarning: true } });
-        }
-      })
-    );
+  async canActivate(): Promise<boolean | UrlTree> {
+    const isActive = await this.authService.isSessionActive();
+    if (isActive) {
+      return true;
+    } else {
+      return this.router.createUrlTree(['/auth/login'], { queryParams: { authWarning: true } });
+    }
   }
 }

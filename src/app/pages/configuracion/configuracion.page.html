@@ -12,33 +12,53 @@
     </button>
   </div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar hidden lg:flex flex-col items-center w-24 py-8 bg-dark-secondary border-r border-glass-border fixed h-screen z-50">
-    <div class="sidebar-header mb-12">
-      <div class="logo-box w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white text-2xl shadow-xl shadow-primary/30 cursor-pointer hover:scale-105 transition-transform" routerLink="/main">
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
         <ion-icon name="pulse-outline"></ion-icon>
       </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
     </div>
-    <nav class="sidebar-nav flex-grow flex flex-col gap-6">
-      <div class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/main"><ion-icon name="home-outline" class="text-2xl"></ion-icon></div>
-      <div class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/dashboard"><ion-icon name="grid-outline" class="text-2xl"></ion-icon></div>
-      <div class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/citas"><ion-icon name="calendar-outline" class="text-2xl"></ion-icon></div>
-      <div class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/pacientes"><ion-icon name="people-outline" class="text-2xl"></ion-icon></div>
-      <div *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/consulta"><ion-icon name="medical-outline" class="text-2xl"></ion-icon></div>
-      <div *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-text-muted hover:bg-primary/10 hover:text-primary transition-all duration-300" routerLink="/contabilidad"><ion-icon name="wallet-outline" class="text-2xl"></ion-icon></div>
-      <div *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="nav-item group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer bg-primary/10 text-primary transition-all duration-300" routerLink="/configuracion"><ion-icon name="settings-outline" class="text-2xl"></ion-icon></div>
-      <div class="nav-item mt-auto group relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300" (click)="logout()">
-        <ion-icon name="log-out-outline" class="text-2xl"></ion-icon>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
       </div>
+      }
     </nav>
-    <div class="sidebar-footer mt-8">
-      <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5">
-        <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
       </div>
     </div>
   </aside>
 
-  <main class="main-content lg:ml-24 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0" *ngIf="config">
+  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0" *ngIf="config">
     <!-- Top Bar -->
     <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
       <div class="flex items-center gap-4">
@@ -50,7 +70,11 @@
           <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Configuración y Usuarios</p>
         </div>
       </div>
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-4">
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
         <div class="user-info text-right">
           <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Administración' }}</span>
           <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">Control Maestro</span>

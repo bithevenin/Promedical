@@ -3,8 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastController, LoadingController } from '@ionic/angular';
-import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { environment } from 'src/environments/environment';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from 'src/app/services/supabase.service';
 
 @Component({
   selector: 'app-update-password',
@@ -23,9 +23,10 @@ export class UpdatePasswordPage implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private supabaseService: SupabaseService
   ) {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+    this.supabase = this.supabaseService.client;
 
     this.updatePasswordForm = this.fb.group({
       password: ['', [Validators.required, Validators.minLength(8)]],
