@@ -5,6 +5,7 @@ import { PatientService } from '../../services/patient.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { formatMonto } from '../../utils/format.utils';
 
 interface NavItem {
   icon: string;
@@ -104,7 +105,7 @@ export class DashboardPage implements OnInit {
     ];
 
     if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
-      carts.push({ title: 'Ingresos Mensuales', value: `$${ingresosMes.toLocaleString()}`, trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' });
+      carts.push({ title: 'Ingresos Mensuales', value: formatMonto(ingresosMes), trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' });
     } else {
       carts.push({ title: 'Consultas Pendientes', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'calendar', colorClass: 'green' });
     }

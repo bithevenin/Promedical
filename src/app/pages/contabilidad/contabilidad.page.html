@@ -116,32 +116,32 @@
           <!-- Ingresos -->
           <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-2">Ingresos Brutos</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ ingresosTotalesUnificados() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(ingresosTotalesUnificados()) }}</h3>
           </div>
           <!-- Gastos -->
           <div class="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-2">Gastos Totales</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ totalGastos() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalGastos()) }}</h3>
           </div>
           <!-- Copagos -->
           <div class="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-primary uppercase tracking-widest mb-2">Diferencia ARS</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ ingresosCopagos() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(ingresosCopagos()) }}</h3>
           </div>
           <!-- Cheques -->
           <div class="bg-sky-500/10 border border-sky-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-sky-400 uppercase tracking-widest mb-2">Seguros Recib.</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ totalSegurosRecibido() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalSegurosRecibido()) }}</h3>
           </div>
           <!-- Pendiente -->
           <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-amber-500 uppercase tracking-widest mb-2">Pendiente ARS</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ totalSegurosPendiente() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalSegurosPendiente()) }}</h3>
           </div>
           <!-- Neto -->
           <div class="bg-white/10 border border-white/20 rounded-2xl p-4 flex flex-col justify-between border-dashed hover:scale-105 transition-transform">
             <span class="text-[8px] font-black text-text-muted uppercase tracking-widest mb-2">Balance Neto</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ balanceNeto() | currency }}</h3>
+            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(balanceNeto()) }}</h3>
           </div>
         </div>
       </div>
@@ -193,7 +193,7 @@
                     </td>
                     <td class="px-5 py-3 text-right">
                       <span class="text-[13px] font-black tracking-tighter" [class.text-emerald-400]="t.categoria === 'Ingreso'" [class.text-rose-400]="t.categoria === 'Gasto'">
-                        {{ t.categoria === 'Ingreso' ? '+' : '-' }}{{ t.monto | currency }}
+                        {{ t.categoria === 'Ingreso' ? '+' : '-' }}{{ formatMonto(t.monto) }}
                       </span>
                     </td>
                     <td class="px-5 py-3 text-center">
@@ -233,7 +233,7 @@
                      </div>
                   </div>
                   <div class="text-right">
-                     <div class="text-sm font-black text-white tracking-tighter">{{ seguro.totalPendiente | currency }}</div>
+                     <div class="text-sm font-black text-white tracking-tighter">{{ formatMonto(seguro.totalPendiente) }}</div>
                   </div>
                 </div>
                 }

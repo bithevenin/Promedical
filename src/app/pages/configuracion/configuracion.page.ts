@@ -5,6 +5,7 @@ import { PatientService, Paciente } from '../../services/patient.service';
 import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { formatMonto } from '../../utils/format.utils';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -69,6 +70,8 @@ export class ConfiguracionPage implements OnInit {
         montoCobertura: 0,
         copago: 0
     };
+
+    formatMonto = formatMonto;
 
     constructor(
         private configService: ConfigService,

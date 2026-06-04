@@ -110,71 +110,149 @@
             </div>
 
             <div class="space-y-4">
-              <div>
-                <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Identificación (Cédula)</label>
-                <div class="relative group">
-                  <input type="text" 
-                         class="w-full pl-4 pr-10 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-black text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/30" 
-                         [(ngModel)]="nuevoPaciente.cedula"
-                         placeholder="000-0000000-0">
-                  @if (modoRegistro === 'registrado') {
-                  <button class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all"
-                          (click)="buscarPaciente()">
-                    <ion-icon name="search-outline" class="text-lg"></ion-icon>
-                  </button>
-                  }
-                </div>
-              </div>
-
-              <div>
-                <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nombre Completo</label>
-                <input type="text" 
-                       class="w-full px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50" 
-                       [(ngModel)]="nuevoPaciente.nombre"
-                       placeholder="Ej. Pedro Alcántara"
-                       [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.nombre !== ''">
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nacimiento</label>
-                  <input type="date" 
-                         class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
-                         [(ngModel)]="nuevoPaciente.fecha_nacimiento"
-                         [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.fecha_nacimiento !== ''">
-                </div>
-                <div>
-                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Ocupación</label>
-                  <input type="text" 
-                         class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
-                         [(ngModel)]="nuevoPaciente.profesion"
-                         placeholder="Ingeniero"
-                         [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.profesion !== ''">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Seguro</label>
-                  <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
-                          [(ngModel)]="nuevoPaciente.seguro"
-                          (change)="onSeguroChange()"
-                          [disabled]="modoRegistro === 'registrado' && !errorBusqueda && nuevoPaciente.seguro !== 'Particular'">
-                    @for (seguro of listaSeguros; track seguro) {
-                    <option [value]="seguro" class="bg-dark-secondary">{{ seguro }}</option>
+              <!-- Foto de Perfil Preview (Siempre Visible) -->
+              <div class="flex flex-col items-center justify-center p-3 bg-white/5 border border-glass-border rounded-xl">
+                @if (nuevoPaciente.fotoUrl) {
+                  <img [src]="nuevoPaciente.fotoUrl" class="w-20 h-20 rounded-xl object-cover border border-glass-border shadow-md mb-1.5 animate-scale-in">
+                  <span class="text-[8px] font-black text-primary uppercase tracking-wider">Foto JCE Cargada</span>
+                } @else {
+                  <div class="w-20 h-20 rounded-xl bg-white/5 border border-dashed border-glass-border flex flex-col items-center justify-center text-text-muted mb-1.5">
+                    @if (isLoadingJce) {
+                      <ion-spinner name="crescent" class="text-primary text-xs"></ion-spinner>
+                    } @else {
+                      <ion-icon name="person-outline" class="text-3xl opacity-30"></ion-icon>
                     }
-                  </select>
-                </div>
-                <div>
-                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Sexo</label>
-                  <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
-                          [(ngModel)]="nuevoPaciente.sexo"
-                          [disabled]="modoRegistro === 'registrado' && !errorBusqueda">
-                    <option value="M" class="bg-dark-secondary">M</option>
-                    <option value="F" class="bg-dark-secondary">F</option>
-                  </select>
-                </div>
-              </div>
+                  </div>
+                  <span class="text-[8px] font-black text-text-muted uppercase tracking-wider">
+                    {{ isLoadingJce ? 'Buscando en JCE...' : 'Sin foto de paciente' }}
+                  </span>
+                }
+              </div>               <div>
+                 <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Identificación (Cédula)</label>
+                 <div class="relative group">
+                   <input type="text" 
+                          class="w-full pl-4 pr-12 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-black text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/30" 
+                          [(ngModel)]="nuevoPaciente.cedula"
+                          (input)="filtrarPacientes($event)"
+                          (focus)="setActiveSearchField('cedula'); mostrarDropdownPacientes = pacientesFiltrados.length > 0"
+                          placeholder="000-0000000-0">
+                   <button class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                           (click)="buscarJCE()" [disabled]="isLoadingJce">
+                      @if (isLoadingJce) {
+                        <ion-spinner name="crescent" class="text-xs"></ion-spinner>
+                      } @else {
+                        <ion-icon name="search-outline" class="text-lg"></ion-icon>
+                      }
+                   </button>
+
+                   <!-- Floating Dropdown list for matching patients -->
+                   @if (mostrarDropdownPacientes && activeSearchField === 'cedula') {
+                   <div class="absolute left-0 right-0 top-full mt-1 bg-medical-dark border border-glass-border rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto p-1 backdrop-blur-md">
+                      @for (p of pacientesFiltrados; track p.cedula) {
+                      <div (click)="seleccionarPacienteDeLista(p); $event.stopPropagation()" 
+                           class="p-2 hover:bg-primary/20 rounded-lg cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 text-left">
+                         <div class="w-7 h-7 bg-primary rounded-md flex items-center justify-center text-[10px] font-black uppercase shadow-sm">
+                            {{ p.nombre.charAt(0) }}
+                         </div>
+                         <div class="flex-grow min-w-0">
+                            <span class="block text-xs font-bold text-white truncate">{{ p.nombre }}</span>
+                            <span class="block text-[8px] font-black text-text-muted uppercase tracking-tight">Cédula: {{ p.cedula }}</span>
+                         </div>
+                      </div>
+                      }
+                   </div>
+                   }
+                 </div>
+               </div>
+ 
+               <div class="relative">
+                 <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nombre Completo</label>
+                 <input type="text" 
+                        class="w-full px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50" 
+                        [(ngModel)]="nuevoPaciente.nombre"
+                        (input)="filtrarPacientes($event)"
+                        (focus)="setActiveSearchField('nombre'); mostrarDropdownPacientes = pacientesFiltrados.length > 0"
+                        placeholder="Ej. Pedro Alcántara">
+
+                 <!-- Floating Dropdown list for matching patients -->
+                 @if (mostrarDropdownPacientes && activeSearchField === 'nombre') {
+                 <div class="absolute left-0 right-0 top-full mt-1 bg-medical-dark border border-glass-border rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto p-1 backdrop-blur-md">
+                    @for (p of pacientesFiltrados; track p.cedula) {
+                    <div (click)="seleccionarPacienteDeLista(p); $event.stopPropagation()" 
+                         class="p-2 hover:bg-primary/20 rounded-lg cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 text-left">
+                       <div class="w-7 h-7 bg-primary rounded-md flex items-center justify-center text-[10px] font-black uppercase shadow-sm">
+                          {{ p.nombre.charAt(0) }}
+                       </div>
+                       <div class="flex-grow min-w-0">
+                          <span class="block text-xs font-bold text-white truncate">{{ p.nombre }}</span>
+                          <span class="block text-[8px] font-black text-text-muted uppercase tracking-tight">Cédula: {{ p.cedula }}</span>
+                       </div>
+                    </div>
+                    }
+                 </div>
+                 }
+               </div>
+ 
+               <div>
+                 <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Dirección</label>
+                 <input type="text" 
+                        class="w-full px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50" 
+                        [(ngModel)]="nuevoPaciente.direccion"
+                        placeholder="Ej. Calle Duarte #10, Santo Domingo">
+               </div>
+ 
+               <div class="grid grid-cols-2 gap-3">
+                 <div>
+                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nacimiento</label>
+                   <input type="date" 
+                          class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
+                          [(ngModel)]="nuevoPaciente.fecha_nacimiento">
+                 </div>
+                 <div>
+                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Ocupación</label>
+                   <input type="text" 
+                          class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
+                          [(ngModel)]="nuevoPaciente.profesion"
+                          placeholder="Ingeniero">
+                 </div>
+               </div>
+ 
+               <div class="grid grid-cols-2 gap-3">
+                 <div>
+                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Seguro</label>
+                   <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
+                           [(ngModel)]="nuevoPaciente.seguro"
+                           (change)="onSeguroChange()">
+                     @for (seguro of listaSeguros; track seguro) {
+                     <option [value]="seguro" class="bg-dark-secondary">{{ seguro }}</option>
+                     }
+                   </select>
+                 </div>
+                 <div>
+                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Sexo</label>
+                   <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
+                           [(ngModel)]="nuevoPaciente.sexo">
+                     <option value="M" class="bg-dark-secondary">M</option>
+                     <option value="F" class="bg-dark-secondary">F</option>
+                   </select>
+                 </div>
+               </div>
+ 
+               <div>
+                 <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Tipo de Sangre</label>
+                 <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
+                         [(ngModel)]="nuevoPaciente.tipo_sangre">
+                   <option value="" class="bg-dark-secondary">-- Desconocido --</option>
+                   <option value="A+" class="bg-dark-secondary">A+</option>
+                   <option value="A-" class="bg-dark-secondary">A-</option>
+                   <option value="B+" class="bg-dark-secondary">B+</option>
+                   <option value="B-" class="bg-dark-secondary">B-</option>
+                   <option value="AB+" class="bg-dark-secondary">AB+</option>
+                   <option value="AB-" class="bg-dark-secondary">AB-</option>
+                   <option value="O+" class="bg-dark-secondary">O+</option>
+                   <option value="O-" class="bg-dark-secondary">O-</option>
+                 </select>
+               </div>
 
               <div class="bg-primary/5 border border-primary/10 p-4 rounded-xl">
                  <label class="text-[9px] font-black text-primary tracking-widest uppercase mb-2 block">Programación de Turno</label>
@@ -233,9 +311,20 @@
                       </span>
                     </td>
                     <td class="px-5 py-3">
-                      <div class="text-[13px] font-bold text-white group-hover:text-primary transition-colors leading-none mb-1">{{ cita.nombre }}</div>
-                      <div class="text-[9px] font-black text-text-muted flex items-center gap-1.5">
-                        <ion-icon name="time-outline" class="text-primary"></ion-icon> {{ cita.hora }}
+                      <div class="flex items-center gap-3">
+                        @if (getPatientPhoto(cita.cedula)) {
+                          <img [src]="getPatientPhoto(cita.cedula)" class="w-8 h-8 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
+                        } @else {
+                          <div class="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                            {{ cita.nombre.charAt(0).toUpperCase() }}
+                          </div>
+                        }
+                        <div>
+                          <div class="text-[13px] font-bold text-white group-hover:text-primary transition-colors leading-none mb-1">{{ cita.nombre }}</div>
+                          <div class="text-[9px] font-black text-text-muted flex items-center gap-1.5">
+                            <ion-icon name="time-outline" class="text-primary"></ion-icon> {{ cita.hora }}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td class="px-5 py-3 hidden sm:table-cell">
@@ -286,9 +375,18 @@
               @for (cita of citasPorCobrar; track cita.turno) {
               <div class="flex items-center justify-between p-4 bg-white/[0.02] border border-glass-border rounded-xl hover:border-emerald-500/30 transition-all group">
                 <div class="flex items-center gap-3">
-                   <div class="w-10 h-10 bg-white/5 rounded-xl flex flex-col items-center justify-center border border-glass-border group-hover:text-emerald-400 transition-colors">
-                      <span class="text-[7px] font-black text-text-muted uppercase tracking-tighter">Turno</span>
-                      <span class="text-base font-black text-white">#{{ cita.turno }}</span>
+                   <div class="relative shrink-0">
+                      @if (getPatientPhoto(cita.cedula)) {
+                        <img [src]="getPatientPhoto(cita.cedula)" class="w-10 h-10 rounded-xl object-cover border border-glass-border shadow-sm">
+                        <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center border border-dark-secondary">
+                          {{ cita.turno }}
+                        </span>
+                      } @else {
+                        <div class="w-10 h-10 bg-white/5 rounded-xl flex flex-col items-center justify-center border border-glass-border group-hover:text-emerald-400 transition-colors">
+                           <span class="text-[7px] font-black text-text-muted uppercase tracking-tighter">Turno</span>
+                           <span class="text-base font-black text-white">#{{ cita.turno }}</span>
+                        </div>
+                      }
                    </div>
                    <div>
                      <h6 class="text-xs font-bold text-white leading-none mb-1 group-hover:text-primary transition-colors">{{ cita.nombre }}</h6>
@@ -338,9 +436,13 @@
 
       <div class="p-8 space-y-8">
         <div class="flex items-center gap-4 p-5 bg-white/5 rounded-2xl border border-glass-border">
-          <div class="w-14 h-14 bg-primary/20 text-primary rounded-full flex items-center justify-center text-3xl font-black">
-            {{ citaParaCobrar.nombre.charAt(0) }}
-          </div>
+          @if (getPatientPhoto(citaParaCobrar.cedula)) {
+            <img [src]="getPatientPhoto(citaParaCobrar.cedula)" class="w-14 h-14 rounded-full object-cover border border-glass-border shadow-md shrink-0">
+          } @else {
+            <div class="w-14 h-14 bg-primary/20 text-primary rounded-full flex items-center justify-center text-3xl font-black shrink-0">
+              {{ citaParaCobrar.nombre.charAt(0) }}
+            </div>
+          }
           <div>
             <h6 class="text-lg font-black text-white leading-tight uppercase">{{ citaParaCobrar.nombre }}</h6>
             <div class="flex items-center gap-2 mt-1">
@@ -372,12 +474,11 @@
                 </div>
              </div>
           </div>
-
           <div class="p-6 bg-emerald-500 rounded-3xl shadow-xl shadow-emerald-500/20 relative overflow-hidden">
             <div class="relative z-10 flex items-center justify-between">
                <div>
                   <span class="text-[10px] font-black text-white/70 uppercase tracking-widest block mb-1">Total a Percibir</span>
-                  <h3 class="text-3xl font-black text-white tracking-tighter">$ {{ datosCobro.totalACobrar.toFixed(2) }}</h3>
+                  <h3 class="text-3xl font-black text-white tracking-tighter">{{ formatMonto(datosCobro.totalACobrar) }}</h3>
                </div>
                <ion-icon name="wallet" class="text-5xl text-white/30"></ion-icon>
             </div>
@@ -403,15 +504,15 @@
                 <div class="flex items-center gap-3">
                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" 
                         [ngClass]="datosCobro.vuelto >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">
-                      <ion-icon [name]="datosCobro.vuelto >= 0 ? 'cash-outline' : 'alert-circle'"></ion-icon>
+                       <ion-icon [name]="datosCobro.vuelto >= 0 ? 'cash-outline' : 'alert-circle'"></ion-icon>
                    </div>
                    <span class="text-xs font-black uppercase tracking-widest" 
                          [ngClass]="datosCobro.vuelto >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                      {{ datosCobro.vuelto >= 0 ? 'Vuelto a entregar' : 'Pendiente' }}
+                       {{ datosCobro.vuelto >= 0 ? 'Vuelto a entregar' : 'Pendiente' }}
                    </span>
                 </div>
                 <span class="text-xl font-black" [ngClass]="datosCobro.vuelto >= 0 ? 'text-white' : 'text-rose-400'">
-                   $ {{ Math.abs(datosCobro.vuelto).toFixed(2) }}
+                   {{ formatMonto(Math.abs(datosCobro.vuelto)) }}
                 </span>
              </div>
           </div>

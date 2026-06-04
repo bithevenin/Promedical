@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
+import { environment } from '../../environments/environment';
 
 export interface SignoVital {
   fecha: string;
@@ -29,6 +30,9 @@ export interface Paciente {
   antecedentesPersonales?: string;
   antecedentesFamiliares?: string;
   alergias?: string;
+  tipo_sangre?: string;
+  fotoUrl?: string;
+  direccion?: string;
   signosVitales?: SignoVital[];
 }
 
@@ -71,6 +75,9 @@ export class PatientService {
             antecedentesPersonales: p.antecedentes_personales || '',
             antecedentesFamiliares: p.antecedentes_familiares || '',
             alergias: p.alergias || '',
+            tipo_sangre: p.tipo_sangre || '',
+            fotoUrl: p.foto_url || '',
+            direccion: p.direccion || '',
             signosVitales: (p.signos_vitales || []).map((sv: any) => ({
               fecha: sv.fecha,
               presionArterial: sv.presion_arterial,
@@ -127,7 +134,10 @@ export class PatientService {
         carnet_seguro: paciente.carnetSeguro,
         antecedentes_personales: paciente.antecedentesPersonales,
         antecedentes_familiares: paciente.antecedentesFamiliares,
-        alergias: paciente.alergias
+        alergias: paciente.alergias,
+        tipo_sangre: paciente.tipo_sangre || '',
+        foto_url: paciente.fotoUrl || '',
+        direccion: paciente.direccion || ''
       };
 
       if (navigator.onLine) {
@@ -153,7 +163,10 @@ export class PatientService {
         carnet_seguro: paciente.carnetSeguro,
         antecedentes_personales: paciente.antecedentesPersonales,
         antecedentes_familiares: paciente.antecedentesFamiliares,
-        alergias: paciente.alergias
+        alergias: paciente.alergias,
+        tipo_sangre: paciente.tipo_sangre || '',
+        foto_url: paciente.fotoUrl || '',
+        direccion: paciente.direccion || ''
       };
       await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
     }
@@ -267,6 +280,39 @@ export class PatientService {
         alergias: data.alergias
       };
       await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
+    }
+  }
+
+  async consultarJCE(cedula: string): Promise<any> {
+    const cleanCedula = cedula.replace(/[^0-9]/g, '');
+    if (!cleanCedula) {
+      throw new Error('Por favor, ingrese un número de cédula.');
+    }
+    if (cleanCedula.length !== 11) {
+      throw new Error('La cédula debe contener exactamente 11 dígitos.');
+    }
+
+    const baseUrl = environment.jceApiUrl || 'https://edging-rarity-routing.ngrok-free.dev';
+    const apiUrl = `${baseUrl}/api/v1/cedula-queries/query`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({ cedula: cleanCedula })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error en el servidor JCE: Código ${response.status}`);
+    }
+
+    const resData = await response.json();
+    if (resData.success && resData.data && resData.data.result) {
+      return resData.data.result;
+    } else {
+      throw new Error(resData.message || 'No se encontró información para la cédula ingresada.');
     }
   }
 }

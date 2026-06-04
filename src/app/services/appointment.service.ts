@@ -103,7 +103,6 @@ export class AppointmentService {
     try {
       // 1. Save locally
       await this.offlineService.saveLocalData('citas', localCita);
-      await this.refreshAppointments();
 
       // 2. Prepare database payload
       const dbData = {
@@ -154,6 +153,8 @@ export class AppointmentService {
         telefono: cita.telefono
       };
       await this.offlineService.addToQueue('citas', 'insert', dbData);
+    } finally {
+      await this.refreshAppointments();
     }
   }
 
@@ -170,7 +171,6 @@ export class AppointmentService {
           Object.assign(target, extraData);
         }
         await this.offlineService.saveLocalData('citas', target);
-        await this.refreshAppointments();
       }
 
       // 2. Prepare payload for Supabase
@@ -208,6 +208,8 @@ export class AppointmentService {
         });
       }
       await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);
+    } finally {
+      await this.refreshAppointments();
     }
   }
 }

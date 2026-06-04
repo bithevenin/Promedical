@@ -71,8 +71,14 @@ export class PacientesPage implements OnInit {
     email: '',
     antecedentesPersonales: '',
     antecedentesFamiliares: '',
-    alergias: ''
+    alergias: '',
+    tipo_sangre: '',
+    fotoUrl: '',
+    direccion: ''
   };
+
+  isLoadingJce = false;
+  cargandoFotos = false;
 
   listaSeguros: string[] = ['Particular'];
 
@@ -89,6 +95,10 @@ export class PacientesPage implements OnInit {
   ngOnInit() {
     this.patientService.patients$.subscribe(patients => {
       this.pacientes = patients;
+      // Auto-load photos for patients without one, once the list is ready
+      if (!this.cargandoFotos && patients.length > 0) {
+        this.cargarFotosEnSegundoPlano();
+      }
     });
 
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
@@ -96,6 +106,38 @@ export class PacientesPage implements OnInit {
     this.configService.config$.subscribe(config => {
       this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
     });
+  }
+
+  /** Silently fetches photos from the backend server for patients that have no fotoUrl.
+   *  The backend returns cached photos (base64 data URIs) without re-scraping the JCE.
+   *  Base64 photos are used in-memory for display; only proper URL strings are persisted to Supabase.
+   */
+  async cargarFotosEnSegundoPlano() {
+    if (this.cargandoFotos) return;
+    this.cargandoFotos = true;
+
+    const sinFoto = this.pacientes.filter(p => !p.fotoUrl && p.cedula);
+    for (const paciente of sinFoto) {
+      try {
+        const result = await this.patientService.consultarJCE(paciente.cedula);
+        if (result && result.fotoUrl) {
+          // Update the in-memory reference so the UI re-renders immediately
+          paciente.fotoUrl = result.fotoUrl;
+
+          // Only persist to Supabase if it's a real URL (not a base64 data URI)
+          // Base64 strings are too large for a database column
+          if (!result.fotoUrl.startsWith('data:')) {
+            this.patientService.savePatient({ ...paciente });
+          }
+        }
+      } catch {
+        // Silently ignore errors for individual patients
+      }
+      // Small throttle to avoid overwhelming the backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    this.cargandoFotos = false;
   }
 
   get pacientesFiltrados() {
@@ -112,9 +154,49 @@ export class PacientesPage implements OnInit {
   }
 
   editarPaciente(paciente: Paciente) {
+    console.log('editarPaciente called with:', JSON.stringify(paciente));
     this.pacienteSeleccionado = paciente;
     this.editData = { ...paciente };
+    console.log('editarPaciente editData is:', JSON.stringify(this.editData));
     this.showEditModal = true;
+  }
+
+  async buscarJCE() {
+    if (!this.editData.cedula) {
+      this.presentToast('Por favor, ingrese una cédula.', 'danger');
+      return;
+    }
+    this.isLoadingJce = true;
+    console.log('buscarJCE called for:', this.editData.cedula);
+    try {
+      const result = await this.patientService.consultarJCE(this.editData.cedula);
+      console.log('buscarJCE result received:', JSON.stringify(result));
+      if (result) {
+        this.editData.nombre = result.nombreCompleto || `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+        
+        if (result.fechaNacimiento) {
+          this.editData.fecha_nacimiento = result.fechaNacimiento.split('T')[0];
+          this.editData.edad = this.patientService.calcularEdad(this.editData.fecha_nacimiento || '');
+        }
+
+        if (result.sexo) {
+          const s = result.sexo.trim().toUpperCase();
+          this.editData.sexo = s.startsWith('F') ? 'F' : 'M';
+        }
+
+        this.editData.profesion = result.ocupacion || result.ocupación || this.editData.profesion || '';
+        this.editData.direccion = result.direccion || result.dirección || [result.lugarNacimiento, result.municipioCedula].filter(Boolean).join(', ') || '';
+        this.editData.fotoUrl = result.fotoUrl || this.editData.fotoUrl || '';
+
+        console.log('buscarJCE editData set to:', JSON.stringify(this.editData));
+        this.presentToast('¡Datos de la cédula cargados con éxito!', 'success');
+      }
+    } catch (error: any) {
+      console.error('Error JCE lookup:', error);
+      this.presentToast('Error al consultar cédula JCE: ' + (error.message || error), 'danger');
+    } finally {
+      this.isLoadingJce = false;
+    }
   }
 
   async guardarCambios() {

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, HostListener } from '@angular/core';
 import { AppointmentService, Cita } from '../../services/appointment.service';
 import { PatientService, Paciente } from '../../services/patient.service';
 import { ConfigService } from '../../services/config.service';
@@ -6,6 +6,7 @@ import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
+import { formatMonto } from '../../utils/format.utils';
 
 @Component({
   selector: 'app-citas',
@@ -28,8 +29,13 @@ export class CitasPage implements OnInit {
     profesion: '',
     seguro: 'Particular',
     sexo: 'M' as 'M' | 'F',
-    telefono: ''
+    telefono: '',
+    fotoUrl: '',
+    tipo_sangre: '',
+    direccion: ''
   };
+
+  isLoadingJce = false;
 
   // Listado de ARS (se carga dinámicamente)
   listaSeguros: string[] = ['Particular'];
@@ -46,6 +52,21 @@ export class CitasPage implements OnInit {
   carnetSeguroTemp = '';
 
   currentProfile = signal<any>(null);
+
+  // Listado de pacientes para agendamiento
+  listaPacientes: Paciente[] = [];
+  pacientesFiltrados: Paciente[] = [];
+  mostrarDropdownPacientes = false;
+  activeSearchField: 'cedula' | 'nombre' | null = null;
+
+  setActiveSearchField(field: 'cedula' | 'nombre') {
+    this.activeSearchField = field;
+  }
+
+  @HostListener('document:click')
+  closeCitasDropdowns() {
+    this.mostrarDropdownPacientes = false;
+  }
 
   navigationItems = computed(() => {
     const base: any[] = [
@@ -64,8 +85,9 @@ export class CitasPage implements OnInit {
     return base;
   });
 
-  // Exponer Math para el template
+  // Exponer Math y utilidades para el template
   Math = Math;
+  formatMonto = formatMonto;
 
   constructor(
     public appointmentService: AppointmentService,
@@ -92,6 +114,10 @@ export class CitasPage implements OnInit {
 
     this.appointmentService.appointments$.subscribe(appointments => {
       this.actualizarListas(appointments);
+    });
+
+    this.patientService.patients$.subscribe(patients => {
+      this.listaPacientes = patients;
     });
 
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
@@ -187,14 +213,14 @@ export class CitasPage implements OnInit {
       const montoTotal = this.datosCobro.diferencia; // Solo se registra lo que pagó el paciente
       await this.financialService.registrarCobro(this.citaParaCobrar.turno, montoTotal);
 
-      // Preparar mensaje interno
+      // Preparar mensaje interno usando formatMonto
       this.mensajeExito = `Cobro registrado exitosamente!
       
 Paciente: ${this.citaParaCobrar.nombre}
-Seguro médico: $${this.datosCobro.montoSeguro.toFixed(2)}
-Diferencia cobrada: $${this.datosCobro.diferencia.toFixed(2)}
-Pago recibido: $${this.datosCobro.pagoRecibido.toFixed(2)}
-Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
+Seguro médico: ${this.formatMonto(this.datosCobro.montoSeguro)}
+Diferencia cobrada: ${this.formatMonto(this.datosCobro.diferencia)}
+Pago recibido: ${this.formatMonto(this.datosCobro.pagoRecibido)}
+Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
       this.mostrarMensajeExito = true;
       this.cerrarModalCobro();
@@ -253,11 +279,78 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         sexo: paciente.sexo || 'M',
         altura: paciente.altura || '',
         peso: paciente.peso || '',
-        telefono: paciente.telefono || ''
+        telefono: paciente.telefono || '',
+        fotoUrl: paciente.fotoUrl || '',
+        tipo_sangre: paciente.tipo_sangre || '',
+        direccion: paciente.direccion || ''
       };
       this.carnetSeguroTemp = paciente.carnetSeguro || '';
     } else {
       this.errorBusqueda = 'Paciente no encontrado. Use el modo "Nuevo" para registrarlo.';
+    }
+  }
+
+  async buscarJCE() {
+    if (!this.nuevoPaciente.cedula) {
+      this.errorBusqueda = 'Por favor, ingrese un número de cédula.';
+      return;
+    }
+    const cleanCedula = this.nuevoPaciente.cedula.replace(/[^0-9]/g, '');
+    if (cleanCedula.length !== 11) {
+      this.errorBusqueda = 'La cédula debe contener exactamente 11 dígitos.';
+      return;
+    }
+
+    this.isLoadingJce = true;
+    this.errorBusqueda = '';
+    try {
+      // First, check if the patient exists locally
+      const localPatient = this.patientService.findPatientByCedula(cleanCedula);
+      if (localPatient) {
+        this.nuevoPaciente = {
+          ...this.nuevoPaciente,
+          nombre: localPatient.nombre,
+          edad: localPatient.edad,
+          fecha_nacimiento: localPatient.fecha_nacimiento || '',
+          profesion: localPatient.profesion,
+          seguro: localPatient.seguro,
+          sexo: localPatient.sexo || 'M',
+          altura: localPatient.altura || '',
+          peso: localPatient.peso || '',
+          telefono: localPatient.telefono || '',
+          fotoUrl: localPatient.fotoUrl || '',
+          tipo_sangre: localPatient.tipo_sangre || '',
+          direccion: localPatient.direccion || ''
+        };
+        this.carnetSeguroTemp = localPatient.carnetSeguro || '';
+        this.isLoadingJce = false;
+        return;
+      }
+
+      // If not, fetch from JCE API
+      const result = await this.patientService.consultarJCE(cleanCedula);
+      if (result) {
+        this.nuevoPaciente.nombre = result.nombreCompleto || `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+        
+        if (result.fechaNacimiento) {
+          this.nuevoPaciente.fecha_nacimiento = result.fechaNacimiento.split('T')[0];
+          this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+        }
+
+        if (result.sexo) {
+          const s = result.sexo.trim().toUpperCase();
+          this.nuevoPaciente.sexo = s.startsWith('F') ? 'F' : 'M';
+        }
+
+        this.nuevoPaciente.profesion = result.ocupacion || result.ocupación || '';
+        this.nuevoPaciente.direccion = result.direccion || result.dirección || [result.lugarNacimiento, result.municipioCedula].filter(Boolean).join(', ') || '';
+        this.nuevoPaciente.fotoUrl = result.fotoUrl || '';
+      }
+    } catch (error: any) {
+      console.error('Error JCE lookup in Citas:', error);
+      this.errorBusqueda = 'Error al consultar JCE: ' + (error.message || error);
+    } finally {
+      this.isLoadingJce = false;
     }
   }
 
@@ -278,7 +371,10 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
         altura: this.nuevoPaciente.altura,
         peso: this.nuevoPaciente.peso,
         telefono: this.nuevoPaciente.telefono,
-        carnetSeguro: this.carnetSeguroTemp
+        carnetSeguro: this.carnetSeguroTemp,
+        tipo_sangre: this.nuevoPaciente.tipo_sangre,
+        fotoUrl: this.nuevoPaciente.fotoUrl,
+        direccion: this.nuevoPaciente.direccion
       };
       await this.patientService.savePatient(datosPaciente);
 
@@ -312,6 +408,47 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
     }
   }
 
+  filtrarPacientes(event: any) {
+    const val = (event.target.value || '').toLowerCase().trim();
+    if (!val) {
+      this.pacientesFiltrados = [];
+      this.mostrarDropdownPacientes = false;
+      return;
+    }
+
+    const cleanVal = val.replace(/[^0-9a-zA-Z]/g, '');
+
+    this.pacientesFiltrados = this.listaPacientes.filter(p => {
+      const matchNombre = p.nombre.toLowerCase().includes(val);
+      const cleanCedula = p.cedula.replace(/[^0-9]/g, '');
+      const matchCedula = cleanCedula.includes(cleanVal);
+      return matchNombre || matchCedula;
+    }).slice(0, 5); // Limit to 5 results
+
+    this.mostrarDropdownPacientes = this.pacientesFiltrados.length > 0;
+  }
+
+  seleccionarPacienteDeLista(paciente: Paciente) {
+    this.nuevoPaciente = {
+      nombre: paciente.nombre,
+      cedula: paciente.cedula,
+      edad: paciente.edad,
+      fecha_nacimiento: paciente.fecha_nacimiento || '',
+      altura: paciente.altura || '',
+      peso: paciente.peso || '',
+      profesion: paciente.profesion || '',
+      seguro: paciente.seguro || 'Particular',
+      sexo: paciente.sexo || 'M',
+      telefono: paciente.telefono || '',
+      fotoUrl: paciente.fotoUrl || '',
+      tipo_sangre: paciente.tipo_sangre || '',
+      direccion: paciente.direccion || ''
+    };
+    this.carnetSeguroTemp = paciente.carnetSeguro || '';
+    this.pacientesFiltrados = [];
+    this.mostrarDropdownPacientes = false;
+  }
+
   limpiarFormulario() {
     this.nuevoPaciente = {
       nombre: '',
@@ -323,9 +460,17 @@ Vuelto entregado: $${this.datosCobro.vuelto.toFixed(2)}`;
       profesion: '',
       seguro: 'Particular',
       sexo: 'M',
-      telefono: ''
+      telefono: '',
+      fotoUrl: '',
+      tipo_sangre: '',
+      direccion: ''
     };
     this.errorBusqueda = '';
+  }
+
+  getPatientPhoto(cedula: string): string {
+    const paciente = this.patientService.findPatientByCedula(cedula);
+    return paciente?.fotoUrl || '';
   }
 
   async logout() {

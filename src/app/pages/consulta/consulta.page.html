@@ -109,18 +109,33 @@
                    [class.border-glass-border]="pacienteSeleccionado?.turno !== paciente.turno"
                    [class.hover:border-primary/50]="pacienteSeleccionado?.turno !== paciente.turno"
                    (click)="seleccionarPaciente(paciente)">
-                <div class="flex justify-between items-start mb-1.5">
-                  <span class="text-[8px] font-black tracking-widest uppercase opacity-60">Turno #{{ paciente.turno }}</span>
-                  <span class="text-[8px] font-black opacity-40">{{ paciente.hora }}</span>
-                </div>
-                <div class="text-[13px] font-black truncate mb-2" [class.text-white]="pacienteSeleccionado?.turno !== paciente.turno">
-                  {{ paciente.nombre }}
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <span class="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border"
-                        [ngClass]="pacienteSeleccionado?.turno === paciente.turno ? 'bg-white/20 border-white/20 text-white' : 'bg-primary/10 border-primary/20 text-primary'">
-                    {{ paciente.seguro }}
-                  </span>
+                <div class="flex items-center gap-3 justify-between">
+                   <div class="flex-grow min-w-0">
+                      <div class="flex justify-between items-start mb-1">
+                        <span class="text-[8px] font-black tracking-widest uppercase opacity-60">Turno #{{ paciente.turno }}</span>
+                        <span class="text-[8px] font-black opacity-40 mr-1">{{ paciente.hora }}</span>
+                      </div>
+                      <div class="text-[13px] font-black truncate mb-1.5" [class.text-white]="pacienteSeleccionado?.turno !== paciente.turno">
+                        {{ paciente.nombre }}
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border"
+                              [ngClass]="pacienteSeleccionado?.turno === paciente.turno ? 'bg-white/20 border-white/20 text-white' : 'bg-primary/10 border-primary/20 text-primary'">
+                          {{ paciente.seguro }}
+                        </span>
+                      </div>
+                   </div>
+
+                   <!-- Patient Photo -->
+                   <div class="w-10 h-10 shrink-0 overflow-hidden rounded-xl border border-glass-border">
+                      @if (getPatientPhoto(paciente.cedula)) {
+                         <img [src]="getPatientPhoto(paciente.cedula)" class="w-full h-full object-cover">
+                      } @else {
+                         <div class="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm uppercase">
+                            {{ paciente.nombre.charAt(0) }}
+                         </div>
+                      }
+                   </div>
                 </div>
               </div>
               } @empty {
@@ -153,65 +168,138 @@
                   </div>
                </div>
 
-               <div class="flex flex-wrap gap-2.5">
-                  <button class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary/20 hover:text-primary transition-all" (click)="abrirModalSignos()">
-                    <ion-icon name="pulse-outline" class="text-base text-primary"></ion-icon>
-                    Signos Vitales
-                  </button>
-                  <button class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500/20 hover:text-emerald-400 transition-all" (click)="abrirModalAntecedentes()">
-                    <ion-icon name="clipboard-outline" class="text-base text-emerald-400"></ion-icon>
-                    Antecedentes
-                  </button>
-               </div>
-            </div>
+                <div class="flex flex-wrap items-center gap-2.5">
+                   <!-- Text Formatting Toolbar -->
+                   <div class="flex flex-wrap items-center gap-1.5 p-1 bg-white/5 border border-glass-border rounded-xl backdrop-blur-md mr-1 select-none">
+                      
+                      <!-- Custom Font Dropdown -->
+                      <div class="relative">
+                         <button (click)="toggleDropdown('font', $event)" (mousedown)="$event.preventDefault()"
+                                 class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2.5 py-1 hover:bg-white/5 flex items-center gap-1">
+                            Fuente <span class="opacity-40 text-[7px]">▼</span>
+                         </button>
+                         <div [class.hidden]="activeDropdown !== 'font'" [class.block]="activeDropdown === 'font'" class="absolute top-full left-0 mt-1 hidden bg-medical-dark border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[110px] backdrop-blur-md">
+                            <div (click)="formatText('fontName', 'Inter'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
+                            <div (click)="formatText('fontName', 'Arial'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
+                            <div (click)="formatText('fontName', 'Georgia'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
+                            <div (click)="formatText('fontName', 'Courier New'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
+                            <div (click)="formatText('fontName', 'Times New Roman'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
+                         </div>
+                      </div>
 
-            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-               <!-- Columna Historial -->
-               <div class="lg:col-span-4 lg:border-r lg:border-glass-border lg:pr-8">
-                  <div class="h-full">
-                     <h6 class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
-                        <ion-icon name="time-outline" class="text-primary text-sm"></ion-icon>
-                        Historial Clínico
-                     </h6>
-                     <div class="space-y-5 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
-                        @for (h of historialPasado.slice().reverse(); track h.fecha) {
-                        <div class="relative pl-5 border-l-2 border-primary/20 py-1">
-                           <div class="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-primary"></div>
-                           <small class="block text-[8px] font-black text-primary uppercase tracking-widest mb-1">{{ h.fecha }}</small>
-                           <p class="text-xs font-bold text-white/80 leading-relaxed">
-                             {{ h.diagnostico }}
-                           </p>
-                        </div>
-                        } @empty {
-                        <div class="text-center py-10 opacity-20">
-                           <p class="text-[9px] font-black uppercase">Sin historial</p>
-                        </div>
-                        }
-                     </div>
-                  </div>
-               </div>
+                      <div class="w-[1px] h-3 bg-glass-border"></div>
 
-               <!-- Columna Trabajo -->
-               <div class="lg:col-span-8 flex flex-col gap-6">
-                  <div>
-                    <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 block">Diagnóstico & Notas</label>
-                    <textarea class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-4 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/20 min-h-[140px]" 
-                             [(ngModel)]="nuevaConsulta.diagnostico"
-                             placeholder="Ingrese el diagnóstico y observaciones clínicas..."></textarea>
-                  </div>
+                      <!-- Custom Size Dropdown -->
+                      <div class="relative">
+                         <button (click)="toggleDropdown('size', $event)" (mousedown)="$event.preventDefault()"
+                                 class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2.5 py-1 hover:bg-white/5 flex items-center gap-1">
+                            Tamaño <span class="opacity-40 text-[7px]">▼</span>
+                         </button>
+                         <div [class.hidden]="activeDropdown !== 'size'" [class.block]="activeDropdown === 'size'" class="absolute top-full left-0 mt-1 hidden bg-medical-dark border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[100px] backdrop-blur-md">
+                            <div (click)="formatText('fontSize', '2'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
+                            <div (click)="formatText('fontSize', '3'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
+                            <div (click)="formatText('fontSize', '4'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
+                            <div (click)="formatText('fontSize', '5'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
+                         </div>
+                      </div>
 
-                  <div>
-                    <div class="flex items-center justify-between mb-2 px-1">
-                      <label class="text-[9px] font-black text-text-muted uppercase tracking-widest block">Receta Médica</label>
-                      <button class="flex items-center gap-2 text-[8px] font-black text-primary uppercase tracking-widest hover:text-white transition-all" (click)="imprimirReceta()">
-                        <ion-icon name="print-outline" class="text-xs"></ion-icon>
-                        Imprimir
+                      <div class="w-[1px] h-3 bg-glass-border"></div>
+
+                      <button (click)="formatText('bold')" 
+                              (mousedown)="$event.preventDefault()"
+                              class="p-1.5 w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center transition-all"
+                              title="Negrita">
+                         <span class="font-black text-xs">B</span>
                       </button>
-                    </div>
-                    <textarea class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-4 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/20 min-h-[140px]" 
-                             [(ngModel)]="nuevaConsulta.receta"
-                             placeholder="Medicamentos, dosis y tratamiento..."></textarea>
-                  </div>
+
+                      <button (click)="formatText('italic')" 
+                              (mousedown)="$event.preventDefault()"
+                              class="p-1.5 w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center transition-all"
+                              title="Cursiva">
+                         <span class="italic font-serif text-xs">I</span>
+                      </button>
+
+                      <button (click)="formatText('underline')" 
+                              (mousedown)="$event.preventDefault()"
+                              class="p-1.5 w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center transition-all"
+                              title="Subrayado">
+                         <span class="underline text-xs">U</span>
+                      </button>
+
+                      <button (click)="formatText('insertUnorderedList')" 
+                              (mousedown)="$event.preventDefault()"
+                              class="p-1.5 w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center transition-all font-mono"
+                              title="Lista">
+                         <span class="text-xs font-bold">•=</span>
+                      </button>
+                   </div>
+
+                   <button class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary/20 hover:text-primary transition-all" (click)="abrirModalSignos()">
+                     <ion-icon name="pulse-outline" class="text-base text-primary"></ion-icon>
+                     Signos Vitales
+                   </button>
+                   <button class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500/20 hover:text-emerald-400 transition-all" (click)="abrirModalAntecedentes()">
+                     <ion-icon name="clipboard-outline" class="text-base text-emerald-400"></ion-icon>
+                     Antecedentes
+                   </button>
+                </div>
+             </div>
+
+             <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                <!-- Columna Historial -->
+                <div class="lg:col-span-4 lg:border-r lg:border-glass-border lg:pr-8">
+                   <div class="h-full">
+                      <h6 class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+                         <ion-icon name="time-outline" class="text-primary text-sm"></ion-icon>
+                         Historial Clínico
+                      </h6>
+                      <div class="space-y-5 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+                         @for (h of historialPasado.slice().reverse(); track h.fecha) {
+                         <div class="relative pl-5 border-l-2 border-primary/20 py-1">
+                            <div class="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-primary"></div>
+                            <small class="block text-[8px] font-black text-primary uppercase tracking-widest mb-1">{{ h.fecha }}</small>
+                            <div class="text-xs font-bold text-white/80 leading-relaxed rich-text-content" [innerHTML]="h.diagnostico"></div>
+                         </div>
+                         } @empty {
+                         <div class="text-center py-10 opacity-20">
+                            <p class="text-[9px] font-black uppercase">Sin historial</p>
+                         </div>
+                         }
+                      </div>
+                   </div>
+                </div>
+
+                <!-- Columna Trabajo -->
+                <div class="lg:col-span-8 flex flex-col gap-6">
+                   <div>
+                     <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 block">Diagnóstico & Notas</label>
+                     <div #diagnosticoEditor
+                          contenteditable="true"
+                          class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-4 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/20 min-h-[140px] max-h-[250px] overflow-y-auto rich-textarea-editor"
+                          (input)="onEditorInput('diagnostico', $event)"
+                          (focus)="setActiveEditor('diagnostico')"
+                          (mouseup)="saveSelection()"
+                          (keyup)="saveSelection()"
+                          placeholder="Ingrese el diagnóstico y observaciones clínicas..."></div>
+                   </div>
+
+                   <div>
+                     <div class="flex items-center justify-between mb-2 px-1">
+                       <label class="text-[9px] font-black text-text-muted uppercase tracking-widest block">Receta Médica</label>
+                       <button class="flex items-center gap-2 text-[8px] font-black text-primary uppercase tracking-widest hover:text-white transition-all" (click)="imprimirReceta()">
+                         <ion-icon name="print-outline" class="text-xs"></ion-icon>
+                         Imprimir
+                       </button>
+                     </div>
+                     <div #recetaEditor
+                          contenteditable="true"
+                          class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-4 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/20 min-h-[140px] max-h-[250px] overflow-y-auto rich-textarea-editor"
+                          (input)="onEditorInput('receta', $event)"
+                          (focus)="setActiveEditor('receta')"
+                          (mouseup)="saveSelection()"
+                          (keyup)="saveSelection()"
+                          placeholder="Medicamentos, dosis y tratamiento..."></div>
+                   </div>
 
                   <!-- Selector Cobro -->
                   <div class="bg-dark-secondary/40 border border-glass-border p-5 rounded-2xl">

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService, Cita } from '../../services/appointment.service';
 import { PatientService, Paciente } from '../../services/patient.service';
@@ -15,6 +15,26 @@ import { ThemeService } from '../../services/theme.service';
   styleUrls: ['./consulta.page.scss'],
 })
 export class ConsultaPage implements OnInit {
+  @ViewChild('diagnosticoEditor') diagnosticoEditor!: ElementRef;
+  @ViewChild('recetaEditor') recetaEditor!: ElementRef;
+
+  activeDropdown: 'font' | 'size' | null = null;
+
+  toggleDropdown(dropdown: 'font' | 'size', event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.activeDropdown === dropdown) {
+      this.activeDropdown = null;
+    } else {
+      this.activeDropdown = dropdown;
+    }
+  }
+
+  @HostListener('document:click')
+  closeDropdowns() {
+    this.activeDropdown = null;
+  }
+
   pacientesEspera: Cita[] = [];
   pacienteSeleccionado: Cita | null = null;
   historialPasado: Consulta[] = [];
@@ -47,6 +67,12 @@ export class ConsultaPage implements OnInit {
     receta: '',
     instruccionCobro: 'cobrar' as 'cobrar' | 'seguro' | 'gratis'
   };
+
+  lastActiveEditor: 'diagnostico' | 'receta' | null = null;
+
+  setActiveEditor(editor: 'diagnostico' | 'receta') {
+    this.lastActiveEditor = editor;
+  }
 
   // Signos Vitales Modal
   showVitalSignsModal = false;
@@ -88,7 +114,14 @@ export class ConsultaPage implements OnInit {
     });
 
     this.appointmentService.appointments$.subscribe(appointments => {
-      this.pacientesEspera = appointments.filter(c => c.estado === 'espera' || c.estado === 'consulta');
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+      const today = localDate.toISOString().split('T')[0];
+
+      this.pacientesEspera = appointments.filter(c => 
+        (c.estado === 'espera' || c.estado === 'consulta') && c.fecha === today
+      );
       // Si hay uno en 'consulta' y no hemos seleccionado ninguno (y no es consulta directa), seleccionarlo automáticamente
       const enConsulta = this.pacientesEspera.find(c => c.estado === 'consulta');
       if (enConsulta && !this.pacienteSeleccionado && !this.esConsultaDirecta) {
@@ -121,12 +154,16 @@ export class ConsultaPage implements OnInit {
       this.esConsultaDirecta = true;
       this.pacienteSeleccionado = citaTemporal;
       this.historialPasado = this.consultationService.getPatientHistory(cedula);
+      this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
+      this.updateEditorContents();
     }
   }
 
   async seleccionarPaciente(paciente: Cita) {
     this.pacienteSeleccionado = paciente;
     this.historialPasado = this.consultationService.getPatientHistory(paciente.cedula);
+    this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
+    this.updateEditorContents();
 
     // Si estaba en espera, pasarlo a consulta
     if (paciente.estado === 'espera') {
@@ -170,7 +207,67 @@ export class ConsultaPage implements OnInit {
       this.historialPasado = [];
       this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
       this.esConsultaDirecta = false;
+      this.updateEditorContents();
     }
+  }
+
+  // --- Rich Text Editing Toolbar Helpers ---
+  savedSelection: Range | null = null;
+
+  saveSelection() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      // Ensure the selection is within one of our editors
+      const host = range.commonAncestorContainer;
+      const editor = host.nodeType === 3 ? host.parentNode : host;
+      if (editor && (editor as HTMLElement).closest('.rich-textarea-editor')) {
+        this.savedSelection = range.cloneRange();
+      }
+    }
+  }
+
+  restoreSelection() {
+    if (this.savedSelection) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(this.savedSelection);
+      }
+    }
+  }
+
+  formatText(command: string, value: string = '') {
+    if (this.lastActiveEditor) {
+      const editorEl = this.lastActiveEditor === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+      if (editorEl && editorEl.nativeElement) {
+        editorEl.nativeElement.focus();
+        this.restoreSelection();
+      }
+    }
+    document.execCommand(command, false, value);
+    // Save selection again after formatting
+    this.saveSelection();
+  }
+
+  onEditorInput(field: 'diagnostico' | 'receta', event: any) {
+    const html = event.target.innerHTML;
+    if (field === 'diagnostico') {
+      this.nuevaConsulta.diagnostico = html;
+    } else {
+      this.nuevaConsulta.receta = html;
+    }
+  }
+
+  updateEditorContents() {
+    setTimeout(() => {
+      if (this.diagnosticoEditor?.nativeElement) {
+        this.diagnosticoEditor.nativeElement.innerHTML = this.nuevaConsulta.diagnostico || '';
+      }
+      if (this.recetaEditor?.nativeElement) {
+        this.recetaEditor.nativeElement.innerHTML = this.nuevaConsulta.receta || '';
+      }
+    }, 100);
   }
 
   imprimirReceta() {
@@ -267,6 +364,11 @@ export class ConsultaPage implements OnInit {
         this.pacienteSeleccionado.alergias = this.antecedentesForm.alergias;
       }
     }
+  }
+
+  getPatientPhoto(cedula: string): string {
+    const p = this.patientService.findPatientByCedula(cedula);
+    return p?.fotoUrl || '';
   }
 
   async presentToast(message: string, color: 'success' | 'danger' | 'info') {

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FinancialService, Transaccion, ReportePagoSeguro } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { formatMonto } from '../../utils/format.utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -126,6 +127,7 @@ export class ContabilidadPage implements OnInit {
     this.filteredReportes().reduce((acc, r) => acc + (r.montoEnviado - (r.montoRecibido || 0)), 0)
   );
 
+  formatMonto = formatMonto;
 
   constructor(
     private financialService: FinancialService,
