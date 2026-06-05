@@ -130,6 +130,13 @@ export class ConsultaPage implements OnInit {
       }
     });
 
+    // Actualizar historial del paciente seleccionado en tiempo real
+    this.consultationService.consultations$.subscribe(() => {
+      if (this.pacienteSeleccionado) {
+        this.historialPasado = this.consultationService.getPatientHistory(this.pacienteSeleccionado.cedula);
+      }
+    });
+
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
@@ -21,9 +21,27 @@ export class ConsultationService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private ngZone: NgZone
   ) {
     this.refreshConsultas();
+    this.setupRealtimeSubscription();
+  }
+
+  private setupRealtimeSubscription() {
+    this.supabase
+      .channel('consultas-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'consultas' },
+        (payload: any) => {
+          console.log('🔔 Realtime update on consultas:', payload);
+          this.ngZone.run(async () => {
+            await this.refreshConsultas();
+          });
+        }
+      )
+      .subscribe();
   }
 
   async refreshConsultas() {
