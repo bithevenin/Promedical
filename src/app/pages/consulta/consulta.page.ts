@@ -7,6 +7,7 @@ import { PrintRecetaService } from '../../services/print-receta.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
+import { getLocalDateString } from '../../utils/format.utils';
 
 @Component({
   selector: 'app-consulta',
@@ -143,7 +144,7 @@ export class ConsultaPage implements OnInit {
         edad: paciente.edad,
         seguro: paciente.seguro,
         sexo: paciente.sexo || 'M',
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: getLocalDateString(),
         estado: 'consulta',
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         altura: paciente.altura,
@@ -187,7 +188,7 @@ export class ConsultaPage implements OnInit {
     if (this.pacienteSeleccionado && this.nuevaConsulta.diagnostico) {
       const consulta: Consulta = {
         cedula: this.pacienteSeleccionado.cedula,
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: getLocalDateString(),
         diagnostico: this.nuevaConsulta.diagnostico,
         receta: this.nuevaConsulta.receta
       };

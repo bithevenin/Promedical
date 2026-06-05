@@ -5,6 +5,7 @@ import { ConfigService } from './config.service';
 import { AppointmentService } from './appointment.service';
 import { PatientService } from './patient.service';
 import { OfflineService } from './offline.service';
+import { getLocalDateString } from '../utils/format.utils';
 
 export interface Transaccion {
   id: number;
@@ -208,8 +209,13 @@ export class FinancialService {
   async registrarCobro(turno: number, monto: number) {
     try {
       const apps = this.appointmentService.getAppointments();
-      const today = new Date().toISOString().split('T')[0];
-      const cita = apps.find(c => c.turno === turno && c.fecha === today);
+      const today = getLocalDateString();
+      // Search by turno first, fallback to turno+fecha in case of date mismatch
+      let cita = apps.find((c: any) => c.turno === turno && c.fecha === today);
+      if (!cita) {
+        cita = apps.find((c: any) => c.turno === turno);
+        if (cita) console.warn(`[FinancialService] Cita found by turno only (fecha mismatch). turno=${turno}, today=${today}, cita.fecha=${cita.fecha}`);
+      }
 
       if (cita) {
         const nuevaTrans: Transaccion = {

@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { PatientService } from './patient.service';
 import { OfflineService } from './offline.service';
+import { getLocalDateString } from '../utils/format.utils';
 
 export interface Cita {
   id?: number;
@@ -40,7 +41,8 @@ export class AppointmentService {
   constructor(
     private supabaseService: SupabaseService,
     private patientService: PatientService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private ngZone: NgZone
   ) {
     this.refreshAppointments();
     this.setupRealtimeSubscription();
@@ -54,7 +56,9 @@ export class AppointmentService {
         { event: '*', schema: 'public', table: 'citas' },
         async (payload) => {
           console.log('Realtime update on citas:', payload);
-          await this.refreshAppointments();
+          this.ngZone.run(async () => {
+            await this.refreshAppointments();
+          });
         }
       )
       .subscribe();
@@ -119,7 +123,15 @@ export class AppointmentService {
       // 1. Save locally
       await this.offlineService.saveLocalData('citas', localCita);
 
-      // 2. Prepare database payload
+      // 2. Optimistic update: emit new list immediately so UI reflects change instantly
+      const currentList = [...this.appointmentsSubject.value];
+      const existingIndex = currentList.findIndex(c => c.turno === localCita.turno && c.fecha === localCita.fecha);
+      if (existingIndex === -1) {
+        currentList.push(localCita);
+        this.appointmentsSubject.next(currentList);
+      }
+
+      // 3. Prepare database payload
       const dbData = {
         turno: cita.turno,
         nombre: cita.nombre,
@@ -169,23 +181,34 @@ export class AppointmentService {
       };
       await this.offlineService.addToQueue('citas', 'insert', dbData);
     } finally {
+      // Full refresh to get real ID from Supabase and sync all data
       await this.refreshAppointments();
     }
   }
 
   async updateAppointmentStatus(turno: number, estado: Cita['estado'], extraData?: Partial<Cita>) {
+    // Use local date to match how citas are stored (citas.page uses local date for fechaSeleccionada)
+    const today = extraData?.fecha || getLocalDateString();
     try {
-      const today = extraData?.fecha || new Date().toISOString().split('T')[0];
-
       // 1. Update locally in IndexedDB first
       const local = await this.offlineService.getLocalData('citas');
-      const target = local.find(c => c.turno === turno && c.fecha === today);
+      // Try to find by turno+fecha (local date), fallback to turno only
+      let target = local.find((c: any) => c.turno === turno && c.fecha === today);
+      if (!target) {
+        // Fallback: find by turno alone (in case of date mismatch)
+        target = local.find((c: any) => c.turno === turno);
+        console.warn(`[AppointmentService] Cita not found by turno+fecha (turno=${turno}, fecha=${today}), using fallback by turno only.`);
+      }
+
       if (target) {
         target.estado = estado;
         if (extraData) {
           Object.assign(target, extraData);
         }
         await this.offlineService.saveLocalData('citas', target);
+        // Emit updated list immediately (optimistic update) so UI updates without waiting for DB
+        const updatedLocal = await this.offlineService.getLocalData('citas');
+        this.appointmentsSubject.next(updatedLocal);
       }
 
       // 2. Prepare payload for Supabase
@@ -202,6 +225,7 @@ export class AppointmentService {
           const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
           if (error) throw error;
         } else {
+          // Try by turno+fecha then by turno only
           const { error } = await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
           if (error) throw error;
         }
@@ -214,7 +238,6 @@ export class AppointmentService {
       }
     } catch (error) {
       console.warn('Error updating appointment online, queueing write:', error);
-      const today = extraData?.fecha || new Date().toISOString().split('T')[0];
       const updateData: any = { estado };
       if (extraData) {
         Object.keys(extraData).forEach(key => {

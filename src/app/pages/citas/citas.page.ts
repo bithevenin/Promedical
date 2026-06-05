@@ -6,7 +6,7 @@ import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
-import { formatMonto } from '../../utils/format.utils';
+import { formatMonto, parseJCEDate } from '../../utils/format.utils';
 
 @Component({
   selector: 'app-citas',
@@ -330,20 +330,35 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
       // If not, fetch from JCE API
       const result = await this.patientService.consultarJCE(cleanCedula);
       if (result) {
-        this.nuevoPaciente.nombre = result.nombreCompleto || `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
-        
+        // Nombre
+        this.nuevoPaciente.nombre = result.nombreCompleto ||
+          `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+
+        // Fecha de nacimiento: JCE devuelve "M/D/YYYY h:mm:ss AM/PM"
         if (result.fechaNacimiento) {
-          this.nuevoPaciente.fecha_nacimiento = result.fechaNacimiento.split('T')[0];
-          this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+          this.nuevoPaciente.fecha_nacimiento = parseJCEDate(result.fechaNacimiento);
+          if (this.nuevoPaciente.fecha_nacimiento) {
+            this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+          }
         }
 
+        // Sexo: la API devuelve "F" o "M"
         if (result.sexo) {
           const s = result.sexo.trim().toUpperCase();
           this.nuevoPaciente.sexo = s.startsWith('F') ? 'F' : 'M';
         }
 
-        this.nuevoPaciente.profesion = result.ocupacion || result.ocupación || '';
-        this.nuevoPaciente.direccion = result.direccion || result.dirección || [result.lugarNacimiento, result.municipioCedula].filter(Boolean).join(', ') || '';
+        // Ocupación: la API JCE no incluye este campo; mantener lo existente o vaciar
+        // result.ocupacion / result.ocupación son undefined en la respuesta real
+        if (result.ocupacion || result.ocupación) {
+          this.nuevoPaciente.profesion = result.ocupacion || result.ocupación;
+        }
+
+        // Dirección: usar lugarNacimiento como referencia si no hay dirección directa
+        this.nuevoPaciente.direccion = result.direccion || result.dirección ||
+          [result.lugarNacimiento].filter(Boolean).join(', ') || '';
+
+        // Foto
         this.nuevoPaciente.fotoUrl = result.fotoUrl || '';
       }
     } catch (error: any) {

@@ -4,6 +4,7 @@ import { PatientService, Paciente } from '../../services/patient.service';
 import { ConsultationService, Consulta } from '../../services/consultation.service';
 import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
+import { formatMonto, parseJCEDate } from '../../utils/format.utils';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 
@@ -172,20 +173,34 @@ export class PacientesPage implements OnInit {
       const result = await this.patientService.consultarJCE(this.editData.cedula);
       console.log('buscarJCE result received:', JSON.stringify(result));
       if (result) {
-        this.editData.nombre = result.nombreCompleto || `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
-        
+        // Nombre
+        this.editData.nombre = result.nombreCompleto ||
+          `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+
+        // Fecha de nacimiento: JCE devuelve "M/D/YYYY h:mm:ss AM/PM"
         if (result.fechaNacimiento) {
-          this.editData.fecha_nacimiento = result.fechaNacimiento.split('T')[0];
-          this.editData.edad = this.patientService.calcularEdad(this.editData.fecha_nacimiento || '');
+          this.editData.fecha_nacimiento = parseJCEDate(result.fechaNacimiento);
+          if (this.editData.fecha_nacimiento) {
+            this.editData.edad = this.patientService.calcularEdad(this.editData.fecha_nacimiento);
+          }
         }
 
+        // Sexo: la API devuelve "F" o "M"
         if (result.sexo) {
           const s = result.sexo.trim().toUpperCase();
           this.editData.sexo = s.startsWith('F') ? 'F' : 'M';
         }
 
-        this.editData.profesion = result.ocupacion || result.ocupación || this.editData.profesion || '';
-        this.editData.direccion = result.direccion || result.dirección || [result.lugarNacimiento, result.municipioCedula].filter(Boolean).join(', ') || '';
+        // Ocupación: la API JCE no incluye este campo directamente
+        if (result.ocupacion || result.ocupación) {
+          this.editData.profesion = result.ocupacion || result.ocupación;
+        }
+
+        // Dirección
+        this.editData.direccion = result.direccion || result.dirección ||
+          [result.lugarNacimiento].filter(Boolean).join(', ') || '';
+
+        // Foto
         this.editData.fotoUrl = result.fotoUrl || this.editData.fotoUrl || '';
 
         console.log('buscarJCE editData set to:', JSON.stringify(this.editData));
