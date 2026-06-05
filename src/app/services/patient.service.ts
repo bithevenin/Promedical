@@ -116,7 +116,6 @@ export class PatientService {
         edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad
       };
       await this.offlineService.saveLocalData('pacientes', fullPatient);
-      this.refreshPatients();
 
       // 2. Prepare payload for Supabase
       const dbData = {
@@ -169,6 +168,8 @@ export class PatientService {
         direccion: paciente.direccion || ''
       };
       await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
+    } finally {
+      await this.refreshPatients();
     }
   }
 

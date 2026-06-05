@@ -125,11 +125,8 @@ export class PacientesPage implements OnInit {
           // Update the in-memory reference so the UI re-renders immediately
           paciente.fotoUrl = result.fotoUrl;
 
-          // Only persist to Supabase if it's a real URL (not a base64 data URI)
-          // Base64 strings are too large for a database column
-          if (!result.fotoUrl.startsWith('data:')) {
-            this.patientService.savePatient({ ...paciente });
-          }
+          // Persistir el paciente con la foto en la base de datos (Supabase e IndexedDB)
+          await this.patientService.savePatient({ ...paciente });
         }
       } catch {
         // Silently ignore errors for individual patients

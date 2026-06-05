@@ -322,7 +322,14 @@
                         <div>
                           <div class="text-[13px] font-bold text-white group-hover:text-primary transition-colors leading-none mb-1">{{ cita.nombre }}</div>
                           <div class="text-[9px] font-black text-text-muted flex items-center gap-1.5">
-                            <ion-icon name="time-outline" class="text-primary"></ion-icon> {{ cita.hora }}
+                            @if (cita.estado === 'consulta') {
+                              <span class="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-md text-[7px] font-black uppercase tracking-wider animate-pulse">
+                                <span class="w-1 h-1 bg-yellow-400 rounded-full"></span>
+                                En Consulta
+                              </span>
+                            } @else {
+                              <ion-icon name="time-outline" class="text-primary"></ion-icon> {{ cita.hora }}
+                            }
                           </div>
                         </div>
                       </div>

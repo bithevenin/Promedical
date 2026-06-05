@@ -143,8 +143,13 @@ export class CitasPage implements OnInit {
   }
 
   actualizarListas(appointments: Cita[]) {
-    this.proximasCitas = appointments.filter(c => c.estado === 'espera' && c.fecha === this.fechaFiltro);
-    this.citasPorCobrar = appointments.filter(c => c.estado === 'por_pagar' && c.fecha === this.fechaFiltro);
+    this.proximasCitas = appointments
+      .filter(c => (c.estado === 'espera' || c.estado === 'consulta') && c.fecha === this.fechaFiltro)
+      .sort((a, b) => a.turno - b.turno);
+
+    this.citasPorCobrar = appointments
+      .filter(c => c.estado === 'por_pagar' && c.fecha === this.fechaFiltro)
+      .sort((a, b) => a.turno - b.turno);
 
     // Calcular próximo turno solo para el día de hoy o el día seleccionado
     const citasDelDia = appointments.filter(c => c.fecha === this.fechaSeleccionada);
@@ -323,19 +328,25 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
           direccion: localPatient.direccion || ''
         };
         this.carnetSeguroTemp = localPatient.carnetSeguro || '';
-        this.isLoadingJce = false;
-        return;
+
+        // If the patient already has a photo, bypass JCE lookup
+        if (localPatient.fotoUrl) {
+          this.isLoadingJce = false;
+          return;
+        }
       }
 
-      // If not, fetch from JCE API
+      // If patient does not exist or has no photo, query JCE API
       const result = await this.patientService.consultarJCE(cleanCedula);
       if (result) {
         // Nombre
-        this.nuevoPaciente.nombre = result.nombreCompleto ||
-          `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+        if (!this.nuevoPaciente.nombre) {
+          this.nuevoPaciente.nombre = result.nombreCompleto ||
+            `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+        }
 
         // Fecha de nacimiento: JCE devuelve "M/D/YYYY h:mm:ss AM/PM"
-        if (result.fechaNacimiento) {
+        if (result.fechaNacimiento && !this.nuevoPaciente.fecha_nacimiento) {
           this.nuevoPaciente.fecha_nacimiento = parseJCEDate(result.fechaNacimiento);
           if (this.nuevoPaciente.fecha_nacimiento) {
             this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
@@ -343,23 +354,37 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         }
 
         // Sexo: la API devuelve "F" o "M"
-        if (result.sexo) {
+        if (result.sexo && !this.nuevoPaciente.sexo) {
           const s = result.sexo.trim().toUpperCase();
           this.nuevoPaciente.sexo = s.startsWith('F') ? 'F' : 'M';
         }
 
-        // Ocupación: la API JCE no incluye este campo; mantener lo existente o vaciar
-        // result.ocupacion / result.ocupación son undefined en la respuesta real
-        if (result.ocupacion || result.ocupación) {
+        // Ocupación: la API JCE no incluye este campo; mantener lo existente
+        if ((result.ocupacion || result.ocupación) && !this.nuevoPaciente.profesion) {
           this.nuevoPaciente.profesion = result.ocupacion || result.ocupación;
         }
 
         // Dirección: usar lugarNacimiento como referencia si no hay dirección directa
-        this.nuevoPaciente.direccion = result.direccion || result.dirección ||
-          [result.lugarNacimiento].filter(Boolean).join(', ') || '';
+        if (!this.nuevoPaciente.direccion) {
+          this.nuevoPaciente.direccion = result.direccion || result.dirección ||
+            [result.lugarNacimiento].filter(Boolean).join(', ') || '';
+        }
 
         // Foto
-        this.nuevoPaciente.fotoUrl = result.fotoUrl || '';
+        this.nuevoPaciente.fotoUrl = result.fotoUrl || this.nuevoPaciente.fotoUrl || '';
+
+        // Si el paciente ya existe localmente, actualizamos sus datos con la nueva foto/datos
+        if (localPatient) {
+          const updatedPatient = {
+            ...localPatient,
+            fecha_nacimiento: this.nuevoPaciente.fecha_nacimiento || localPatient.fecha_nacimiento,
+            sexo: this.nuevoPaciente.sexo || localPatient.sexo,
+            fotoUrl: this.nuevoPaciente.fotoUrl || localPatient.fotoUrl,
+            direccion: this.nuevoPaciente.direccion || localPatient.direccion,
+            edad: this.nuevoPaciente.edad || localPatient.edad
+          };
+          await this.patientService.savePatient(updatedPatient);
+        }
       }
     } catch (error: any) {
       console.error('Error JCE lookup in Citas:', error);

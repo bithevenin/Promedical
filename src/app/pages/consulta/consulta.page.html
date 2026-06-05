@@ -155,8 +155,14 @@
             <!-- Header Paciente -->
             <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start gap-6 mb-7 pb-6 border-b border-glass-border">
                <div class="flex items-center gap-5">
-                  <div class="w-14 h-14 bg-primary rounded-xl flex items-center justify-center text-2xl font-black shadow-lg shadow-primary/20">
-                    {{ pacienteSeleccionado.nombre.charAt(0) }}
+                  <div class="w-14 h-14 rounded-xl border border-glass-border overflow-hidden flex items-center justify-center shrink-0 shadow-lg shadow-primary/10">
+                    @if (getPatientPhoto(pacienteSeleccionado.cedula)) {
+                       <img [src]="getPatientPhoto(pacienteSeleccionado.cedula)" class="w-full h-full object-cover">
+                    } @else {
+                       <div class="w-full h-full bg-primary flex items-center justify-center text-2xl font-black text-white">
+                         {{ pacienteSeleccionado.nombre.charAt(0) }}
+                       </div>
+                    }
                   </div>
                   <div>
                     <h3 class="text-xl font-black text-white leading-tight mb-1 uppercase tracking-tight">{{ pacienteSeleccionado.nombre }}</h3>
