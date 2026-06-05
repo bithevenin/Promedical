@@ -43,6 +43,21 @@ export class AppointmentService {
     private offlineService: OfflineService
   ) {
     this.refreshAppointments();
+    this.setupRealtimeSubscription();
+  }
+
+  private setupRealtimeSubscription() {
+    this.supabase
+      .channel('citas-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'citas' },
+        async (payload) => {
+          console.log('Realtime update on citas:', payload);
+          await this.refreshAppointments();
+        }
+      )
+      .subscribe();
   }
 
   async refreshAppointments() {
