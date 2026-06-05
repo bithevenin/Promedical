@@ -250,13 +250,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] block mb-2">Diagnóstico</label>
-                <p class="text-sm font-bold text-white leading-relaxed">{{ h.diagnostico }}</p>
+                 <div class="text-sm font-bold text-white leading-relaxed rich-text-content" [innerHTML]="h.diagnostico"></div>
               </div>
               <div>
                 <label class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] block mb-2">Tratamiento / Receta</label>
-                <p class="text-sm text-text-secondary leading-relaxed bg-dark-secondary/50 p-3 rounded-xl border border-glass-border">
-                  {{ h.receta }}
-                </p>
+                 <div class="text-sm text-text-secondary leading-relaxed bg-dark-secondary/50 p-3 rounded-xl border border-glass-border rich-text-content" [innerHTML]="h.receta"></div>
               </div>
             </div>
           </div>
