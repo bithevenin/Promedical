@@ -293,7 +293,7 @@ export class PatientService {
       throw new Error('La cédula debe contener exactamente 11 dígitos.');
     }
 
-    const baseUrl = environment.jceApiUrl || 'https://edging-rarity-routing.ngrok-free.dev';
+    const baseUrl = environment.jceApiUrl || 'https://unrude-unpopular-gerri.ngrok-free.dev';
     const apiUrl = `${baseUrl}/api/v1/cedula-queries/query`;
 
     const response = await fetch(apiUrl, {
