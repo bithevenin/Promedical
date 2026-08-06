@@ -4,30 +4,27 @@ import { SupabaseService } from './supabase.service';
 import { PatientService } from './patient.service';
 import { OfflineService } from './offline.service';
 import { getLocalDateString } from '../utils/format.utils';
+import { Cita } from '../models';
 
-export interface Cita {
-  id?: number;
+interface DbCita {
+  id: number;
   turno: number;
   nombre: string;
   cedula: string;
   edad: number;
   fecha_nacimiento?: string;
-  seguro: string;
+  seguro?: string;
   sexo: 'M' | 'F';
-  fecha: string; // YYYY-MM-DD
+  fecha: string;
   estado: 'espera' | 'consulta' | 'por_pagar' | 'atendido';
   hora: string;
   altura?: string;
   peso?: string;
   profesion?: string;
-  instruccionCobro?: 'cobrar' | 'seguro' | 'gratis';
-  montoCobrado?: number;
-  carnetSeguro?: string;
+  instruccion_cobro?: 'cobrar' | 'seguro' | 'gratis';
+  monto_cobrado?: number;
+  carnet_seguro?: string;
   telefono?: string;
-  signosVitales?: any;
-  antecedentesPersonales?: string;
-  antecedentesFamiliares?: string;
-  alergias?: string;
 }
 
 @Injectable({
@@ -54,8 +51,7 @@ export class AppointmentService {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'citas' },
-        async (payload) => {
-          console.log('Realtime update on citas:', payload);
+        async () => {
           this.ngZone.run(async () => {
             await this.refreshAppointments();
           });
@@ -72,7 +68,7 @@ export class AppointmentService {
 
         if (data) {
           await this.offlineService.clearStore('citas');
-          const appointments: Cita[] = data.map((c: any) => ({
+          const appointments: Cita[] = data.map((c: DbCita) => ({
             id: c.id,
             turno: Number(c.turno),
             nombre: c.nombre,
@@ -104,7 +100,7 @@ export class AppointmentService {
       console.warn('Network issue, fetching appointments from offline storage:', error);
     }
 
-    const local = await this.offlineService.getLocalData('citas');
+    const local = await this.offlineService.getLocalData<Cita>('citas');
     this.appointmentsSubject.next(local);
   }
 
@@ -191,13 +187,12 @@ export class AppointmentService {
     const today = extraData?.fecha || getLocalDateString();
     try {
       // 1. Update locally in IndexedDB first
-      const local = await this.offlineService.getLocalData('citas');
+      const local = await this.offlineService.getLocalData<Cita>('citas');
       // Try to find by turno+fecha (local date), fallback to turno only
-      let target = local.find((c: any) => c.turno === turno && c.fecha === today);
+      let target = local.find((c: Cita) => c.turno === turno && c.fecha === today);
       if (!target) {
         // Fallback: find by turno alone (in case of date mismatch)
-        target = local.find((c: any) => c.turno === turno);
-        console.warn(`[AppointmentService] Cita not found by turno+fecha (turno=${turno}, fecha=${today}), using fallback by turno only.`);
+        target = local.find((c: Cita) => c.turno === turno);
       }
 
       if (target) {
@@ -207,16 +202,16 @@ export class AppointmentService {
         }
         await this.offlineService.saveLocalData('citas', target);
         // Emit updated list immediately (optimistic update) so UI updates without waiting for DB
-        const updatedLocal = await this.offlineService.getLocalData('citas');
+        const updatedLocal = await this.offlineService.getLocalData<Cita>('citas');
         this.appointmentsSubject.next(updatedLocal);
       }
 
       // 2. Prepare payload for Supabase
-      const updateData: any = { estado };
+      const updateData: Record<string, unknown> = { estado };
       if (extraData) {
         Object.keys(extraData).forEach(key => {
           const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-          updateData[snakeKey] = (extraData as any)[key];
+          updateData[snakeKey] = extraData[key as keyof Cita];
         });
       }
 
@@ -238,11 +233,11 @@ export class AppointmentService {
       }
     } catch (error) {
       console.warn('Error updating appointment online, queueing write:', error);
-      const updateData: any = { estado };
+      const updateData: Record<string, unknown> = { estado };
       if (extraData) {
         Object.keys(extraData).forEach(key => {
           const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-          updateData[snakeKey] = (extraData as any)[key];
+          updateData[snakeKey] = extraData[key as keyof Cita];
         });
       }
       await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);

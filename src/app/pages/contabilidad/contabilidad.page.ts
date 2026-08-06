@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { FinancialService, Transaccion, ReportePagoSeguro } from '../../services/financial.service';
+import { FinancialService } from '../../services/financial.service';
+import { Transaccion, ReportePagoSeguro, UserProfile } from '../../models';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { formatMonto } from '../../utils/format.utils';
@@ -19,10 +20,10 @@ export class ContabilidadPage implements OnInit {
   transactions = signal<Transaccion[]>([]);
   resumenSeguros = signal<{ seguro: string; totalPendiente: number; totalFacturas: number }[]>([]);
   reportes = signal<ReportePagoSeguro[]>([]);
-  currentProfile = signal<any>(null);
+  currentProfile = signal<UserProfile | null>(null);
 
   navigationItems = computed(() => {
-    const base: any[] = [
+    const base: { icon: string; label: string; route: string; active?: boolean }[] = [
       { icon: 'home-outline', label: 'Inicio', route: '/main' },
       { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
       { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
@@ -103,7 +104,7 @@ export class ContabilidadPage implements OnInit {
 
   ingresosCopagos = computed(() =>
     this.filteredTransactions()
-      .filter(t => t.categoria === 'Ingreso')
+      .filter(t => t.categoria === 'Ingreso' && !t.concepto.startsWith('Pago ARS:'))
       .reduce((sum, t) => sum + t.monto, 0)
   );
 
@@ -114,11 +115,15 @@ export class ContabilidadPage implements OnInit {
   );
 
   totalSegurosRecibido = computed(() =>
-    this.filteredReportes().reduce((acc, r) => acc + (r.montoRecibido || 0), 0)
+    this.filteredTransactions()
+      .filter(t => t.categoria === 'Ingreso' && t.concepto.startsWith('Pago ARS:'))
+      .reduce((sum, t) => sum + t.monto, 0)
   );
 
   ingresosTotalesUnificados = computed(() =>
-    this.ingresosCopagos() + this.totalSegurosRecibido()
+    this.filteredTransactions()
+      .filter(t => t.categoria === 'Ingreso')
+      .reduce((sum, t) => sum + t.monto, 0)
   );
 
   balanceNeto = computed(() => this.ingresosTotalesUnificados() - this.totalGastos());

@@ -1,19 +1,20 @@
 import { Injectable } from '@angular/core';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { environment } from 'src/environments/environment';
 import { BehaviorSubject } from 'rxjs';
+import { UserProfile } from '../models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private supabase: SupabaseClient;
-  private userSession = new BehaviorSubject<any>(null);
+  private userSession = new BehaviorSubject<Session | null>(null);
 
   constructor(private supabaseService: SupabaseService) {
     this.supabase = this.supabaseService.client;
-    this.supabase.auth.onAuthStateChange((event: any, session: any) => {
+    this.supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       this.userSession.next(session);
       if (session?.user) {
         this.loadProfile(session.user.id);
@@ -43,7 +44,7 @@ export class AuthService {
     return this.userSession.value;
   }
 
-  private userProfile = new BehaviorSubject<any>(null);
+  private userProfile = new BehaviorSubject<UserProfile | null>(null);
   get profile$() {
     return this.userProfile.asObservable();
   }
@@ -87,8 +88,8 @@ export class AuthService {
   }
 
   async updateUser(id: string, nombre: string, fotoUrl: string, rol: string, especialidad?: string) {
-    const updateData: any = { nombre, foto_url: fotoUrl, rol };
-    if (especialidad !== undefined) updateData.especialidad = especialidad;
+    const updateData: Record<string, string> = { nombre, foto_url: fotoUrl, rol };
+    if (especialidad !== undefined) updateData['especialidad'] = especialidad;
 
     const { error } = await this.supabase
       .from('usuarios')

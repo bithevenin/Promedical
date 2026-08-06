@@ -1,11 +1,12 @@
 import { Component, ChangeDetectionStrategy, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { AppointmentService, Cita } from '../../services/appointment.service';
+import { AppointmentService } from '../../services/appointment.service';
 import { PatientService } from '../../services/patient.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { formatMonto } from '../../utils/format.utils';
+import { Paciente, Transaccion, UserProfile, Cita } from '../../models';
 
 interface NavItem {
   icon: string;
@@ -50,21 +51,66 @@ export class DashboardPage implements OnInit {
   });
 
   allCitas = signal<Cita[]>([]);
-  allPatients = signal<any[]>([]);
-  allTransactions = signal<any[]>([]);
-  currentProfile = signal<any>(null);
+  allPatients = signal<Paciente[]>([]);
+  allTransactions = signal<Transaccion[]>([]);
+  currentProfile = signal<UserProfile | null>(null);
+
+  selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
 
   stats = computed<StatCard[]>(() => {
-    const now = new Date();
-    const offset = now.getTimezoneOffset();
-    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
-    const today = localDate.toISOString().split('T')[0];
+    const selectedDateStr = this.selectedDate();
+    
+    // Parse selected date carefully to avoid timezone shifts
+    let selectedDateObj: Date;
+    if (selectedDateStr.includes('-')) {
+      const [y, m, d] = selectedDateStr.split('-');
+      selectedDateObj = new Date(Number(y), Number(m) - 1, Number(d));
+    } else {
+      selectedDateObj = new Date(selectedDateStr);
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
 
     const citasHoy = this.allCitas().filter(c => c.fecha === today).length;
     const pacientesTotales = this.allPatients().length;
 
     const mesActual = new Date().getMonth();
     const añoActual = new Date().getFullYear();
+    
+    // Pagos diarios (ingresos) del dia seleccionado
+    const ingresosDia = this.allTransactions()
+      .filter(t => {
+        let dateObj: Date;
+        if (t.fecha.includes('-')) {
+          const [y, m, d] = t.fecha.split('-');
+          dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+        } else if (t.fecha.includes('/')) {
+          const parts = t.fecha.split('/');
+          if (parts[0].length === 4) {
+            dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          } else {
+            const p0 = Number(parts[0]);
+            const p1 = Number(parts[1]);
+            const p2 = Number(parts[2]);
+            if (p0 > 12) {
+              dateObj = new Date(p2, p1 - 1, p0);
+            } else if (p1 > 12) {
+              dateObj = new Date(p2, p0 - 1, p1);
+            } else {
+              dateObj = new Date(p2, p1 - 1, p0);
+            }
+          }
+        } else {
+          dateObj = new Date(t.fecha);
+        }
+        return t.categoria === 'Ingreso' && 
+               !isNaN(dateObj.getTime()) && 
+               dateObj.getDate() === selectedDateObj.getDate() &&
+               dateObj.getMonth() === selectedDateObj.getMonth() && 
+               dateObj.getFullYear() === selectedDateObj.getFullYear();
+      })
+      .reduce((sum, t) => sum + t.monto, 0);
+
     const ingresosMes = this.allTransactions()
       .filter(t => {
         let dateObj: Date;
@@ -106,6 +152,7 @@ export class DashboardPage implements OnInit {
 
     if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
       carts.push({ title: 'Ingresos Mensuales', value: formatMonto(ingresosMes), trend: '+12%', isPositive: true, icon: 'wallet', colorClass: 'green' });
+      carts.push({ title: 'Ingresos Diarios', value: formatMonto(ingresosDia), trend: 'Hoy', isPositive: true, icon: 'cash', colorClass: 'emerald' });
     } else {
       carts.push({ title: 'Consultas Pendientes', value: citasEsperaHoy.toString(), trend: '0%', isPositive: true, icon: 'calendar', colorClass: 'green' });
     }

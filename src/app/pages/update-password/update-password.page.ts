@@ -76,10 +76,11 @@ export class UpdatePasswordPage implements OnInit {
           this.router.navigate(['/main']);
         }, 2000);
 
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error updating password:', error);
         this.msgType = 'error';
-        this.message = error.message || 'Error al actualizar contraseña';
+        const errMsg = error instanceof Error ? error.message : String(error);
+        this.message = errMsg || 'Error al actualizar contraseña';
         this.presentToast(this.message, 'danger');
       } finally {
         this.isLoading = false;

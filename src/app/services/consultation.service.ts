@@ -2,13 +2,14 @@ import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
+import { Consulta } from '../models';
 
-export interface Consulta {
-  id?: string;
-  cedula: string;
-  fecha: string; // YYYY-MM-DD
-  diagnostico: string;
-  receta: string;
+interface DbConsulta {
+  id: string;
+  paciente_cedula: string;
+  fecha: string;
+  diagnostico?: string;
+  receta?: string;
 }
 
 @Injectable({
@@ -34,8 +35,7 @@ export class ConsultationService {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'consultas' },
-        (payload: any) => {
-          console.log('🔔 Realtime update on consultas:', payload);
+        (payload: unknown) => {
           this.ngZone.run(async () => {
             await this.refreshConsultas();
           });
@@ -52,7 +52,7 @@ export class ConsultationService {
         
         if (data) {
           await this.offlineService.clearStore('consultas');
-          const consultas: Consulta[] = data.map((c: any) => ({
+          const consultas: Consulta[] = data.map((c: DbConsulta) => ({
             id: c.id,
             cedula: c.paciente_cedula,
             fecha: c.fecha,
@@ -71,7 +71,7 @@ export class ConsultationService {
       console.warn('Network issue, fetching consultations from offline storage:', error);
     }
 
-    const local = await this.offlineService.getLocalData('consultas');
+    const local = await this.offlineService.getLocalData<Consulta>('consultas');
     this.consultationsSubject.next(local);
   }
 

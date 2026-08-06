@@ -279,6 +279,71 @@
            }
         </div>
       </div>
+
+      <!-- SECCIÓN DATOS -->
+      <div *ngIf="selectedSegment === 'datos'" class="animate-fade-in-up space-y-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Pacientes Import/Export -->
+          <div class="bg-glass-light border border-glass-border rounded-2xl p-6 lg:p-8 shadow-xl">
+             <div class="flex items-center gap-3 mb-6">
+                <div class="w-1 h-5 bg-sky-400 rounded-full"></div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">Gestión de Pacientes</h5>
+             </div>
+             <p class="text-[9px] font-bold text-text-muted mb-6">Importa tu base de datos de pacientes o exporta la actual a formato Excel.</p>
+             
+             <div class="space-y-4">
+                <button class="w-full py-3 bg-white/5 border border-glass-border text-white hover:border-primary/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" (click)="descargarPlantilla('pacientes')">
+                   <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
+                   Descargar Plantilla
+                </button>
+                
+                <div class="relative w-full">
+                   <input type="file" accept=".xlsx, .xls, .csv" (change)="importarArchivo($event, 'pacientes')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="guardando">
+                   <button class="w-full py-3 bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" [class.opacity-50]="guardando">
+                      <ion-icon [name]="guardando ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="guardando" class="text-lg"></ion-icon>
+                      Importar Pacientes
+                   </button>
+                </div>
+
+                <button class="w-full py-3 bg-primary text-white hover:bg-primary-deep rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2" (click)="exportarPacientes()">
+                   <ion-icon name="download-outline" class="text-lg"></ion-icon>
+                   Exportar Pacientes
+                </button>
+             </div>
+          </div>
+
+          <!-- Historias Import/Export -->
+          <div class="bg-glass-light border border-glass-border rounded-2xl p-6 lg:p-8 shadow-xl">
+             <div class="flex items-center gap-3 mb-6">
+                <div class="w-1 h-5 bg-amber-400 rounded-full"></div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">Historias Clínicas</h5>
+             </div>
+             <p class="text-[9px] font-bold text-text-muted mb-6">Importa consultas históricas o exporta el registro clínico completo a Excel.</p>
+             
+             <div class="space-y-4">
+                <button class="w-full py-3 bg-white/5 border border-glass-border text-white hover:border-amber-500/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" (click)="descargarPlantilla('historias')">
+                   <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
+                   Descargar Plantilla
+                </button>
+                
+                <div class="relative w-full">
+                   <input type="file" accept=".xlsx, .xls, .csv" (change)="importarArchivo($event, 'historias')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="guardando">
+                   <button class="w-full py-3 bg-amber-500/20 border border-amber-500/30 text-amber-500 hover:bg-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" [class.opacity-50]="guardando">
+                      <ion-icon [name]="guardando ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="guardando" class="text-lg"></ion-icon>
+                      Importar Historias
+                   </button>
+                </div>
+
+                <button class="w-full py-3 bg-amber-500 text-white hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2" (click)="exportarHistorias()">
+                   <ion-icon name="download-outline" class="text-lg"></ion-icon>
+                   Exportar Historias
+                </button>
+             </div>
+          </div>
+          
+        </div>
+      </div>
     </div>
   </main>
 

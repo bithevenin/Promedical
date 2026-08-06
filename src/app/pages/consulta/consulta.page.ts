@@ -1,10 +1,11 @@
 import { Component, OnInit, signal, computed, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AppointmentService, Cita } from '../../services/appointment.service';
-import { PatientService, Paciente } from '../../services/patient.service';
-import { ConsultationService, Consulta } from '../../services/consultation.service';
+import { AppointmentService } from '../../services/appointment.service';
+import { PatientService } from '../../services/patient.service';
+import { ConsultationService } from '../../services/consultation.service';
 import { PrintRecetaService } from '../../services/print-receta.service';
 import { AuthService } from '../../services/auth.service';
+import { Cita, Paciente, Consulta, UserProfile } from '../../models';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import { getLocalDateString } from '../../utils/format.utils';
@@ -40,10 +41,10 @@ export class ConsultaPage implements OnInit {
   pacienteSeleccionado: Cita | null = null;
   historialPasado: Consulta[] = [];
 
-  currentProfile = signal<any>(null);
+  currentProfile = signal<UserProfile | null>(null);
 
   navigationItems = computed(() => {
-    const base: any[] = [
+    const base: { icon: string; label: string; route: string; active?: boolean }[] = [
       { icon: 'home-outline', label: 'Inicio', route: '/main' },
       { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
       { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
@@ -301,10 +302,10 @@ export class ConsultaPage implements OnInit {
   }
 
   calcularIMC() {
-    if (this.signosForm.peso > 0 && this.signosForm.talla > 30) {
+    if (this.signosForm.peso > 0 && this.signosForm.talla > 0) {
       const tallaMeters = this.signosForm.talla / 100;
       const imcVal = this.signosForm.peso / (tallaMeters * tallaMeters);
-      this.signosForm.imc = Number(Math.min(imcVal, 99.9).toFixed(1));
+      this.signosForm.imc = Number(Math.min(imcVal, 999.9).toFixed(1));
     } else {
       this.signosForm.imc = 0;
     }
@@ -318,14 +319,15 @@ export class ConsultaPage implements OnInit {
       });
 
       if (error) {
-        this.presentToast('Error al guardar signos vitales: ' + ((error as any).message || 'Error desconocido'), 'danger');
+        const errMsg = (error as any)?.message || String(error);
+        this.presentToast('Error al guardar signos vitales: ' + errMsg, 'danger');
       } else {
         this.presentToast('Signos vitales guardados con éxito', 'success');
         this.cerrarModalSignos();
         // Recargar datos del paciente para ver el historial actualizado
         const fullPatient = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
-        if (fullPatient && this.pacienteSeleccionado) {
-          this.pacienteSeleccionado.signosVitales = fullPatient.signosVitales;
+        if (fullPatient && this.pacienteSeleccionado && fullPatient.signosVitales) {
+          this.pacienteSeleccionado.signosVitales = [...fullPatient.signosVitales];
         }
         // Reset form
         this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0 };

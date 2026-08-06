@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-20 lg:pb-0">
+<div class="dashboard-wrapper h-[100dvh] overflow-y-auto overflow-x-hidden bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-20 lg:pb-0">
   <!-- Mobile Header -->
   <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
     <div class="logo flex items-center gap-3" routerLink="/main">
@@ -115,33 +115,33 @@
         <div class="xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 lg:gap-4">
           <!-- Ingresos -->
           <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-2">Ingresos Brutos</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(ingresosTotalesUnificados()) }}</h3>
+            <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Ingresos Brutos</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(ingresosTotalesUnificados()) }}</h3>
           </div>
           <!-- Gastos -->
           <div class="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-2">Gastos Totales</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalGastos()) }}</h3>
+            <span class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-2">Gastos Totales</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(totalGastos()) }}</h3>
           </div>
           <!-- Copagos -->
           <div class="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-primary uppercase tracking-widest mb-2">Diferencia ARS</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(ingresosCopagos()) }}</h3>
+            <span class="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Diferencia ARS</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(ingresosCopagos()) }}</h3>
           </div>
           <!-- Cheques -->
           <div class="bg-sky-500/10 border border-sky-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-sky-400 uppercase tracking-widest mb-2">Seguros Recib.</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalSegurosRecibido()) }}</h3>
+            <span class="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2">Seguros Recib.</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(totalSegurosRecibido()) }}</h3>
           </div>
           <!-- Pendiente -->
           <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-amber-500 uppercase tracking-widest mb-2">Pendiente ARS</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(totalSegurosPendiente()) }}</h3>
+            <span class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">Pendiente ARS</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(totalSegurosPendiente()) }}</h3>
           </div>
           <!-- Neto -->
           <div class="bg-white/10 border border-white/20 rounded-2xl p-4 flex flex-col justify-between border-dashed hover:scale-105 transition-transform">
-            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest mb-2">Balance Neto</span>
-            <h3 class="text-base font-black text-white tracking-tighter">{{ formatMonto(balanceNeto()) }}</h3>
+            <span class="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Balance Neto</span>
+            <h3 class="text-xl 2xl:text-2xl font-black text-white tracking-tighter">{{ formatMonto(balanceNeto()) }}</h3>
           </div>
         </div>
       </div>
