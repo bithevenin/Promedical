@@ -442,6 +442,19 @@ export class ConfiguracionPage implements OnInit {
             // Usar header: 1 para obtener un array de arrays (índices posicionales)
             const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
+            // Función auxiliar para convertir fechas de Excel a YYYY-MM-DD
+            const formatExcelDate = (val: any): string => {
+                if (!val) return '';
+                if (val instanceof Date) {
+                    return val.toISOString().split('T')[0];
+                }
+                if (typeof val === 'number') {
+                    const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    return date.toISOString().split('T')[0];
+                }
+                return String(val).trim();
+            };
+
             try {
                 const pacientes: Paciente[] = [];
                 
@@ -451,12 +464,19 @@ export class ConfiguracionPage implements OnInit {
                     const row = rows[i];
                     if (!row || row.length === 0) continue;
 
-                    const nombre = String(row[0] || '').trim();
-                    const primerApellido = String(row[1] || '').trim();
-                    const segundoApellido = String(row[2] || '').trim();
-                    const direccion = String(row[8] || '').trim();
-                    const telefono = String(row[12] || '').trim();
-                    const historialClinico = String(row[43] || '').trim();
+                    const nombre = String(row[0] || '').trim(); // 1-Nombre celda A
+                    const primerApellido = String(row[1] || '').trim(); // 2-Primer apellido celda B
+                    const segundoApellido = String(row[2] || '').trim(); // 3-Segundo apellido celda C
+                    const fechaNacimientoRaw = row[3]; // 4-fecha de nacimiento celda D
+                    const edadRaw = parseInt(String(row[4] || '0').trim(), 10); // 5-Edad celda E
+                    const edad = isNaN(edadRaw) ? 0 : edadRaw;
+                    const direccion = String(row[8] || '').trim(); // 6-Direccion celda I
+                    const telefono = String(row[12] || '').trim(); // 7-Numero de telefono celda M
+                    
+                    let sexoRaw = String(row[21] || 'M').trim().toUpperCase(); // 8-Sexo celda V
+                    const sexo = (sexoRaw === 'M' || sexoRaw === 'F') ? sexoRaw : 'M';
+                    
+                    const historialClinico = String(row[41] || '').trim(); // 9-Historial clinico celda AP
 
                     const nombreCompleto = `${nombre} ${primerApellido} ${segundoApellido}`.replace(/\s+/g, ' ').trim();
 
@@ -468,13 +488,13 @@ export class ConfiguracionPage implements OnInit {
                     pacientes.push({
                         cedula: cedulaGenerada,
                         nombre: nombreCompleto,
-                        edad: 0,
+                        edad: edad,
                         direccion: direccion,
                         telefono: telefono,
                         antecedentesPersonales: historialClinico,
-                        sexo: 'M', // Default
+                        sexo: sexo as 'M' | 'F', // Default to M si es inválido
                         seguro: 'Particular', // Default
-                        fecha_nacimiento: '',
+                        fecha_nacimiento: formatExcelDate(fechaNacimientoRaw),
                         profesion: '',
                         peso: '',
                         altura: '',

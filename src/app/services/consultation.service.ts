@@ -80,10 +80,21 @@ export class ConsultationService {
   }
 
   async saveConsultation(consulta: Consulta) {
-    // Generate temporary UUID if not provided
+    // Generate temporary UUID safely
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
     const localConsulta = {
       ...consulta,
-      id: consulta.id || crypto.randomUUID()
+      id: consulta.id || generateId()
     };
 
     try {
