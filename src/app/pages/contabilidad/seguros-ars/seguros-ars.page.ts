@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
+import { AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { FinancialService } from '../../../services/financial.service';
 import { FacturaSeguro, ReportePagoSeguro, UserProfile } from '../../../models';
@@ -136,7 +137,8 @@ export class SegurosArsPage implements OnInit {
         private configService: ConfigService,
         private authService: AuthService,
         public themeService: ThemeService,
-        private router: Router
+        private router: Router,
+        private alertController: AlertController
     ) { }
 
     ngOnInit() {
@@ -176,10 +178,25 @@ export class SegurosArsPage implements OnInit {
         this.mostrarSoloPendientes.set(!this.mostrarSoloPendientes());
     }
 
-    marcarPagada(factura: FacturaSeguro) {
-        if (confirm(`¿Confirmar pago de factura de ${factura.nombrePaciente}?`)) {
-            this.financialService.marcarFacturaPagada(factura.id);
-        }
+    async marcarPagada(factura: FacturaSeguro) {
+        const alert = await this.alertController.create({
+            header: 'Confirmar Pago',
+            message: `¿Estás seguro de registrar el pago de <strong>${factura.nombrePaciente}</strong>?`,
+            cssClass: 'custom-alert',
+            buttons: [
+                {
+                    text: 'Cancelar',
+                    role: 'cancel'
+                },
+                {
+                    text: 'Aceptar',
+                    handler: () => {
+                        this.financialService.marcarFacturaPagada(factura.id);
+                    }
+                }
+            ]
+        });
+        await alert.present();
     }
 
     volver() {

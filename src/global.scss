@@ -383,3 +383,49 @@ table tr:hover {
   background-color: rgba(79, 70, 229, 0.1) !important;
   color: var(--color-primary) !important;
 }
+/* Custom Toast Styling - Premium Layout */
+ion-toast {
+  --border-radius: 12px;
+  --box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-width: 1px;
+  --border-style: solid;
+  font-family: var(--font-inter);
+
+  &::part(message) {
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    padding: 16px 20px;
+  }
+}
+
+/* Custom Alert Styling - Premium Layout */
+ion-alert {
+  --background: var(--color-dark-card, #1e293b);
+  --color: var(--color-text-primary, #ffffff);
+  --backdrop-opacity: 0.7;
+  font-family: var(--font-inter);
+
+  &::part(content) {
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--color-glass-border, #334155);
+  }
+
+  &::part(title) {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+  }
+
+  &::part(message) {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  &::part(button) {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+}
