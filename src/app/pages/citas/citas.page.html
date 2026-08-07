@@ -8,9 +8,7 @@
       <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
     </div>
     <div class="header-actions">
-      <button class="header-btn p-2 text-text-secondary hover:text-white transition-colors">
-        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
-      </button>
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
     </div>
   </div>
 
@@ -127,14 +125,14 @@
                 }
               </div>               <div>
                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Identificación (Cédula)</label>
-                 <div class="relative group">
+                 <div class="relative flex items-center w-full">
                    <input type="text" 
                           class="w-full pl-4 pr-12 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-black text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/30" 
                           [(ngModel)]="nuevoPaciente.cedula"
                           (input)="filtrarPacientes($event)"
                           (focus)="setActiveSearchField('cedula'); mostrarDropdownPacientes = pacientesFiltrados.length > 0"
                           placeholder="000-0000000-0">
-                   <button class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                   <button class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
                            (click)="buscarJCE()" [disabled]="isLoadingJce">
                       @if (isLoadingJce) {
                         <ion-spinner name="crescent" class="text-xs"></ion-spinner>
@@ -199,7 +197,7 @@
                         placeholder="Ej. Calle Duarte #10, Santo Domingo">
                </div>
  
-               <div class="grid grid-cols-2 gap-3">
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  <div>
                    <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nacimiento</label>
                    <input type="date" 
@@ -215,7 +213,7 @@
                  </div>
                </div>
  
-               <div class="grid grid-cols-2 gap-3">
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  <div>
                    <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Seguro</label>
                    <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
@@ -624,3 +622,4 @@
     <div class="absolute top-1/2 -left-40 w-[500px] h-[500px] bg-emerald-500/5 blur-[150px] rounded-full"></div>
   </div>
 </div>
+

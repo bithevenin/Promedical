@@ -8,9 +8,7 @@
       <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
     </div>
     <div class="header-actions">
-      <button class="header-btn p-2 text-text-secondary hover:text-white transition-colors">
-        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
-      </button>
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
     </div>
   </div>
 
@@ -239,4 +237,5 @@
     <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-indigo-500/5 blur-[150px] rounded-full"></div>
   </div>
 </div>
+
 

@@ -8,9 +8,7 @@
       <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
     </div>
     <div class="header-actions">
-      <button class="p-2 text-text-secondary hover:text-white transition-colors">
-        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
-      </button>
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
     </div>
   </div>
 
@@ -95,7 +93,7 @@
               <div class="w-1 h-5 bg-primary rounded-full"></div>
               <h5 class="text-xs font-black text-white uppercase tracking-tight">Rango de Fecha</h5>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1 shadow-sm block">Inicio</label>
                 <input type="date" class="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-[10px] font-black text-white focus:outline-none focus:border-primary/50 transition-all" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)">
@@ -360,3 +358,4 @@
      <div class="absolute bottom-0 right-0 w-1/3 h-1/2 bg-emerald-500/5 blur-[150px] rounded-full"></div>
   </div>
 </div>
+
