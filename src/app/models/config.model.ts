@@ -13,5 +13,6 @@ export interface ConfiguracionDoctor {
   password?: string;
   fotoUrl: string;
   montoConsultaParticular: number;
+  exequatur?: string;
   tarifasSeguros: TarifaSeguro[];
 }

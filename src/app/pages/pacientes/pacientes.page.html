@@ -117,6 +117,14 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
+          <!-- Cartas Button -->
+          <button (click)="abrirModalCartas()" 
+                  class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                  title="Cartas de Consentimiento">
+            <ion-icon name="document-text-outline" class="text-base"></ion-icon>
+            Carta Consentimiento
+          </button>
+
           <!-- Search -->
           <div class="relative">
             <ion-icon name="search-outline" class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-base"></ion-icon>
@@ -448,6 +456,475 @@
           Guardar Cambios del Perfil
         </button>
       </div>
+    </div>
+  </div>
+  }
+
+  <!-- Cartas de Consentimiento Modal -->
+  @if (showCartasModal) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-medical-dark/95 backdrop-blur-2xl animate-fade-in" (click)="closeModals()"></div>
+    <div class="relative w-full max-w-3xl bg-dark-secondary border border-glass-border rounded-[2rem] shadow-2xl animate-scale-in">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-glass-border bg-glass-light rounded-t-[2rem]">
+        <div>
+          <h5 class="text-lg font-black text-white uppercase tracking-tight">Consentimientos Informados</h5>
+          <p class="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-0.5">Impresión de cartas de consentimiento quirúrgico</p>
+        </div>
+        <button class="p-2 hover:bg-white/10 rounded-xl text-text-muted hover:text-white transition-all" (click)="closeModals()">
+          <ion-icon name="close-outline" class="text-3xl"></ion-icon>
+        </button>
+      </div>
+
+      <div class="p-6 max-h-[75vh] overflow-y-auto custom-scrollbar flex flex-col gap-5">
+        
+        <!-- Step 1: Select Patient -->
+        <div>
+          <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">1. Seleccionar Paciente</label>
+          
+          @if (!cartaPacienteSeleccionado) {
+            <!-- Patient Search -->
+            <div class="relative mb-2">
+              <ion-icon name="search-outline" class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-base"></ion-icon>
+              <input type="text" 
+                     class="w-full pl-11 pr-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm text-white placeholder:text-text-muted focus:outline-none focus:border-primary/50 transition-all" 
+                     placeholder="Escribe el nombre o cédula del paciente existente..."
+                     [(ngModel)]="cartasFiltroPaciente">
+            </div>
+
+            <!-- Patient search results -->
+            @if (pacientesFiltradosCartas.length > 0) {
+              <div class="bg-glass-light border border-glass-border rounded-xl max-h-40 overflow-y-auto custom-scrollbar divide-y divide-glass-border/30">
+                @for (p of pacientesFiltradosCartas; track p.cedula) {
+                  <div class="p-3 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors" (click)="seleccionarPacienteCarta(p)">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+                        {{ p.nombre.charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <span class="block text-sm font-bold text-white">{{ p.nombre }}</span>
+                        <span class="block text-[10px] text-text-muted font-bold tracking-wider">{{ p.cedula }}</span>
+                      </div>
+                    </div>
+                    <span class="text-[9px] font-black uppercase text-primary tracking-wider">Seleccionar</span>
+                  </div>
+                }
+              </div>
+            } @else if (cartasFiltroPaciente.length >= 2) {
+              <p class="text-xs text-text-muted italic px-2">No se encontraron pacientes que coincidan con la búsqueda.</p>
+            }
+          } @else {
+            <!-- Selected Patient Card -->
+            <div class="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary font-black text-base">
+                  {{ cartaPacienteSeleccionado.nombre.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <span class="block text-sm font-black text-white uppercase tracking-tight">{{ cartaPacienteSeleccionado.nombre }}</span>
+                  <span class="block text-[10px] text-text-muted font-bold tracking-wider mt-0.5">
+                    Cédula: <span class="text-primary font-black">{{ cartaPacienteSeleccionado.cedula }}</span> &nbsp;|&nbsp; 
+                    Edad: {{ cartaPacienteSeleccionado.edad }} años &nbsp;|&nbsp;
+                    Sexo: {{ cartaPacienteSeleccionado.sexo === 'M' ? 'Masc' : 'Fem' }}
+                  </span>
+                </div>
+              </div>
+              <button class="px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
+                      (click)="cartaPacienteSeleccionado = null">
+                Cambiar
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Step 2: Configure Consent Form -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Select Letter Template -->
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">2. Tipo de Consentimiento Quirúrgico</label>
+            <select class="w-full px-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all text-left" 
+                    [(ngModel)]="tipoCartaSeleccionada">
+              <option value="litiasis" class="bg-[#121c30] text-white">Cirugía de la litiasis urinaria (Cálculos/Piedras)</option>
+              <option value="cistoscopia" class="bg-[#121c30] text-white">Cistoscopia, cateterismo ureteral y pielografía retrógrada</option>
+              <option value="doble_j" class="bg-[#121c30] text-white">Colocación de catéter Doble J</option>
+            </select>
+          </div>
+
+          <!-- Doctor Name -->
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Nombre del Cirujano/Médico</label>
+            <input type="text" 
+                   class="w-full px-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all"
+                   [(ngModel)]="cartaMedicoNombre"
+                   placeholder="Dr./Dra. Nombre Completo">
+          </div>
+
+          <!-- Registration ID (Colegiado / Exequatur) -->
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Nº Colegiado / Exequatur</label>
+            <input type="text" 
+                   class="w-full px-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all"
+                   [(ngModel)]="cartaMedicoColegiado"
+                   placeholder="Ej. 12345-67">
+          </div>
+
+          <!-- City -->
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Ciudad de Emisión</label>
+            <input type="text" 
+                   class="w-full px-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all"
+                   [(ngModel)]="cartaCiudad">
+          </div>
+
+          <!-- Date -->
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Fecha de Firma</label>
+            <input type="date" 
+                   class="w-full px-4 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all"
+                   [(ngModel)]="cartaFecha">
+          </div>
+        </div>
+
+        <!-- Live Preview Box -->
+        @if (cartaPacienteSeleccionado) {
+          <div class="border border-glass-border rounded-2xl bg-white/[0.02] overflow-hidden flex flex-col">
+            <div class="px-4 py-2 border-b border-glass-border bg-white/5 flex items-center justify-between">
+              <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Vista Previa Dinámica de la Carta</span>
+              <span class="text-[8px] font-black text-primary uppercase tracking-widest">Documento Oficial</span>
+            </div>
+            
+            <div class="p-6 text-left font-serif text-[11px] text-text-secondary leading-relaxed max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-3 bg-[#0c1322]/20">
+              <div class="border-b border-dashed border-glass-border/30 pb-3 flex justify-between font-sans">
+                <div>
+                  <h6 class="text-[10px] font-black text-white uppercase tracking-tight">Consentimiento Informado</h6>
+                  <h5 class="text-[11px] font-black text-primary uppercase mt-0.5">
+                    {{ tipoCartaSeleccionada === 'litiasis' ? 'Cirugía de la litiasis urinaria' : tipoCartaSeleccionada === 'cistoscopia' ? 'Cistoscopia, cateterismo ureteral y pielografía retrógrada' : 'Colocación doble J' }}
+                  </h5>
+                </div>
+                <span class="text-[10px] font-black text-white/50 tracking-wider">PROMEDICAL</span>
+              </div>
+              
+              <p class="italic text-[10px] text-text-muted font-sans">
+                [Espacio reservado para la etiqueta identificativa del paciente]
+              </p>
+              
+              <p>
+                Yo, <strong>D./Dña. {{ cartaPacienteSeleccionado.nombre }}</strong>, con cédula de identidad número <strong>{{ cartaPacienteSeleccionado.cedula }}</strong>, confirmo que he recibido explicación detallada sobre el procedimiento clínico quirúrgico recomendado por mi cirujano.
+              </p>
+              
+              <p class="font-sans text-[10px] font-bold text-white/80 uppercase tracking-wide mt-2">Declaración de consentimiento:</p>
+              <p class="pl-4 border-l-2 border-primary/50 italic bg-primary/5 py-2 pr-2 font-sans text-white text-[10px]">
+                "CONSIENTO libre, expresa y voluntariamente a ser sometido/a a la intervención de: {{ tipoCartaSeleccionada === 'litiasis' ? 'CIRUGÍA DE LA LITIASIS URINARIA' : tipoCartaSeleccionada === 'cistoscopia' ? 'CISTOSCOPIA, CATETERISMO URETERAL Y PIELOGRAFÍA RETRÓGRADA' : 'COLOCACIÓN DOBLE J' }}."
+              </p>
+              
+              <p class="mt-2 text-right">
+                En {{ cartaCiudad }}, a {{ getFormattedDateText() }}.
+              </p>
+            </div>
+          </div>
+        }
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button class="flex-1 py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary-deep transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2" 
+                  (click)="abrirEstudioImpresion()"
+                  [disabled]="!cartaPacienteSeleccionado">
+            <ion-icon name="print-outline" class="text-lg"></ion-icon>
+            Abrir Centro de Impresión y Previsualización
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Centro de Impresión & Preview Studio Modal -->
+  @if (showPrintStudioModal && cartaPacienteSeleccionado) {
+  <div class="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4">
+    <div class="absolute inset-0 bg-medical-dark/95 backdrop-blur-2xl animate-fade-in" (click)="showPrintStudioModal = false"></div>
+    <div class="relative w-full max-w-6xl h-[92vh] bg-dark-secondary border border-glass-border rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+      
+      <!-- Studio Header Bar -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-glass-border bg-glass-light rounded-t-[2.5rem]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center text-primary text-xl">
+            <ion-icon name="print-outline"></ion-icon>
+          </div>
+          <div>
+            <h5 class="text-base font-black text-white uppercase tracking-tight">Centro de Impresión y Documentación Médica</h5>
+            <p class="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-0.5">Previsualización de alta fidelidad & Opciones avanzadas</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button class="px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/10"
+                  (click)="imprimirDirecto()">
+            <ion-icon name="print" class="text-base"></ion-icon>
+            Imprimir Ahora
+          </button>
+
+          <button class="px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/10"
+                  (click)="generarCartaWord()">
+            <ion-icon name="document-text-outline" class="text-base"></ion-icon>
+            Descargar Word (.doc)
+          </button>
+
+          <button class="px-4 py-2.5 bg-primary hover:bg-primary-deep text-white border border-primary rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+                  (click)="generarCartaPDF()">
+            <ion-icon name="download-outline" class="text-base"></ion-icon>
+            Descargar PDF
+          </button>
+
+          <button class="p-2.5 hover:bg-white/10 rounded-xl text-text-muted hover:text-white transition-all ml-2" (click)="showPrintStudioModal = false">
+            <ion-icon name="close-outline" class="text-2xl"></ion-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Studio Body (Control Panel + Live Document Canvas) -->
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+        
+        <!-- Left Column: Opciones de Impresión (Control Panel) -->
+        <div class="lg:col-span-4 p-6 border-r border-glass-border bg-glass-light/50 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+          
+          <div class="flex items-center gap-2 border-b border-glass-border pb-3">
+            <ion-icon name="options-outline" class="text-primary text-lg"></ion-icon>
+            <h6 class="text-xs font-black text-white uppercase tracking-wider">Opciones de Impresión</h6>
+          </div>
+
+          <!-- Format & Paper Settings -->
+          <div class="space-y-4">
+            <div>
+              <label class="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1.5">Tamaño de Papel</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoPapel === 'letter'" [class.text-white]="opcionTamanoPapel === 'letter'" [class.border-primary]="opcionTamanoPapel === 'letter'"
+                        [class.bg-white/5]="opcionTamanoPapel !== 'letter'" [class.text-text-muted]="opcionTamanoPapel !== 'letter'" [class.border-glass-border]="opcionTamanoPapel !== 'letter'"
+                        (click)="opcionTamanoPapel = 'letter'">
+                  Carta
+                </button>
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoPapel === 'a4'" [class.text-white]="opcionTamanoPapel === 'a4'" [class.border-primary]="opcionTamanoPapel === 'a4'"
+                        [class.bg-white/5]="opcionTamanoPapel !== 'a4'" [class.text-text-muted]="opcionTamanoPapel !== 'a4'" [class.border-glass-border]="opcionTamanoPapel !== 'a4'"
+                        (click)="opcionTamanoPapel = 'a4'">
+                  A4
+                </button>
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoPapel === 'legal'" [class.text-white]="opcionTamanoPapel === 'legal'" [class.border-primary]="opcionTamanoPapel === 'legal'"
+                        [class.bg-white/5]="opcionTamanoPapel !== 'legal'" [class.text-text-muted]="opcionTamanoPapel !== 'legal'" [class.border-glass-border]="opcionTamanoPapel !== 'legal'"
+                        (click)="opcionTamanoPapel = 'legal'">
+                  Oficio
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1.5">Tamaño de Fuente del Texto</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoFuente === 'normal'" [class.text-white]="opcionTamanoFuente === 'normal'" [class.border-primary]="opcionTamanoFuente === 'normal'"
+                        [class.bg-white/5]="opcionTamanoFuente !== 'normal'" [class.text-text-muted]="opcionTamanoFuente !== 'normal'" [class.border-glass-border]="opcionTamanoFuente !== 'normal'"
+                        (click)="opcionTamanoFuente = 'normal'">
+                  Normal
+                </button>
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoFuente === 'mediana'" [class.text-white]="opcionTamanoFuente === 'mediana'" [class.border-primary]="opcionTamanoFuente === 'mediana'"
+                        [class.bg-white/5]="opcionTamanoFuente !== 'mediana'" [class.text-text-muted]="opcionTamanoFuente !== 'mediana'" [class.border-glass-border]="opcionTamanoFuente !== 'mediana'"
+                        (click)="opcionTamanoFuente = 'mediana'">
+                  Mediana
+                </button>
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionTamanoFuente === 'grande'" [class.text-white]="opcionTamanoFuente === 'grande'" [class.border-primary]="opcionTamanoFuente === 'grande'"
+                        [class.bg-white/5]="opcionTamanoFuente !== 'grande'" [class.text-text-muted]="opcionTamanoFuente !== 'grande'" [class.border-glass-border]="opcionTamanoFuente !== 'grande'"
+                        (click)="opcionTamanoFuente = 'grande'">
+                  Grande
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1.5">Márgenes de Hoja</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionMargen === 'estandar'" [class.text-white]="opcionMargen === 'estandar'" [class.border-primary]="opcionMargen === 'estandar'"
+                        [class.bg-white/5]="opcionMargen !== 'estandar'" [class.text-text-muted]="opcionMargen !== 'estandar'" [class.border-glass-border]="opcionMargen !== 'estandar'"
+                        (click)="opcionMargen = 'estandar'">
+                  Estándar (15mm)
+                </button>
+                <button class="py-2.5 px-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all"
+                        [class.bg-primary]="opcionMargen === 'estrecho'" [class.text-white]="opcionMargen === 'estrecho'" [class.border-primary]="opcionMargen === 'estrecho'"
+                        [class.bg-white/5]="opcionMargen !== 'estrecho'" [class.text-text-muted]="opcionMargen !== 'estrecho'" [class.border-glass-border]="opcionMargen !== 'estrecho'"
+                        (click)="opcionMargen = 'estrecho'">
+                  Estrecho (10mm)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="h-px bg-glass-border my-1"></div>
+
+          <!-- Document Section Toggles -->
+          <div class="space-y-3">
+            <span class="text-[10px] font-black text-text-muted uppercase tracking-widest block">Secciones e Inclusiones</span>
+            
+            <label class="flex items-center justify-between p-3 bg-white/5 border border-glass-border rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+              <span class="text-xs font-bold text-white">Membrete ProMedical</span>
+              <input type="checkbox" [(ngModel)]="opcionIncluirMembrete" class="w-4 h-4 accent-primary rounded">
+            </label>
+
+            <label class="flex items-center justify-between p-3 bg-white/5 border border-glass-border rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+              <span class="text-xs font-bold text-white">Caja Identificación Paciente</span>
+              <input type="checkbox" [(ngModel)]="opcionIncluirEtiqueta" class="w-4 h-4 accent-primary rounded">
+            </label>
+
+            <label class="flex items-center justify-between p-3 bg-white/5 border border-glass-border rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+              <span class="text-xs font-bold text-white">Sección para Testigo</span>
+              <input type="checkbox" [(ngModel)]="opcionIncluirTestigo" class="w-4 h-4 accent-primary rounded">
+            </label>
+
+            <label class="flex items-center justify-between p-3 bg-white/5 border border-glass-border rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+              <span class="text-xs font-bold text-white">Cláusula de Revocación</span>
+              <input type="checkbox" [(ngModel)]="opcionIncluirRevocacion" class="w-4 h-4 accent-primary rounded">
+            </label>
+          </div>
+
+          <!-- Summary info -->
+          <div class="mt-auto p-4 bg-primary/10 border border-primary/20 rounded-2xl">
+            <span class="block text-[9px] font-black text-primary uppercase tracking-widest mb-1">Resumen del Expediente</span>
+            <span class="block text-xs font-bold text-white">{{ cartaPacienteSeleccionado.nombre }}</span>
+            <span class="block text-[10px] text-text-muted">Cédula: {{ cartaPacienteSeleccionado.cedula }}</span>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Live High-Fidelity Paper Canvas -->
+        <div class="lg:col-span-8 p-6 bg-[#070b14] overflow-y-auto custom-scrollbar flex justify-center items-start">
+          
+          <!-- Virtual Sheet HD (Realistic A4/Letter Paper) -->
+          <div id="print-document-sheet" 
+               class="bg-white text-slate-900 shadow-2xl rounded-sm transition-all duration-300 w-full max-w-[650px] font-serif border border-slate-300"
+               [class.p-10]="opcionMargen === 'estandar'"
+               [class.p-6]="opcionMargen === 'estrecho'"
+               [style.font-size]="opcionTamanoFuente === 'grande' ? '13px' : opcionTamanoFuente === 'mediana' ? '12px' : '11px'">
+            
+            <!-- Document Header -->
+            @if (opcionIncluirMembrete) {
+              <div class="flex items-center justify-between border-b-2 border-blue-600 pb-3 mb-4 font-sans">
+                <div>
+                  <span class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Consentimiento Informado</span>
+                  <h4 class="text-base font-black text-blue-700 uppercase tracking-tight mt-0.5">
+                    {{ getConsentTemplateData().titulo }}
+                  </h4>
+                </div>
+                <div class="text-right">
+                  <span class="block text-sm font-black text-blue-800 tracking-wider">PROMEDICAL</span>
+                  <span class="block text-[8px] font-bold text-slate-500 uppercase tracking-widest">Grupo Hospitalario</span>
+                </div>
+              </div>
+            }
+
+            <!-- Patient ID Card Box -->
+            @if (opcionIncluirEtiqueta) {
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-md mb-4 font-sans">
+                <span class="block text-[8px] font-black text-slate-500 uppercase tracking-wider mb-1">Espacio Destinado a la Identificación del Paciente</span>
+                <div class="text-[11px] font-semibold text-slate-800 flex flex-wrap gap-x-4">
+                  <span><strong>Paciente:</strong> {{ cartaPacienteSeleccionado.nombre }}</span>
+                  <span><strong>Cédula:</strong> {{ cartaPacienteSeleccionado.cedula }}</span>
+                  <span><strong>Edad:</strong> {{ cartaPacienteSeleccionado.edad }} años</span>
+                </div>
+              </div>
+            }
+
+            <!-- Legal Intro -->
+            <p class="italic text-slate-600 mb-3 text-justify leading-relaxed">
+              De conformidad con lo dispuesto en la legislación de derechos y deberes de los pacientes, el firmante declara haber sido plenamente informado/a acerca del procedimiento recomendado por el especialista.
+            </p>
+
+            <!-- Template Paragraphs -->
+            <div class="space-y-3 leading-relaxed text-slate-800 text-justify">
+              <p>{{ getConsentTemplateData().p1 }}</p>
+              <p>{{ getConsentTemplateData().p2 }}</p>
+              <p>{{ getConsentTemplateData().p3 }}</p>
+              <p>{{ getConsentTemplateData().p4 }}</p>
+            </div>
+
+            <!-- Consent Declaration Box -->
+            <div class="my-4 p-3 bg-blue-50 border-l-4 border-blue-600 rounded-r-md font-sans">
+              <span class="block text-[10px] font-black text-blue-900 uppercase tracking-wider mb-0.5">Declaración Expresa de Consentimiento:</span>
+              <p class="italic text-[11px] text-blue-950 font-medium">
+                "Yo, <strong>D./Dña. {{ cartaPacienteSeleccionado.nombre }}</strong>, con cédula de identidad N.º <strong>{{ cartaPacienteSeleccionado.cedula }}</strong>, CONSIENTO libre, expresa y voluntariamente a ser sometido/a a la intervención de {{ getConsentTemplateData().titulo.toUpperCase() }} por parte del médico cirujano <strong>{{ cartaMedicoNombre }}</strong> (Exequatur N.º <strong>{{ cartaMedicoColegiado || 'N/A' }}</strong>)."
+              </p>
+            </div>
+
+            <!-- Emission Place and Date -->
+            <p class="text-right font-sans text-xs text-slate-700 my-4">
+              En <strong>{{ cartaCiudad }}</strong>, a {{ getFormattedDateText() }}.
+            </p>
+
+            <!-- Signatures Grid -->
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-2 font-sans">
+              
+              <!-- Patient Sig -->
+              <div class="p-3 border border-slate-200 bg-slate-50/50 rounded-md flex flex-col justify-between h-28">
+                <div>
+                  <span class="block text-[9px] font-black text-slate-700 uppercase">Paciente o Tutor Legal</span>
+                  <span class="block text-[10px] text-slate-600 mt-1">D./Dña. {{ cartaPacienteSeleccionado.nombre }}</span>
+                  <span class="block text-[9px] text-slate-500">Cédula: {{ cartaPacienteSeleccionado.cedula }}</span>
+                </div>
+                <div class="border-t border-dashed border-slate-300 pt-1 text-[8px] text-slate-400 text-center">
+                  Firma del Paciente / Tutor Autorizado
+                </div>
+              </div>
+
+              <!-- Doctor Sig -->
+              <div class="p-3 border border-slate-200 bg-slate-50/50 rounded-md flex flex-col justify-between h-28">
+                <div>
+                  <span class="block text-[9px] font-black text-slate-700 uppercase">Cirujano / Médico Tratante</span>
+                  <span class="block text-[10px] text-slate-600 mt-1">{{ cartaMedicoNombre }}</span>
+                  <span class="block text-[9px] text-slate-500">Exequatur / Reg: {{ cartaMedicoColegiado || 'N/A' }}</span>
+                </div>
+                <div class="border-t border-dashed border-slate-300 pt-1 text-[8px] text-slate-400 text-center">
+                  Firma y Sello del Médico Cirujano
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Optional Witness Section -->
+            @if (opcionIncluirTestigo) {
+              <div class="mt-4 p-2.5 border border-slate-200 rounded-md font-sans text-[10px] text-slate-700 bg-white">
+                <span class="block font-bold text-slate-800 uppercase text-[9px] mb-1">Declaración de Testigo (Si aplica):</span>
+                <span>Testigo Nombre: _________________________________ &nbsp; Cédula: _________________ &nbsp; Firma: _________________</span>
+              </div>
+            }
+
+            <!-- Optional Revocation Section -->
+            @if (opcionIncluirRevocacion) {
+              <div class="mt-4 p-3 border border-rose-200 bg-rose-50/60 rounded-md font-sans text-[10px]">
+                <span class="block font-black text-rose-800 uppercase text-[9px] mb-1">Denegación o Revocación del Consentimiento Informado:</span>
+                <p class="text-rose-900/80 mb-2">Rechazo la realización del procedimiento tras haber sido oportunamente informado/a de los riesgos de la no intervención.</p>
+                <div class="flex justify-between text-[9px] text-rose-900/70 pt-2 border-t border-rose-200">
+                  <span>Firma Paciente: __________________________</span>
+                  <span>Firma Médico: __________________________</span>
+                </div>
+              </div>
+            }
+
+            <!-- Sheet Footer -->
+            <div class="mt-6 pt-3 border-t border-slate-200 text-[8px] text-slate-400 font-sans flex justify-between">
+              <span>Este documento es confidencial y de uso estrictamente médico-legal.</span>
+              <span>ProMedical System</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
   </div>
   }

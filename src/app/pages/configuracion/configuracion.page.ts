@@ -23,6 +23,7 @@ export class ConfiguracionPage implements OnInit {
         password: '',
         fotoUrl: '',
         montoConsultaParticular: 0,
+        exequatur: '',
         tarifasSeguros: []
     };
 

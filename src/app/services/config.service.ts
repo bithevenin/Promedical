@@ -23,6 +23,7 @@ export class ConfigService {
     email: 'doctor@promedical.com',
     fotoUrl: 'https://i.pravatar.cc/150?u=doctor',
     montoConsultaParticular: 1500,
+    exequatur: '',
     tarifasSeguros: [
       { seguro: 'ARS Humano', montoCobertura: 500, copago: 200 },
       { seguro: 'ARS Primera', montoCobertura: 450, copago: 250 },
@@ -59,6 +60,7 @@ export class ConfigService {
             email: configRows.email || this.defaultConfig.email,
             fotoUrl: configRows.foto_url,
             montoConsultaParticular: configRows.monto_consulta_particular,
+            exequatur: configRows.exequatur || '',
             tarifasSeguros: (tarifas || []).map((t: DbTarifaSeguro) => ({
               id: t.id,
               seguro: t.seguro,
@@ -95,7 +97,8 @@ export class ConfigService {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
         foto_url: config.fotoUrl,
-        monto_consulta_particular: config.montoConsultaParticular
+        monto_consulta_particular: config.montoConsultaParticular,
+        exequatur: config.exequatur
       };
 
       if (navigator.onLine) {
@@ -134,7 +137,8 @@ export class ConfigService {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
         foto_url: config.fotoUrl,
-        monto_consulta_particular: config.montoConsultaParticular
+        monto_consulta_particular: config.montoConsultaParticular,
+        exequatur: config.exequatur
       };
       await this.offlineService.addToQueue('configuracion_doctor', 'update', dbConfigPayload, 'id', 1);
     }
