@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { ConfigService, ConfiguracionDoctor } from '../../services/config.service';
+import { Component, OnInit, signal, computed } from '@angular/core';
+import { ConfigService } from '../../services/config.service';
+import { ConfiguracionDoctor, UserProfile } from '../../models';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 
@@ -12,6 +13,12 @@ import { ThemeService } from '../../services/theme.service';
 export class MainPage implements OnInit {
   config: ConfiguracionDoctor | null = null;
   profile: any = null;
+  currentProfile = signal<UserProfile | null>(null);
+
+  navigationItems = computed(() => {
+    const base: { icon: string; label: string; route: string; active?: boolean }[] = [];
+    return base;
+  });
 
   constructor(
       private configService: ConfigService,
@@ -25,7 +32,8 @@ export class MainPage implements OnInit {
     });
     
     this.authService.profile$.subscribe(p => {
-        this.profile = p;
+      this.profile = p;
+      this.currentProfile.set(p as UserProfile);
     });
   }
 

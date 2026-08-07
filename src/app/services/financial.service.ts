@@ -6,37 +6,29 @@ import { AppointmentService } from './appointment.service';
 import { PatientService } from './patient.service';
 import { OfflineService } from './offline.service';
 import { getLocalDateString } from '../utils/format.utils';
+import { Transaccion, FacturaSeguro, ReportePagoSeguro, Cita } from '../models';
 
-export interface Transaccion {
-  id: number;
-  fecha: string;
-  concepto: string;
-  categoria: 'Ingreso' | 'Gasto';
-  monto: number;
-  paciente?: string;
-}
-
-export interface FacturaSeguro {
+interface DbFactura {
   id: number;
   cedula: string;
-  nombrePaciente: string;
+  nombre_paciente: string;
   edad: number;
-  carnetSeguro: string;
+  carnet_seguro: string;
   seguro: string;
   fecha: string;
   monto: number;
   estado: 'pendiente' | 'pagado';
-  fechaPago?: string;
+  fecha_pago?: string;
 }
 
-export interface ReportePagoSeguro {
+interface DbReporte {
   id: number;
   seguro: string;
-  mes: string; // Formato YYYY-MM
-  montoEnviado: number;
-  montoRecibido?: number;
-  fechaEnvio: string;
-  fechaPago?: string;
+  mes: string;
+  monto_enviado: number;
+  monto_recibido?: number;
+  fecha_envio: string;
+  fecha_pago?: string;
   comentario?: string;
   estado: 'pendiente' | 'completado';
 }
@@ -92,7 +84,7 @@ export class FinancialService {
       console.warn('Network issue, fetching transactions from offline storage:', error);
     }
 
-    const local = await this.offlineService.getLocalData('transacciones');
+    const local = await this.offlineService.getLocalData<Transaccion>('transacciones');
     this.transactionsSubject.next(local);
   }
 
@@ -102,7 +94,7 @@ export class FinancialService {
         const { data, error } = await this.supabase.from('facturas_seguro').select('*');
         if (error) throw error;
         if (data) {
-          const facturas: FacturaSeguro[] = data.map((f: any) => ({
+          const facturas: FacturaSeguro[] = data.map((f: DbFactura) => ({
             id: f.id,
             cedula: f.cedula,
             nombrePaciente: f.nombre_paciente,
@@ -127,7 +119,7 @@ export class FinancialService {
       console.warn('Network issue, fetching insurance invoices from offline storage:', error);
     }
 
-    const local = await this.offlineService.getLocalData('facturas_seguro');
+    const local = await this.offlineService.getLocalData<FacturaSeguro>('facturas_seguro');
     this.facturasSeguroSubject.next(local);
   }
 
@@ -137,7 +129,7 @@ export class FinancialService {
         const { data, error } = await this.supabase.from('reportes_pagos_seguro').select('*');
         if (error) throw error;
         if (data) {
-          const reportes: ReportePagoSeguro[] = data.map((r: any) => ({
+          const reportes: ReportePagoSeguro[] = data.map((r: DbReporte) => ({
             id: r.id,
             seguro: r.seguro,
             mes: r.mes,
@@ -161,7 +153,7 @@ export class FinancialService {
       console.warn('Network issue, fetching insurance reports from offline storage:', error);
     }
 
-    const local = await this.offlineService.getLocalData('reportes_pagos_seguro');
+    const local = await this.offlineService.getLocalData<ReportePagoSeguro>('reportes_pagos_seguro');
     this.reportesPagosSeguroSubject.next(local);
   }
 
@@ -211,10 +203,9 @@ export class FinancialService {
       const apps = this.appointmentService.getAppointments();
       const today = getLocalDateString();
       // Search by turno first, fallback to turno+fecha in case of date mismatch
-      let cita = apps.find((c: any) => c.turno === turno && c.fecha === today);
+      let cita = apps.find((c: Cita) => c.turno === turno && c.fecha === today);
       if (!cita) {
-        cita = apps.find((c: any) => c.turno === turno);
-        if (cita) console.warn(`[FinancialService] Cita found by turno only (fecha mismatch). turno=${turno}, today=${today}, cita.fecha=${cita.fecha}`);
+        cita = apps.find((c: Cita) => c.turno === turno);
       }
 
       if (cita) {
@@ -306,7 +297,7 @@ export class FinancialService {
       const today = new Date().toISOString().split('T')[0];
 
       // 1. Update locally
-      const local = await this.offlineService.getLocalData('facturas_seguro');
+      const local = await this.offlineService.getLocalData<FacturaSeguro>('facturas_seguro');
       const target = local.find(f => f.id === id);
       if (target) {
         target.estado = 'pagado';
@@ -386,7 +377,7 @@ export class FinancialService {
   async registrarPagoRecibido(reporte: ReportePagoSeguro, montoRecibido: number, fechaPago: string) {
     try {
       // 1. Update locally
-      const local = await this.offlineService.getLocalData('reportes_pagos_seguro');
+      const local = await this.offlineService.getLocalData<ReportePagoSeguro>('reportes_pagos_seguro');
       const target = local.find(r => r.id === reporte.id);
       if (target) {
         target.montoRecibido = montoRecibido;

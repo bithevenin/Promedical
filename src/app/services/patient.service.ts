@@ -3,37 +3,38 @@ import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
 import { environment } from '../../environments/environment';
+import { Paciente, SignoVital } from '../models';
 
-export interface SignoVital {
+interface DbSignoVital {
   fecha: string;
-  presionArterial: string;
-  frecuenciaCardiaca: number;
+  presion_arterial: string;
+  frecuencia_cardiaca: number;
   temperatura: number;
   peso: number;
   talla: number;
   imc: number;
 }
 
-export interface Paciente {
+interface DbPaciente {
   cedula: string;
   nombre: string;
   edad: number;
   fecha_nacimiento?: string;
-  profesion: string;
-  seguro: string;
+  profesion?: string;
+  seguro?: string;
   sexo: 'M' | 'F';
   telefono?: string;
   email?: string;
   altura?: string;
   peso?: string;
-  carnetSeguro?: string;
-  antecedentesPersonales?: string;
-  antecedentesFamiliares?: string;
+  carnet_seguro?: string;
+  antecedentes_personales?: string;
+  antecedentes_familiares?: string;
   alergias?: string;
   tipo_sangre?: string;
-  fotoUrl?: string;
+  foto_url?: string;
   direccion?: string;
-  signosVitales?: SignoVital[];
+  signos_vitales?: DbSignoVital[];
 }
 
 @Injectable({
@@ -59,7 +60,7 @@ export class PatientService {
 
         if (data) {
           await this.offlineService.clearStore('pacientes');
-          const patients: Paciente[] = data.map((p: any) => ({
+          const patients: Paciente[] = data.map((p: DbPaciente) => ({
             cedula: p.cedula,
             nombre: p.nombre,
             edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
@@ -78,7 +79,7 @@ export class PatientService {
             tipo_sangre: p.tipo_sangre || '',
             fotoUrl: p.foto_url || '',
             direccion: p.direccion || '',
-            signosVitales: (p.signos_vitales || []).map((sv: any) => ({
+            signosVitales: (p.signos_vitales || []).map((sv: DbSignoVital) => ({
               fecha: sv.fecha,
               presionArterial: sv.presion_arterial,
               frecuenciaCardiaca: sv.frecuencia_cardiaca,
@@ -97,10 +98,10 @@ export class PatientService {
         }
       }
     } catch (error) {
-      console.warn('Network issue, fetching patients from offline storage:', error);
+      // Network issue or offline
     }
 
-    const local = await this.offlineService.getLocalData('pacientes');
+    const local = await this.offlineService.getLocalData<Paciente>('pacientes');
     this.patientsSubject.next(local);
   }
 
@@ -146,7 +147,6 @@ export class PatientService {
         await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
       }
     } catch (error) {
-      console.warn('Supabase save error, queueing write:', error);
       const dbData = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
@@ -180,7 +180,6 @@ export class PatientService {
       }
       return null;
     } catch (error) {
-      console.error('Error importing patients:', error);
       return error;
     }
   }
@@ -232,7 +231,6 @@ export class PatientService {
       }
       return null;
     } catch (error) {
-      console.warn('Error saving signs, queueing write:', error);
       const dataToInsert = {
         paciente_cedula: cedula,
         fecha: new Date().toISOString().split('T')[0],
@@ -274,7 +272,6 @@ export class PatientService {
         await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
       }
     } catch (error) {
-      console.warn('Error updating antecedents, queueing write:', error);
       const dbPayload = {
         antecedentes_personales: data.personales,
         antecedentes_familiares: data.familiares,
@@ -284,7 +281,7 @@ export class PatientService {
     }
   }
 
-  async consultarJCE(cedula: string): Promise<any> {
+  async consultarJCE(cedula: string): Promise<unknown> {
     const cleanCedula = cedula.replace(/[^0-9]/g, '');
     if (!cleanCedula) {
       throw new Error('Por favor, ingrese un número de cédula.');
@@ -294,7 +291,10 @@ export class PatientService {
     }
 
     const baseUrl = environment.jceApiUrl || 'https://unrude-unpopular-gerri.ngrok-free.dev';
-    const apiUrl = `${baseUrl}/api/v1/cedula-queries/query`;
+    const targetUrl = `${baseUrl}/api/v1/cedula-queries/query`;
+    // Usamos corsproxy.io para eludir el bloqueo de CORS directamente desde el frontend en desarrollo
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocalhost ? `https://corsproxy.io/?${encodeURIComponent(targetUrl)}` : targetUrl;
 
     const response = await fetch(apiUrl, {
       method: 'POST',

@@ -2,22 +2,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
+import { TarifaSeguro, ConfiguracionDoctor } from '../models';
 
-export interface TarifaSeguro {
+interface DbTarifaSeguro {
   id?: string;
   seguro: string;
-  montoCobertura: number;
+  monto_cobertura: number;
   copago: number;
-}
-
-export interface ConfiguracionDoctor {
-  nombreDoctor: string;
-  especialidad: string;
-  email?: string;
-  password?: string;
-  fotoUrl: string;
-  montoConsultaParticular: number;
-  tarifasSeguros: TarifaSeguro[];
 }
 
 @Injectable({
@@ -65,10 +56,10 @@ export class ConfigService {
           const config: ConfiguracionDoctor = {
             nombreDoctor: configRows.nombre_doctor,
             especialidad: configRows.especialidad,
-            email: configRows.email,
+            email: configRows.email || this.defaultConfig.email,
             fotoUrl: configRows.foto_url,
             montoConsultaParticular: configRows.monto_consulta_particular,
-            tarifasSeguros: (tarifas || []).map((t: any) => ({
+            tarifasSeguros: (tarifas || []).map((t: DbTarifaSeguro) => ({
               id: t.id,
               seguro: t.seguro,
               montoCobertura: t.monto_cobertura,
@@ -85,9 +76,9 @@ export class ConfigService {
       console.warn('Network issue, fetching config from offline storage:', error);
     }
 
-    const localConfigList = await this.offlineService.getLocalData('configuracion_doctor');
-    if (localConfigList && localConfigList.length > 0) {
-      this.configSubject.next(localConfigList[0]);
+    const local = await this.offlineService.getLocalData<ConfiguracionDoctor>('configuracion_doctor');
+    if (local.length > 0) {
+      this.configSubject.next(local[0]);
     } else {
       this.configSubject.next(this.defaultConfig);
     }
@@ -103,7 +94,6 @@ export class ConfigService {
       const dbConfigPayload = {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
-        email: config.email,
         foto_url: config.fotoUrl,
         monto_consulta_particular: config.montoConsultaParticular
       };
@@ -143,7 +133,6 @@ export class ConfigService {
       const dbConfigPayload = {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
-        email: config.email,
         foto_url: config.fotoUrl,
         monto_consulta_particular: config.montoConsultaParticular
       };

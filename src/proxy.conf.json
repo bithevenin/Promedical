@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://edging-rarity-routing.ngrok-free.dev",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

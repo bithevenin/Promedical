@@ -1,11 +1,12 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { ConfigService, ConfiguracionDoctor, TarifaSeguro } from '../../services/config.service';
-import { PatientService, Paciente } from '../../services/patient.service';
-import { ConsultationService, Consulta } from '../../services/consultation.service';
+import { ConfigService } from '../../services/config.service';
+import { PatientService } from '../../services/patient.service';
+import { ConsultationService } from '../../services/consultation.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { formatMonto } from '../../utils/format.utils';
+import { ConfiguracionDoctor, TarifaSeguro, Paciente, Consulta, UserProfile } from '../../models';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -28,10 +29,10 @@ export class ConfiguracionPage implements OnInit {
     guardando = false;
     mensajeExito = '';
 
-    currentProfile = signal<any>(null);
+    currentProfile = signal<UserProfile | null>(null);
 
     navigationItems = computed(() => {
-        const base: any[] = [
+        const base: { icon: string; label: string; route: string; active?: boolean }[] = [
             { icon: 'home-outline', label: 'Inicio', route: '/main' },
             { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
             { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
@@ -394,7 +395,7 @@ export class ConfiguracionPage implements OnInit {
                         fecha: formatExcelDate(row.fecha || row.Fecha || new Date().toISOString().split('T')[0]),
                         diagnostico: String(row.diagnostico || row.Diagnóstico || '').trim(),
                         receta: String(row.receta || row.Receta || '').trim()
-                    })).filter((c: any) => c.cedula && c.diagnostico);
+                    })).filter((c: Consulta) => c.cedula && c.diagnostico);
 
                     if (consultas.length === 0) {
                         alert('No se encontraron historias clínicas válidas.');

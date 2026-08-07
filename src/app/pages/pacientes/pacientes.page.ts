@@ -1,12 +1,28 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { PatientService, Paciente } from '../../services/patient.service';
-import { ConsultationService, Consulta } from '../../services/consultation.service';
+import { PatientService } from '../../services/patient.service';
+import { ConsultationService } from '../../services/consultation.service';
 import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
+import { Paciente, Consulta, UserProfile } from '../../models';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
+
+interface JceResult {
+  fotoUrl?: string;
+  nombreCompleto?: string;
+  nombres?: string;
+  apellido1?: string;
+  apellido2?: string;
+  fechaNacimiento?: string;
+  sexo?: string;
+  ocupacion?: string;
+  ocupación?: string;
+  direccion?: string;
+  dirección?: string;
+  lugarNacimiento?: string;
+}
 
 @Component({
   selector: 'app-pacientes',
@@ -18,10 +34,10 @@ export class PacientesPage implements OnInit {
   pacientes: Paciente[] = [];
   filtroNombre: string = '';
 
-  currentProfile = signal<any>(null);
+  currentProfile = signal<UserProfile | null>(null);
 
   navigationItems = computed(() => {
-    const base: any[] = [
+    const base: { icon: string; label: string; route: string; active?: boolean }[] = [
       { icon: 'home-outline', label: 'Inicio', route: '/main' },
       { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
       { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
@@ -117,10 +133,10 @@ export class PacientesPage implements OnInit {
     if (this.cargandoFotos) return;
     this.cargandoFotos = true;
 
-    const sinFoto = this.pacientes.filter(p => !p.fotoUrl && p.cedula);
+    const sinFoto = this.pacientes.filter((p: Paciente) => !p.fotoUrl && p.cedula);
     for (const paciente of sinFoto) {
       try {
-        const result = await this.patientService.consultarJCE(paciente.cedula);
+        const result = await this.patientService.consultarJCE(paciente.cedula) as JceResult;
         if (result && result.fotoUrl) {
           // Update the in-memory reference so the UI re-renders immediately
           paciente.fotoUrl = result.fotoUrl;
@@ -152,10 +168,8 @@ export class PacientesPage implements OnInit {
   }
 
   editarPaciente(paciente: Paciente) {
-    console.log('editarPaciente called with:', JSON.stringify(paciente));
     this.pacienteSeleccionado = paciente;
     this.editData = { ...paciente };
-    console.log('editarPaciente editData is:', JSON.stringify(this.editData));
     this.showEditModal = true;
   }
 
@@ -165,10 +179,8 @@ export class PacientesPage implements OnInit {
       return;
     }
     this.isLoadingJce = true;
-    console.log('buscarJCE called for:', this.editData.cedula);
     try {
-      const result = await this.patientService.consultarJCE(this.editData.cedula);
-      console.log('buscarJCE result received:', JSON.stringify(result));
+      const result = await this.patientService.consultarJCE(this.editData.cedula) as JceResult;
       if (result) {
         // Nombre
         this.editData.nombre = result.nombreCompleto ||
@@ -190,7 +202,7 @@ export class PacientesPage implements OnInit {
 
         // Ocupación: la API JCE no incluye este campo directamente
         if (result.ocupacion || result.ocupación) {
-          this.editData.profesion = result.ocupacion || result.ocupación;
+          this.editData.profesion = result.ocupacion || result.ocupación || '';
         }
 
         // Dirección
@@ -200,12 +212,10 @@ export class PacientesPage implements OnInit {
         // Foto
         this.editData.fotoUrl = result.fotoUrl || this.editData.fotoUrl || '';
 
-        console.log('buscarJCE editData set to:', JSON.stringify(this.editData));
         this.presentToast('¡Datos de la cédula cargados con éxito!', 'success');
       }
     } catch (error: any) {
-      console.error('Error JCE lookup:', error);
-      this.presentToast('Error al consultar cédula JCE: ' + (error.message || error), 'danger');
+      this.presentToast('Error al consultar cédula JCE: ' + (error?.message || error), 'danger');
     } finally {
       this.isLoadingJce = false;
     }
@@ -248,7 +258,8 @@ export class PacientesPage implements OnInit {
       const error = await this.patientService.addSignosVitales(this.pacienteSeleccionado.cedula, signos);
 
       if (error) {
-        this.presentToast('Error al guardar signos vitales: ' + ((error as any).message || 'Error desconocido'), 'danger');
+        const errMsg = (error as any)?.message || String(error);
+        this.presentToast('Error al guardar signos vitales: ' + errMsg, 'danger');
         return;
       }
 
