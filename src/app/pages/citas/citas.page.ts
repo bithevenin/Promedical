@@ -1,12 +1,29 @@
 import { Component, OnInit, signal, computed, HostListener } from '@angular/core';
-import { AppointmentService, Cita } from '../../services/appointment.service';
-import { PatientService, Paciente } from '../../services/patient.service';
+import { AppointmentService } from '../../services/appointment.service';
+import { PatientService } from '../../services/patient.service';
+import { Cita, Paciente, UserProfile } from '../../models';
 import { ConfigService } from '../../services/config.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
+
+interface JceResult {
+  fotoUrl?: string;
+  nombreCompleto?: string;
+  nombres?: string;
+  apellido1?: string;
+  apellido2?: string;
+  fechaNacimiento?: string;
+  sexo?: string;
+  ocupacion?: string;
+  ocupación?: string;
+  direccion?: string;
+  dirección?: string;
+  lugarNacimiento?: string;
+}
 
 @Component({
   selector: 'app-citas',
@@ -36,6 +53,7 @@ export class CitasPage implements OnInit {
   };
 
   isLoadingJce = false;
+  fotoTemporal = '';
 
   // Listado de ARS (se carga dinámicamente)
   listaSeguros: string[] = ['Particular'];
@@ -51,7 +69,7 @@ export class CitasPage implements OnInit {
   mostrarModalSeguro = false;
   carnetSeguroTemp = '';
 
-  currentProfile = signal<any>(null);
+  currentProfile = signal<UserProfile | null>(null);
 
   // Listado de pacientes para agendamiento
   listaPacientes: Paciente[] = [];
@@ -69,7 +87,7 @@ export class CitasPage implements OnInit {
   }
 
   navigationItems = computed(() => {
-    const base: any[] = [
+    const base: { icon: string; label: string; route: string; active?: boolean }[] = [
       { icon: 'home-outline', label: 'Inicio', route: '/main' },
       { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
       { icon: 'calendar-outline', label: 'Citas', active: true, route: '/citas' },
@@ -309,7 +327,6 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     this.isLoadingJce = true;
     this.errorBusqueda = '';
     try {
-      // First, check if the patient exists locally
       const localPatient = this.patientService.findPatientByCedula(cleanCedula);
       if (localPatient) {
         this.nuevoPaciente = {
@@ -329,15 +346,13 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         };
         this.carnetSeguroTemp = localPatient.carnetSeguro || '';
 
-        // If the patient already has a photo, bypass JCE lookup
         if (localPatient.fotoUrl) {
           this.isLoadingJce = false;
           return;
         }
       }
 
-      // If patient does not exist or has no photo, query JCE API
-      const result = await this.patientService.consultarJCE(cleanCedula);
+      const result = await this.patientService.consultarJCE(cleanCedula) as JceResult;
       if (result) {
         // Nombre
         if (!this.nuevoPaciente.nombre) {
@@ -359,18 +374,19 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
           this.nuevoPaciente.sexo = s.startsWith('F') ? 'F' : 'M';
         }
 
-        // Ocupación: la API JCE no incluye este campo; mantener lo existente
+        // Ocupación
         if ((result.ocupacion || result.ocupación) && !this.nuevoPaciente.profesion) {
-          this.nuevoPaciente.profesion = result.ocupacion || result.ocupación;
+          this.nuevoPaciente.profesion = result.ocupacion || result.ocupación || '';
         }
 
-        // Dirección: usar lugarNacimiento como referencia si no hay dirección directa
+        // Dirección
         if (!this.nuevoPaciente.direccion) {
           this.nuevoPaciente.direccion = result.direccion || result.dirección ||
             [result.lugarNacimiento].filter(Boolean).join(', ') || '';
         }
 
         // Foto
+        this.fotoTemporal = result.fotoUrl || '';
         this.nuevoPaciente.fotoUrl = result.fotoUrl || this.nuevoPaciente.fotoUrl || '';
 
         // Si el paciente ya existe localmente, actualizamos sus datos con la nueva foto/datos

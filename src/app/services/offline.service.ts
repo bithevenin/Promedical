@@ -2,6 +2,16 @@ import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
+interface QueueItem {
+  id: number;
+  table: string;
+  action: 'insert' | 'update' | 'upsert' | 'delete';
+  data: any;
+  queryKey?: string;
+  queryValue?: string | number;
+  timestamp: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,12 +25,10 @@ export class OfflineService {
   constructor(private supabaseService: SupabaseService) {
     this.supabase = this.supabaseService.client;
     this.initDatabase().then(() => {
-      console.log('IndexedDB initialized.');
       this.checkAndSync();
     });
 
     window.addEventListener('online', () => {
-      console.log('Network is back online. Triggering sync...');
       this.checkAndSync();
     });
   }
@@ -29,8 +37,8 @@ export class OfflineService {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
+      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        const db = (event.target as IDBOpenDBRequest).result;
 
         // Define all stores (tables) matching Supabase schemas
         if (!db.objectStoreNames.contains('citas')) {
@@ -65,32 +73,32 @@ export class OfflineService {
         }
       };
 
-      request.onsuccess = (event: any) => {
-        this.db = event.target.result;
-        resolve(event.target.result);
+      request.onsuccess = (event: Event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
+        resolve((event.target as IDBOpenDBRequest).result);
       };
 
-      request.onerror = (event: any) => {
-        reject(event.target.error);
+      request.onerror = (event: Event) => {
+        reject((event.target as IDBOpenDBRequest).error);
       };
     });
   }
 
   // --- Core DB Actions ---
 
-  async getLocalData(storeName: string): Promise<any[]> {
+  async getLocalData<T = Record<string, unknown>>(storeName: string): Promise<T[]> {
     if (!this.db) await this.initDatabase();
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(storeName, 'readonly');
       const store = transaction.objectStore(storeName);
       const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result || []);
+      request.onsuccess = () => resolve((request.result || []) as T[]);
       request.onerror = () => reject(request.error);
     });
   }
 
-  async saveLocalData(storeName: string, data: any): Promise<void> {
+  async saveLocalData<T = Record<string, unknown>>(storeName: string, data: T): Promise<void> {
     if (!this.db) await this.initDatabase();
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(storeName, 'readwrite');
@@ -102,7 +110,7 @@ export class OfflineService {
     });
   }
 
-  async deleteLocalData(storeName: string, key: any): Promise<void> {
+  async deleteLocalData(storeName: string, key: string | number): Promise<void> {
     if (!this.db) await this.initDatabase();
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(storeName, 'readwrite');
@@ -128,7 +136,7 @@ export class OfflineService {
 
   // --- Sync Queue Actions ---
 
-  async addToQueue(table: string, action: 'insert' | 'update' | 'upsert' | 'delete', data: any, queryKey?: string, queryValue?: any): Promise<void> {
+  async addToQueue<T = Record<string, unknown>>(table: string, action: 'insert' | 'update' | 'upsert' | 'delete', data: T | null, queryKey?: string, queryValue?: string | number): Promise<void> {
     const queueItem = {
       table,
       action,
@@ -150,13 +158,11 @@ export class OfflineService {
     this.isSyncing = true;
 
     try {
-      const queue = await this.getLocalData('sync_queue');
+      const queue = await this.getLocalData<QueueItem>('sync_queue');
       if (queue.length === 0) {
         this.isSyncing = false;
         return;
       }
-
-      console.log(`Starting synchronization of ${queue.length} items...`);
 
       // Process items sequentially to maintain correct order of operations
       for (const item of queue) {
@@ -164,22 +170,22 @@ export class OfflineService {
           let error = null;
 
           if (item.action === 'insert') {
-            const { error: err } = await (this.supabase as any).from(item.table).insert([item.data]);
+            const { error: err } = await this.supabase.from(item.table).insert([item.data]);
             error = err;
           } else if (item.action === 'update') {
-            const { error: err } = await (this.supabase as any)
+            const { error: err } = await this.supabase
               .from(item.table)
               .update(item.data)
-              .eq(item.queryKey, item.queryValue);
+              .eq(item.queryKey as string, item.queryValue as string | number);
             error = err;
           } else if (item.action === 'upsert') {
-            const { error: err } = await (this.supabase as any).from(item.table).upsert(item.data);
+            const { error: err } = await this.supabase.from(item.table).upsert(item.data);
             error = err;
           } else if (item.action === 'delete') {
-            const { error: err } = await (this.supabase as any)
+            const { error: err } = await this.supabase
               .from(item.table)
               .delete()
-              .eq(item.queryKey, item.queryValue);
+              .eq(item.queryKey as string, item.queryValue as string | number);
             error = err;
           }
 
@@ -187,7 +193,8 @@ export class OfflineService {
             console.error(`Error syncing item ${item.id} on table ${item.table}:`, error);
             // If it's a conflict or table error, we might skip it or wait.
             // For now, if it is a standard DB error, let's keep it in queue to retry or skip if it's invalid.
-            if (error.code === '23505') { // Duplicate key, skip it
+            if (error.code === '23505' || (error.code && String(error.code).startsWith('PGRST'))) { // Duplicate key or API/Schema error, skip it
+              console.warn(`Discarding unrecoverable sync item ${item.id} due to API/Schema error (${error.code}).`);
               await this.deleteLocalData('sync_queue', item.id);
             } else {
               // Network error? Stop sync loop and retry later
@@ -195,7 +202,6 @@ export class OfflineService {
               return;
             }
           } else {
-            console.log(`Item ${item.id} synced successfully to table ${item.table}`);
             await this.deleteLocalData('sync_queue', item.id);
           }
         } catch (err) {

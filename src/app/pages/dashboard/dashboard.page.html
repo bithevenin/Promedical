@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
+<div class="dashboard-wrapper h-[100dvh] overflow-y-auto overflow-x-hidden bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
   <!-- Mobile Header -->
   <div class="mobile-header flex items-center justify-between px-6 h-16 bg-slate-900 border-b border-slate-700 lg:hidden fixed top-0 w-full z-50">
     <div class="logo flex items-center gap-3 cursor-pointer" routerLink="/main">
@@ -8,9 +8,7 @@
       <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
     </div>
     <div class="header-actions">
-      <button class="header-btn p-2 text-text-secondary hover:text-white transition-colors">
-        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
-      </button>
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
     </div>
   </div>
 
@@ -61,7 +59,7 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="main-content lg:ml-64 flex-grow relative overflow-x-hidden pt-16 lg:pt-0">
+  <main class="main-content lg:ml-64 flex-grow relative overflow-x-hidden pt-16 lg:pt-0 pb-24 lg:pb-0">
     <!-- Top Bar (Desktop) -->
     <header class="top-bar hidden lg:flex items-center justify-between h-20 px-10 bg-medical-dark border-b border-slate-700 sticky top-0 z-40">
       <div class="search-container flex items-center gap-4 bg-slate-800 px-5 py-2.5 rounded-xl w-96 border border-slate-700 hover:border-primary transition-all focus-within:ring-2 focus-within:ring-primary/20">
@@ -97,11 +95,17 @@
           <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tighter mb-1">Dashboard Principal</h1>
           <p class="text-sm font-medium text-text-secondary"><span class="text-primary font-bold">Hola,</span> {{ currentProfile()?.nombre || 'Bienvenido' }}. Resumen de actividad.</p>
         </div>
-        <button class="group flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-deep text-white rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 active:scale-95"
-                routerLink="/citas">
-          <ion-icon name="add-circle" class="text-lg group-hover:rotate-90 transition-transform duration-500"></ion-icon>
-          <span class="text-xs font-black uppercase tracking-widest">Nueva Cita</span>
-        </button>
+        <div class="flex items-center gap-4">
+          <div class="bg-white/5 border border-glass-border px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-inner">
+            <ion-icon name="calendar-outline" class="text-primary"></ion-icon>
+            <input type="date" class="bg-transparent border-none outline-none text-sm font-bold text-white uppercase tracking-wider w-full" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)">
+          </div>
+          <button class="group flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-deep text-white rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 active:scale-95"
+                  routerLink="/citas">
+            <ion-icon name="add-circle" class="text-lg text-white group-hover:rotate-90 transition-transform duration-500"></ion-icon>
+            <span class="text-xs font-black text-white uppercase tracking-widest hidden md:inline">Nueva Cita</span>
+          </button>
+        </div>
       </div>
 
       <!-- Stats Grid -->
@@ -167,16 +171,16 @@
           <div class="relative z-10 h-full flex flex-col">
             <div class="flex justify-between items-start mb-8">
               <h5 class="text-lg font-black text-white tracking-tight uppercase leading-tight">Resumen<br>Semanal</h5>
-              <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl">
+              <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl text-white">
                 <ion-icon name="analytics-outline"></ion-icon>
               </div>
             </div>
             
             <div class="space-y-6 mb-auto">
               <div>
-                <div class="flex justify-between items-end mb-2">
-                  <span class="text-[10px] font-black opacity-80 uppercase tracking-widest">Metas Mensuales</span>
-                  <span class="text-xl font-black">85%</span>
+                <div class="flex justify-between items-end mb-2 text-white">
+                  <span class="text-[10px] font-black opacity-80 uppercase tracking-widest text-white">Metas Mensuales</span>
+                  <span class="text-xl font-black text-white">85%</span>
                 </div>
                 <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
                   <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: 85%"></div>
@@ -184,15 +188,15 @@
               </div>
 
               <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl">
-                <p class="text-[9px] font-black opacity-60 uppercase tracking-widest mb-1">Próxima Consulta</p>
+                <p class="text-[9px] font-black opacity-60 uppercase tracking-widest mb-1 text-white">Próxima Consulta</p>
                 <div class="flex items-center gap-2">
                   <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                  <p class="text-xs font-black text-white">Dr. Carlos V. <span class="opacity-60 ml-1 font-medium">(14:30)</span></p>
+                  <p class="text-xs font-black text-white">Dr. Carlos V. <span class="opacity-80 ml-1 font-medium text-white">(14:30)</span></p>
                 </div>
               </div>
             </div>
 
-            <button class="mt-6 w-full py-3.5 bg-white text-primary font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-medical-dark hover:text-white transition-all">
+            <button class="mt-6 w-full py-3.5 bg-white text-primary font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-medical-dark hover:text-white transition-all" routerLink="/contabilidad">
               Ver Reporte
             </button>
           </div>
@@ -233,4 +237,5 @@
     <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-indigo-500/5 blur-[150px] rounded-full"></div>
   </div>
 </div>
+
 

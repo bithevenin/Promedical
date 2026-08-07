@@ -37,3 +37,17 @@ $text-dim: rgba(255, 255, 255, 0.9);
     .hide-on-mobile { display: none !important; }
     .top-bar { padding: 0 20px; }
 }
+
+// Fix ion-segment contrast issues in Dark Mode
+ion-segment {
+  --background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+ion-segment-button {
+  --indicator-color: var(--color-primary, #4f46e5);
+  --color-checked: #ffffff;
+  --color: var(--color-text-secondary, #cbd5e1);
+  font-family: var(--font-inter);
+}

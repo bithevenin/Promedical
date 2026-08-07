@@ -1,6 +1,8 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
+import { AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { FinancialService, FacturaSeguro, ReportePagoSeguro } from '../../../services/financial.service';
+import { FinancialService } from '../../../services/financial.service';
+import { FacturaSeguro, ReportePagoSeguro, UserProfile } from '../../../models';
 import { ConfigService } from '../../../services/config.service';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
@@ -22,10 +24,10 @@ export class SegurosArsPage implements OnInit {
     reportes = signal<ReportePagoSeguro[]>([]);
     mostrarSoloPendientes = signal<boolean>(true);
     viewMode = signal<'facturas' | 'pagos'>('facturas');
-    currentProfile = signal<any>(null);
+    currentProfile = signal<UserProfile | null>(null);
 
     navigationItems = computed(() => {
-        const base: any[] = [
+        const base: { icon: string; label: string; route: string; active?: boolean }[] = [
             { icon: 'home-outline', label: 'Inicio', route: '/main' },
             { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
             { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
@@ -135,7 +137,8 @@ export class SegurosArsPage implements OnInit {
         private configService: ConfigService,
         private authService: AuthService,
         public themeService: ThemeService,
-        private router: Router
+        private router: Router,
+        private alertController: AlertController
     ) { }
 
     ngOnInit() {
@@ -175,10 +178,25 @@ export class SegurosArsPage implements OnInit {
         this.mostrarSoloPendientes.set(!this.mostrarSoloPendientes());
     }
 
-    marcarPagada(factura: FacturaSeguro) {
-        if (confirm(`¿Confirmar pago de factura de ${factura.nombrePaciente}?`)) {
-            this.financialService.marcarFacturaPagada(factura.id);
-        }
+    async marcarPagada(factura: FacturaSeguro) {
+        const alert = await this.alertController.create({
+            header: 'Confirmar Pago',
+            message: `¿Estás seguro de registrar el pago de <strong>${factura.nombrePaciente}</strong>?`,
+            cssClass: 'custom-alert',
+            buttons: [
+                {
+                    text: 'Cancelar',
+                    role: 'cancel'
+                },
+                {
+                    text: 'Aceptar',
+                    handler: () => {
+                        this.financialService.marcarFacturaPagada(factura.id);
+                    }
+                }
+            ]
+        });
+        await alert.present();
     }
 
     volver() {
