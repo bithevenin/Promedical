@@ -1,0 +1,2 @@
+-- Agregar columna a tabla citas
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;

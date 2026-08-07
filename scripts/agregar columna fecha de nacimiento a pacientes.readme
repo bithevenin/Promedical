@@ -1,0 +1,2 @@
+-- Agregar columna a tabla pacientes
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;

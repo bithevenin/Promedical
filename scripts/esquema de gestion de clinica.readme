@@ -1,0 +1,123 @@
+-- TABLA DE PACIENTES
+CREATE TABLE pacientes (
+    cedula TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    edad INTEGER,
+    profesion TEXT,
+    seguro TEXT DEFAULT 'Particular',
+    sexo CHAR(1) CHECK (sexo IN ('M', 'F')),
+    telefono TEXT,
+    email TEXT,
+    altura TEXT,
+    peso TEXT,
+    carnet_seguro TEXT,
+    antecedentes_personales TEXT,
+    antecedentes_familiares TEXT,
+    alergias TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABLA DE SIGNOS VITALES
+CREATE TABLE signos_vitales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_cedula TEXT REFERENCES pacientes(cedula) ON DELETE CASCADE,
+    fecha TIMESTAMPTZ DEFAULT NOW(),
+    presion_arterial TEXT,
+    frecuencia_cardiaca INTEGER,
+    temperatura NUMERIC(4,2),
+    peso NUMERIC(5,2),
+    talla NUMERIC(5,2),
+    imc NUMERIC(4,2),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABLA DE CITAS
+CREATE TABLE citas (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    turno BIGINT, -- ID original de la cita si se migra
+    nombre TEXT NOT NULL,
+    cedula TEXT NOT NULL,
+    edad INTEGER,
+    seguro TEXT,
+    sexo CHAR(1),
+    fecha DATE NOT NULL,
+    estado TEXT CHECK (estado IN ('espera', 'consulta', 'por_pagar', 'atendido')),
+    hora TEXT,
+    altura TEXT,
+    peso TEXT,
+    profesion TEXT,
+    instruccion_cobro TEXT,
+    monto_cobrado NUMERIC(10,2),
+    carnet_seguro TEXT,
+    telefono TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABLA DE CONSULTAS (HISTORIAL MÉDICO)
+CREATE TABLE consultas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_cedula TEXT REFERENCES pacientes(cedula) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    diagnostico TEXT,
+    receta TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABLA DE TRANSACCIONES (CONTABILIDAD)
+CREATE TABLE transacciones (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    fecha DATE DEFAULT CURRENT_DATE,
+    concepto TEXT NOT NULL,
+    categoria TEXT CHECK (categoria IN ('Ingreso', 'Gasto')),
+    monto NUMERIC(15,2) NOT NULL,
+    paciente TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABLA DE FACTURAS DE SEGURO
+CREATE TABLE facturas_seguro (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    cedula TEXT NOT NULL,
+    nombre_paciente TEXT NOT NULL,
+    edad INTEGER,
+    carnet_seguro TEXT,
+    seguro TEXT NOT NULL,
+    fecha DATE DEFAULT CURRENT_DATE,
+    monto NUMERIC(15,2) NOT NULL,
+    estado TEXT CHECK (estado IN ('pendiente', 'pagado')) DEFAULT 'pendiente',
+    fecha_pago DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- CONFIGURACIÓN DEL DOCTOR Y TARIFAS
+CREATE TABLE configuracion_doctor (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    nombre_doctor TEXT NOT NULL,
+    especialidad TEXT,
+    foto_url TEXT,
+    monto_consulta_particular NUMERIC(10,2) DEFAULT 1500,
+    CONSTRAINT check_single_row CHECK (id = 1)
+);
+
+CREATE TABLE tarifas_seguro (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seguro TEXT NOT NULL UNIQUE,
+    monto_cobertura NUMERIC(10,2) NOT NULL,
+    copago NUMERIC(10,2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- DATOS INICIALES PARA EL DOCTOR
+INSERT INTO configuracion_doctor (id, nombre_doctor, especialidad, monto_consulta_particular)
+VALUES (1, 'Dr. Thevenin', 'Urólogo', 1500)
+ON CONFLICT (id) DO NOTHING;
+
+-- INSERTAR TARIFAS DE SEGURO POR DEFECTO
+INSERT INTO tarifas_seguro (seguro, monto_cobertura, copago) VALUES
+('ARS Humano', 500, 200),
+('ARS Primera', 450, 250),
+('ARS Senasa', 400, 0),
+('ARS Mapfre', 500, 200),
+('ARS Futuro', 450, 250),
+('ARS Palic', 480, 220)
+ON CONFLICT (seguro) DO NOTHING;

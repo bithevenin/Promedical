@@ -1,0 +1,29 @@
+// Dashboard Styles - Pro Max (Specialized)
+@import '../../styles/variables';
+
+.dashboard-wrapper {
+  // Las animaciones y estilos base se manejan via Tailwind y global.scss
+  // Agregamos solo ajustes específicos de layout si son necesarios
+}
+
+// Custom Scrollbar para el contenido
+.content-body {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// Estilo para el icono watermark
+.bg-icon-watermark {
+  filter: blur(20px);
+}

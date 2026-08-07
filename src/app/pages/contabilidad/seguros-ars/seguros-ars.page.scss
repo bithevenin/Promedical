@@ -1,0 +1,39 @@
+// Importar variables del tema oscuro
+@import '../../../styles/variables';
+
+// --- High-Performance CSS Tokens (Kept for fallback/modal use) ---
+$solid-card: #1e293b;
+$solid-border: #334155;
+$text-bright: #ffffff;
+$text-dim: rgba(255, 255, 255, 0.9);
+
+// Ensure smooth scrolling for the body area
+.content-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba($primary, 0.2) transparent;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: rgba($primary, 0.5);
+        border-radius: 10px;
+    }
+}
+
+// Modal Overrides because modal HTML wasn't entirely rewritten to Tailwind yet
+.modal-body-custom {
+    background: $bg-dark-secondary;
+}
+.modal-header-custom {
+    background: $glass-bg;
+    border-color: $glass-border !important;
+}
+
+// Hide sidebar and top bar effectively on mobile
+@media (max-width: 991px) {
+    .hide-on-mobile { display: none !important; }
+    .top-bar { padding: 0 20px; }
+}

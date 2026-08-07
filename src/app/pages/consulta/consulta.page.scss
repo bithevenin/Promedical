@@ -1,0 +1,31 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.rich-textarea-editor {
+  position: relative;
+  outline: none;
+  word-break: break-word;
+
+  &:empty::before {
+    content: attr(placeholder);
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 500;
+    pointer-events: none;
+    position: absolute;
+  }
+}
+
+.rich-text-content {
+  ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 4px 0;
+  }
+  ol {
+    list-style-type: decimal;
+    padding-left: 20px;
+    margin: 4px 0;
+  }
+}

@@ -1,0 +1,483 @@
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
+  <!-- Mobile Header -->
+  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
+    <div class="logo flex items-center gap-3" routerLink="/main">
+      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn p-2 text-text-secondary hover:text-white transition-colors">
+        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
+      </div>
+      }
+    </nav>
+
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content lg:ml-64 flex flex-col relative pt-16 lg:pt-0 h-screen pb-24 lg:pb-0 overflow-hidden">
+    
+    <!-- Top Bar -->
+    <header class="top-bar hidden lg:flex items-center justify-between h-16 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40 shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center text-primary text-lg">
+          <ion-icon name="people-outline"></ion-icon>
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-white uppercase tracking-tight">Registro de Pacientes</h4>
+          <p class="text-[8px] font-black uppercase text-text-muted tracking-widest mt-0.5">Gestión de expedientes</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-8">
+        <!-- Quick stats -->
+        <div class="flex items-center gap-6">
+          <div class="text-center">
+            <span class="block text-xl font-black text-white">{{ pacientes.length }}</span>
+            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Total</span>
+          </div>
+          <div class="w-px h-8 bg-glass-border"></div>
+          <div class="text-center">
+            <span class="block text-xl font-black text-primary">{{ pacientesFiltrados.length }}</span>
+            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Visibles</span>
+          </div>
+        </div>
+        <div class="w-px h-8 bg-glass-border"></div>
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
+        <div class="w-px h-8 bg-glass-border"></div>
+        <div class="user-info text-right">
+          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Administración' }}</span>
+          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 w-full animate-fade-in flex flex-col flex-grow overflow-hidden">
+      
+      <!-- Page Title + Search + New Patient -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-4 shrink-0">
+        <div>
+          <h5 class="text-lg font-black text-white tracking-tight">Pacientes Registrados</h5>
+          <div class="flex items-center gap-3 mt-0.5">
+            <p class="text-[10px] text-text-muted font-black uppercase tracking-widest">{{ pacientesFiltrados.length }} registros encontrados</p>
+            @if (cargandoFotos) {
+              <span class="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-lg text-[9px] font-black text-primary uppercase tracking-wider animate-pulse">
+                <ion-spinner name="crescent" class="text-[10px]"></ion-spinner>
+                Cargando fotos...
+              </span>
+            }
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Search -->
+          <div class="relative">
+            <ion-icon name="search-outline" class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-base"></ion-icon>
+            <input type="text" 
+                   class="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-glass-light border border-glass-border rounded-xl text-sm text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
+                   placeholder="Buscar nombre o cédula..."
+                   [(ngModel)]="filtroNombre">
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Card - Full Width, Flex Grow to Fill Floor -->
+      <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl flex flex-col flex-grow overflow-hidden mb-2">
+        <div class="overflow-auto custom-scrollbar flex-grow border-b border-glass-border">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-white/[0.03] text-text-muted uppercase text-[9px] font-black tracking-[0.15em] border-b border-glass-border">
+                <th class="px-5 py-3.5">Cédula</th>
+                <th class="px-5 py-3.5">Nombre</th>
+                <th class="px-5 py-3.5 hidden md:table-cell">Edad</th>
+                <th class="px-5 py-3.5 hidden sm:table-cell">Profesión</th>
+                <th class="px-5 py-3.5">Seguro</th>
+                <th class="px-5 py-3.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-glass-border/50">
+              @for (paciente of pacientesFiltrados; track paciente.cedula) {
+              <tr class="hover:bg-white/[0.04] transition-colors group">
+                <td class="px-5 py-3.5 text-[12px] font-black text-primary tracking-tight">{{ paciente.cedula }}</td>
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    @if (paciente.fotoUrl) {
+                      <img [src]="paciente.fotoUrl" class="w-9 h-9 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
+                    } @else {
+                      <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm shrink-0">
+                        {{ paciente.nombre.charAt(0).toUpperCase() }}
+                      </div>
+                    }
+                    <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">{{ paciente.nombre }}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-text-secondary hidden md:table-cell">{{ paciente.edad }} <span class="text-[10px] opacity-50">años</span></td>
+                <td class="px-5 py-3.5 hidden sm:table-cell">
+                  <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[9px] font-black rounded-lg uppercase tracking-wide">
+                    {{ paciente.profesion }}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5">
+                  <span class="px-2 py-0.5 text-[9px] font-black rounded-lg uppercase tracking-wide"
+                        [ngClass]="paciente.seguro === 'Particular' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary/10 text-primary'">
+                    {{ paciente.seguro }}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-all" 
+                            (click)="consultarPaciente(paciente)" title="Iniciar Consulta">
+                      <ion-icon name="medical-outline" class="text-base"></ion-icon>
+                    </button>
+                    <button class="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all" 
+                            (click)="verHistorial(paciente)" title="Ver Historial">
+                      <ion-icon name="eye-outline" class="text-base"></ion-icon>
+                    </button>
+                    <button class="p-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-all" 
+                            (click)="editarPaciente(paciente)" title="Editar Paciente">
+                      <ion-icon name="create-outline" class="text-base"></ion-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              } @empty {
+              <tr>
+                <td colspan="6" class="px-6 py-16 text-center">
+                  <ion-icon name="people-outline" class="text-5xl text-text-muted opacity-30 block mx-auto mb-3"></ion-icon>
+                  <p class="text-text-muted font-bold text-sm opacity-50">No se encontraron pacientes</p>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- History Modal -->
+  @if (showHistoryModal) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-medical-dark/80 backdrop-blur-xl animate-fade-in" (click)="closeModals()"></div>
+    <div class="relative w-full max-w-4xl bg-dark-secondary border border-glass-border rounded-[2.5rem] shadow-2xl overflow-hidden animate-scale-in">
+      <div class="flex items-center justify-between p-8 border-b border-glass-border bg-glass-light">
+        <div>
+          <h4 class="text-2xl font-black text-white tracking-tight">{{ pacienteSeleccionado?.nombre }}</h4>
+          <p class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Expediente Médico Digital</p>
+        </div>
+        <button class="p-2 hover:bg-white/10 rounded-xl text-text-muted hover:text-white transition-all" (click)="closeModals()">
+          <ion-icon name="close-outline" class="text-3xl"></ion-icon>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-glass-border px-8">
+        <button class="flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all"
+                [class.border-primary]="activeTab === 'consultas'"
+                [class.text-primary]="activeTab === 'consultas'"
+                [class.border-transparent]="activeTab !== 'consultas'"
+                [class.text-text-muted]="activeTab !== 'consultas'"
+                (click)="activeTab = 'consultas'">
+          <ion-icon name="medical-outline" class="text-lg"></ion-icon> Consultas
+        </button>
+        <button class="flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all"
+                [class.border-primary]="activeTab === 'clinico'"
+                [class.text-primary]="activeTab === 'clinico'"
+                [class.border-transparent]="activeTab !== 'clinico'"
+                [class.text-text-muted]="activeTab !== 'clinico'"
+                (click)="activeTab = 'clinico'">
+          <ion-icon name="heart-outline" class="text-lg"></ion-icon> Historia Clínica
+        </button>
+      </div>
+
+      <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <!-- Consultations Tab -->
+        @if (activeTab === 'consultas') {
+        <div class="space-y-6">
+          @for (h of historialPaciente.slice().reverse(); track h.fecha) {
+          <div class="p-6 bg-glass-light border border-glass-border rounded-2xl hover:border-primary/30 transition-all">
+            <div class="flex items-center mb-4">
+              <span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg tracking-widest">{{ h.fecha }}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] block mb-2">Diagnóstico</label>
+                 <div class="text-sm font-bold text-white leading-relaxed rich-text-content" [innerHTML]="h.diagnostico"></div>
+              </div>
+              <div>
+                <label class="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] block mb-2">Tratamiento / Receta</label>
+                 <div class="text-sm text-text-secondary leading-relaxed bg-dark-secondary/50 p-3 rounded-xl border border-glass-border rich-text-content" [innerHTML]="h.receta"></div>
+              </div>
+            </div>
+          </div>
+          } @empty {
+          <div class="text-center py-16 text-text-muted opacity-50">
+            <ion-icon name="document-text-outline" class="text-6xl mb-4"></ion-icon>
+            <p class="font-bold">No hay consultas registradas.</p>
+          </div>
+          }
+        </div>
+        }
+
+        <!-- Clinical Details Tab -->
+        @if (activeTab === 'clinico') {
+        <div class="space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-rose-500/10 border border-rose-500/20 p-5 rounded-2xl">
+              <h6 class="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <ion-icon name="alert-circle-outline" class="text-base"></ion-icon> Alergias Críticas
+              </h6>
+              <p class="text-sm font-black text-white px-3 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                {{ pacienteSeleccionado?.alergias || 'SIN ALERGIAS REPORTADAS' }}
+              </p>
+            </div>
+            <div class="bg-indigo-500/10 border border-indigo-500/20 p-5 rounded-2xl">
+              <h6 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <ion-icon name="people-outline" class="text-base"></ion-icon> Antecedentes
+              </h6>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-[8px] font-bold text-text-muted uppercase tracking-tighter">Personales</label>
+                  <p class="text-xs text-white">{{ pacienteSeleccionado?.antecedentesPersonales || 'Ninguno' }}</p>
+                </div>
+                <div>
+                  <label class="text-[8px] font-bold text-text-muted uppercase tracking-tighter">Familiares</label>
+                  <p class="text-xs text-white">{{ pacienteSeleccionado?.antecedentesFamiliares || 'Ninguno' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h6 class="text-sm font-black text-white mb-4 uppercase tracking-wider">Evolución Médica (Signos Vitales)</h6>
+            <div class="overflow-x-auto rounded-2xl border border-glass-border">
+              <table class="w-full text-[11px] text-left">
+                <thead>
+                  <tr class="bg-glass-light text-text-muted font-bold tracking-widest uppercase bg-white/5">
+                    <th class="px-4 py-3">Fecha</th>
+                    <th class="px-4 py-3">Presión</th>
+                    <th class="px-4 py-3">Pulso</th>
+                    <th class="px-4 py-3">Temp</th>
+                    <th class="px-4 py-3">Peso</th>
+                    <th class="px-4 py-3">IMC</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-glass-border">
+                  @for (sv of pacienteSeleccionado?.signosVitales?.slice()?.reverse(); track sv.fecha) {
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-4 py-3 font-bold text-primary">{{ sv.fecha }}</td>
+                    <td class="px-4 py-3 font-bold">{{ sv.presionArterial }}</td>
+                    <td class="px-4 py-3 font-bold">{{ sv.frecuenciaCardiaca }} <span class="text-[10px] opacity-50">lpm</span></td>
+                    <td class="px-4 py-3 font-bold">{{ sv.temperatura }}°C</td>
+                    <td class="px-4 py-3 font-bold">{{ sv.peso }}kg</td>
+                    <td class="px-4 py-3">
+                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest uppercase"
+                            [ngClass]="sv.imc < 25 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'">
+                        {{ sv.imc }}
+                      </span>
+                    </td>
+                  </tr>
+                  } @empty {
+                  <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-text-muted opacity-50">Sin registros previos</td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Edit Modal -->
+  @if (showEditModal) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-medical-dark/90 backdrop-blur-2xl animate-fade-in" (click)="closeModals()"></div>
+    <div class="relative w-full max-w-2xl bg-dark-secondary border border-glass-border rounded-[2rem] shadow-2xl animate-scale-in">
+      <div class="flex items-center justify-between p-8 border-b border-glass-border bg-glass-light rounded-t-[2rem]">
+        <h5 class="text-xl font-black text-white uppercase tracking-tight">Editar Perfil del Paciente</h5>
+        <button class="p-2 hover:bg-white/10 rounded-xl text-text-muted hover:text-white transition-all" (click)="closeModals()">
+          <ion-icon name="close-outline" class="text-3xl"></ion-icon>
+        </button>
+      </div>
+      <div class="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Foto del Paciente (Preview) -->
+          <div class="md:col-span-2 flex flex-col items-center justify-center p-4 bg-white/5 border border-glass-border rounded-2xl mb-2">
+            @if (editData.fotoUrl) {
+              <img [src]="editData.fotoUrl" class="w-32 h-32 rounded-2xl object-cover border border-glass-border shadow-lg mb-2">
+              <span class="text-[9px] font-black text-text-muted uppercase tracking-widest">Foto de Perfil (JCE)</span>
+            } @else {
+              <div class="w-32 h-32 rounded-2xl bg-white/5 border border-dashed border-glass-border flex flex-col items-center justify-center text-text-muted mb-2">
+                <ion-icon name="person-outline" class="text-4xl opacity-40 mb-1"></ion-icon>
+                <span class="text-[9px] font-black uppercase tracking-wider opacity-40">Sin Foto</span>
+              </div>
+            }
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Nombre Completo</label>
+            <input type="text" class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.nombre">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Cód de Identidad (Cédula)</label>
+            <div class="relative flex items-center">
+              <input type="text" class="w-full pl-5 pr-12 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-black text-primary opacity-70 cursor-not-allowed" [value]="editData.cedula" disabled>
+              <button class="absolute right-1 w-9 h-9 flex items-center justify-center text-primary bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                      (click)="buscarJCE()" [disabled]="isLoadingJce">
+                @if (isLoadingJce) {
+                  <ion-spinner name="crescent" class="text-xs"></ion-spinner>
+                } @else {
+                  <ion-icon name="search-outline" class="text-lg"></ion-icon>
+                }
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Nacimiento</label>
+            <input type="date" class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.fecha_nacimiento">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Profesión / Ocupación</label>
+            <input type="text" class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.profesion">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Seguro Médico</label>
+            <select class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.seguro">
+              @for (seguro of listaSeguros; track seguro) {
+              <option [value]="seguro" class="bg-dark-secondary text-white">{{ seguro }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Sexo</label>
+            <select class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.sexo">
+              <option value="M" class="bg-dark-secondary text-white">Masculino</option>
+              <option value="F" class="bg-dark-secondary text-white">Femenino</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Tipo de Sangre</label>
+            <select class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.tipo_sangre">
+              <option value="" class="bg-dark-secondary text-white">-- Desconocido --</option>
+              <option value="A+" class="bg-dark-secondary text-white">A+</option>
+              <option value="A-" class="bg-dark-secondary text-white">A-</option>
+              <option value="B+" class="bg-dark-secondary text-white">B+</option>
+              <option value="B-" class="bg-dark-secondary text-white">B-</option>
+              <option value="AB+" class="bg-dark-secondary text-white">AB+</option>
+              <option value="AB-" class="bg-dark-secondary text-white">AB-</option>
+              <option value="O+" class="bg-dark-secondary text-white">O+</option>
+              <option value="O-" class="bg-dark-secondary text-white">O-</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Teléfono de Contacto</label>
+            <input type="text" class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.telefono" placeholder="809-000-0000">
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Dirección</label>
+            <input type="text" class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all" [(ngModel)]="editData.direccion" placeholder="Ej. Calle Duarte #10, Santo Domingo">
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-black text-rose-400 tracking-widest uppercase mb-2 block">Alergias Conocidas</label>
+            <input type="text" class="w-full px-5 py-3 bg-rose-500/5 border border-rose-500/20 rounded-xl text-sm font-black text-rose-400 focus:outline-none focus:border-rose-400 transition-all" [(ngModel)]="editData.alergias" placeholder="Ej. Penicilina">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Antecedentes Personales</label>
+            <textarea class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-medium text-text-secondary focus:outline-none focus:border-primary/50 transition-all scrollbar-hide" [(ngModel)]="editData.antecedentesPersonales" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-text-muted tracking-widest uppercase mb-2 block">Antecedentes Familiares</label>
+            <textarea class="w-full px-5 py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-medium text-text-secondary focus:outline-none focus:border-primary/50 transition-all scrollbar-hide" [(ngModel)]="editData.antecedentesFamiliares" rows="3"></textarea>
+          </div>
+        </div>
+        <button class="w-full mt-10 py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary-deep transition-all active:scale-95" 
+                (click)="guardarCambios()">
+          Guardar Cambios del Perfil
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-navbar flex lg:hidden items-center justify-around fixed bottom-0 left-0 right-0 h-20 bg-dark-secondary/80 backdrop-blur-xl border-t border-glass-border px-4 pb-2 z-50">
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/main">
+      <ion-icon name="home-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Inicio</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/dashboard">
+      <ion-icon name="grid-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Panel</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/citas">
+      <ion-icon name="calendar-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Citas</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-3 text-primary bg-primary/10 rounded-2xl shadow-lg ring-1 ring-primary/20" routerLink="/pacientes">
+      <ion-icon name="people-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Pacientes</span>
+    </div>
+    <div *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Finanzas</span>
+    </div>
+  </nav>
+
+  <!-- Global Backdrop Elements -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 -left-10 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full"></div>
+  </div>
+</div>

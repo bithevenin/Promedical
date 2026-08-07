@@ -1,0 +1,293 @@
+// Importar variables del tema oscuro
+@import '../../styles/variables';
+
+.custom-input {
+    background: $glass-bg;
+    border: 1px solid $glass-border;
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: $text-primary;
+    transition: all 0.3s;
+
+    &:focus {
+        background: $glass-bg-hover;
+        border-color: $primary;
+        box-shadow: 0 0 0 4px rgba($primary, 0.15);
+    }
+
+    &::placeholder {
+        color: $text-tertiary;
+    }
+}
+
+.profession-tag {
+    background: rgba($primary, 0.1);
+    color: $primary;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.ars-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: $glass-bg;
+    color: $text-secondary;
+
+    &[data-seguro*="Senasa"] {
+        background: rgba(14, 165, 233, 0.15);
+        color: #38bdf8;
+    }
+
+    &[data-seguro*="Humano"] {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+    }
+}
+
+.btn-icon-action {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: $text-muted;
+    padding: 5px;
+    border-radius: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+        background: $glass-bg;
+        color: $primary;
+    }
+
+    // Estilo especial para el botón de consulta
+    &.btn-consulta {
+        color: #10b981; // Verde esmeralda
+
+        &:hover {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+        }
+    }
+}
+
+.search-box {
+    width: 300px;
+}
+
+
+
+// Modals
+.custom-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-modal {
+    background: $bg-dark-secondary;
+    border: 1px solid $glass-border;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    &.modal-edit {
+        max-width: 500px;
+    }
+}
+
+.modal-header-custom {
+    padding: 20px 30px;
+    background: transparent;
+    border-bottom: 1px solid $glass-border;
+}
+
+.modal-body-custom {
+    padding: 20px 30px;
+    overflow-y: auto;
+}
+
+// History Timeline
+.history-timeline {
+    position: relative;
+}
+
+.history-item-modal {
+    position: relative;
+
+    .badge {
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+
+    label {
+        letter-spacing: 0.05em;
+        font-size: 0.7rem;
+    }
+
+    p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    &:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+
+.bg-primary-light {
+    background: rgba($primary, 0.1);
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.tracking-wider {
+    letter-spacing: 0.05em;
+}
+
+.shadow-md {
+    box-shadow: $shadow-md;
+}
+
+.rounded-4 {
+    border-radius: 16px !important;
+}
+
+// ========================================
+// NUEVOS ESTILOS - HISTORIA CLÍNICA Y TABS
+// ========================================
+
+.modal-tabs {
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    border-bottom: 1px solid $glass-border;
+
+    .tab-btn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 15px;
+        color: $text-secondary;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border-bottom: 3px solid transparent;
+
+        ion-icon {
+            font-size: 1.2rem;
+        }
+
+        &.active {
+            color: $primary;
+            border-bottom-color: $primary;
+            background: rgba($primary, 0.05);
+        }
+
+        &:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+    }
+}
+
+.clinical-details {
+    .bg-glass-dark {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .border-primary-left {
+        border-left: 4px solid $primary;
+        background: rgba($primary, 0.03);
+    }
+
+    .table-vital {
+        font-size: 0.85rem;
+        margin-top: 10px;
+
+        th {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        td {
+            padding: 10px;
+            border-color: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+    }
+}
+
+.x-small {
+    font-size: 0.75rem;
+}
+
+// Forzar colores claros en todo el contenido del modal
+.custom-modal {
+    color: #ffffff !important;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .text-main,
+    p,
+    span,
+    label,
+    td,
+    th {
+        color: #ffffff !important;
+    }
+
+    .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+        opacity: 0.8;
+    }
+
+    .custom-input {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.05);
+
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+    }
+}
+
+// Clases de utilidad para fondos claros/oscuros
+.bg-danger-light {
+    background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.bg-primary-light {
+    background: rgba(67, 97, 238, 0.15) !important;
+}

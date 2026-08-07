@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Ionic App</title>
+
+  <base href="/" />
+
+  <meta name="color-scheme" content="light dark" />
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
+
+  <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+  <!-- Tailwind CSS v4 via CDN with custom theme -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#4f46e5',
+            'primary-deep': '#4338ca',
+            'primary-light': '#818cf8',
+            'medical-dark': '#0f172a',
+            'dark-deep': '#020617',
+            'dark-secondary': '#0f172a',
+            'dark-card': '#1e293b',
+            'glass-light': '#1e293b',
+            'glass-heavy': '#334155',
+            'glass-border': '#334155',
+            'text-primary': '#f8fafc',
+            'text-secondary': '#cbd5e1',
+            'text-muted': '#64748b',
+            slate: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              500: '#64748b',
+              600: '#475569',
+              700: '#334155',
+              800: '#1e293b',
+              900: '#0f172a',
+              950: '#020617',
+            }
+          },
+          fontFamily: {
+            'inter': ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'fade-in-up': 'fadeInUp 0.6s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shimmer': 'shimmer 2.5s infinite linear',
+            'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+            fadeInUp: { from: { opacity: '0', transform: 'translateY(20px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            scaleIn: { from: { opacity: '0', transform: 'scale(0.95)' }, to: { opacity: '1', transform: 'scale(1)' } },
+            shimmer: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(100%)' } },
+            bounceIn: { '0%': { opacity: '0', transform: 'scale(0.3)' }, '50%': { opacity: '0.9', transform: 'scale(1.1)' }, '80%': { opacity: '1', transform: 'scale(0.89)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+          },
+          backdropBlur: {
+            '3xl': '64px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- add to homescreen for ios -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <style>
+    /* Splash Screen Styles */
+    #app-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f172a; /* Deep dark blue match */
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+    }
+
+    #app-splash.splash-fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-logo-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    /* Pulse Rings */
+    .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 4px solid #4f46e5;
+      opacity: 0;
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    .pulse-ring:nth-child(2) {
+      animation-delay: 0.5s;
+    }
+
+    /* Medical Cross/Heart */
+    .splash-icon {
+      font-size: 40px;
+      color: white;
+      z-index: 2;
+      animation: heartbeat 1.5s ease-in-out infinite;
+    }
+
+    /* Text */
+    .splash-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 1px;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0;
+      animation: fadeUp 0.8s ease-out 0.3s forwards;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.5); opacity: 0; }
+      50% { opacity: 0.5; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    @keyframes heartbeat {
+      0% { transform: scale(1); }
+      14% { transform: scale(1.1); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.1); }
+      70% { transform: scale(1); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app-splash">
+    <div class="splash-logo-container">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <!-- SVG Heart/Pulse Icon embedded for instant load -->
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="splash-icon">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    </div>
+    <div class="splash-text">ProMedical</div>
+  </div>
+  <app-root></app-root>
+</body>
+
+</html>

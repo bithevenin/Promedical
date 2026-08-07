@@ -1,0 +1,236 @@
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
+  <!-- Mobile Header -->
+  <div class="mobile-header flex items-center justify-between px-6 h-16 bg-slate-900 border-b border-slate-700 lg:hidden fixed top-0 w-full z-50">
+    <div class="logo flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn p-2 text-text-secondary hover:text-white transition-colors">
+        <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
+      </div>
+      }
+    </nav>
+
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content lg:ml-64 flex-grow relative overflow-x-hidden pt-16 lg:pt-0">
+    <!-- Top Bar (Desktop) -->
+    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-10 bg-medical-dark border-b border-slate-700 sticky top-0 z-40">
+      <div class="search-container flex items-center gap-4 bg-slate-800 px-5 py-2.5 rounded-xl w-96 border border-slate-700 hover:border-primary transition-all focus-within:ring-2 focus-within:ring-primary/20">
+        <ion-icon name="search-outline" class="text-text-tertiary"></ion-icon>
+        <input type="text" placeholder="Buscar pacientes, citas..." class="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-text-muted">
+      </div>
+
+      <div class="top-actions flex items-center gap-6">
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
+        <button class="relative p-2 text-text-muted hover:text-white transition-colors">
+          <ion-icon name="notifications-outline" class="text-2xl"></ion-icon>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-medical-dark"></span>
+        </button>
+        <div class="user-info text-right hidden xl:block">
+          <span class="block text-sm font-bold text-white leading-tight uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-medium text-text-muted uppercase mt-0.5">
+            {{ currentProfile()?.rol || 'Control de Panel' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 max-w-full mx-auto">
+      
+      <!-- Welcome Section -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 animate-fade-in">
+        <div>
+          <h1 class="text-2xl lg:text-3xl font-black text-white tracking-tighter mb-1">Dashboard Principal</h1>
+          <p class="text-sm font-medium text-text-secondary"><span class="text-primary font-bold">Hola,</span> {{ currentProfile()?.nombre || 'Bienvenido' }}. Resumen de actividad.</p>
+        </div>
+        <button class="group flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-deep text-white rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 active:scale-95"
+                routerLink="/citas">
+          <ion-icon name="add-circle" class="text-lg group-hover:rotate-90 transition-transform duration-500"></ion-icon>
+          <span class="text-xs font-black uppercase tracking-widest">Nueva Cita</span>
+        </button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-8">
+        @for (stat of stats(); track stat.title) {
+        <div class="stat-card group bg-slate-800 border border-slate-700 p-4 lg:p-5 rounded-2xl hover:bg-slate-700 hover:border-primary transition-all duration-300 animate-scale-in">
+          <div class="flex justify-between items-start mb-3">
+            <div class="icon-wrapper w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all duration-300"
+                 [ngClass]="{
+                   'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20': stat.colorClass === 'blue',
+                   'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20': stat.colorClass === 'indigo',
+                   'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20': stat.colorClass === 'green',
+                   'bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20': stat.colorClass === 'orange'
+                 }">
+              <ion-icon [name]="stat.icon"></ion-icon>
+            </div>
+            <div class="px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tighter uppercase"
+                 [ngClass]="stat.isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'">
+              {{ stat.trend }}
+            </div>
+          </div>
+          <h3 class="text-xl lg:text-2xl font-black text-white mb-0.5 group-hover:text-primary transition-colors tracking-tight">{{ stat.value }}</h3>
+          <p class="text-[9px] font-black text-text-muted uppercase tracking-widest">{{ stat.title }}</p>
+        </div>
+        }
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-6">
+        <!-- Waiting List -->
+        <div class="xl:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-5 lg:p-7 animate-slide-up">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h5 class="text-lg font-black text-white tracking-tight">Pacientes en Espera</h5>
+              <p class="text-[10px] text-text-muted font-black uppercase tracking-widest">Lista activa para hoy</p>
+            </div>
+            <button class="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors flex items-center gap-1 group">
+              Ver todos <ion-icon name="arrow-forward" class="group-hover:translate-x-1 transition-transform"></ion-icon>
+            </button>
+          </div>
+
+          <div class="space-y-2.5">
+            @for (item of recentActivity(); track item.id) {
+            <div class="flex items-center justify-between p-3.5 bg-white/5 border border-transparent hover:border-primary/20 rounded-xl transition-all duration-300 group">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl ring-2 ring-primary/10 p-0.5 transition-all">
+                  <img [src]="item.avatar" class="w-full h-full rounded-lg object-cover" [alt]="item.user">
+                </div>
+                <div>
+                  <h6 class="text-xs font-black text-white group-hover:text-primary transition-colors">{{ item.user }}</h6>
+                  <p class="text-[9px] text-text-muted font-black uppercase tracking-tight">{{ item.action }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black rounded-lg tracking-widest uppercase">{{ item.time }}</span>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Weekly Summary -->
+        <div class="bg-primary rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-xl shadow-primary/20 animate-slide-up" style="animation-delay: 0.1s">
+          <div class="relative z-10 h-full flex flex-col">
+            <div class="flex justify-between items-start mb-8">
+              <h5 class="text-lg font-black text-white tracking-tight uppercase leading-tight">Resumen<br>Semanal</h5>
+              <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl">
+                <ion-icon name="analytics-outline"></ion-icon>
+              </div>
+            </div>
+            
+            <div class="space-y-6 mb-auto">
+              <div>
+                <div class="flex justify-between items-end mb-2">
+                  <span class="text-[10px] font-black opacity-80 uppercase tracking-widest">Metas Mensuales</span>
+                  <span class="text-xl font-black">85%</span>
+                </div>
+                <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: 85%"></div>
+                </div>
+              </div>
+
+              <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl">
+                <p class="text-[9px] font-black opacity-60 uppercase tracking-widest mb-1">Próxima Consulta</p>
+                <div class="flex items-center gap-2">
+                  <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                  <p class="text-xs font-black text-white">Dr. Carlos V. <span class="opacity-60 ml-1 font-medium">(14:30)</span></p>
+                </div>
+              </div>
+            </div>
+
+            <button class="mt-6 w-full py-3.5 bg-white text-primary font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-medical-dark hover:text-white transition-all">
+              Ver Reporte
+            </button>
+          </div>
+          <ion-icon name="pulse" class="absolute -bottom-12 -right-12 text-[15rem] opacity-10 rotate-12 pointer-events-none"></ion-icon>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-navbar flex lg:hidden items-center justify-around fixed bottom-0 left-0 right-0 h-16 bg-dark-secondary/80 backdrop-blur-xl border-t border-glass-border px-4 pb-1 z-50">
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/main">
+      <ion-icon name="home-outline" class="text-xl"></ion-icon>
+      <span class="text-[8px] font-black uppercase mt-0.5">Inicio</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2.5 text-primary bg-primary/10 rounded-xl" routerLink="/dashboard">
+      <ion-icon name="grid-outline" class="text-xl"></ion-icon>
+      <span class="text-[8px] font-black uppercase mt-0.5">Panel</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/citas">
+      <ion-icon name="calendar-outline" class="text-xl"></ion-icon>
+      <span class="text-[8px] font-black uppercase mt-0.5">Citas</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/pacientes">
+      <ion-icon name="people-outline" class="text-xl"></ion-icon>
+      <span class="text-[8px] font-black uppercase mt-0.5">Pacientes</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/contabilidad">
+      <ion-icon name="wallet-outline" class="text-xl"></ion-icon>
+      <span class="text-[8px] font-black uppercase mt-0.5">Finanzas</span>
+    </div>
+  </nav>
+
+  <!-- Global Backdrop Elements -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full"></div>
+    <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-indigo-500/5 blur-[150px] rounded-full"></div>
+  </div>
+</div>
+

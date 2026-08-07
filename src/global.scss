@@ -1,0 +1,373 @@
+:root {
+  --color-medical-dark: #0f172a;
+  --color-dark-deep: #020617;
+  --color-dark-secondary: #0f172a;
+  --color-dark-card: #1e293b;
+  --color-glass-light: #1e293b;
+  --color-glass-heavy: #334155;
+  --color-glass-border: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #64748b;
+}
+
+/*
+  ProMedical Global Styles - Clean Architecture
+*/
+
+/* Ionic Core */
+@import "@ionic/angular/css/core.css";
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/* Ionic Dark Mode */
+@import "@ionic/angular/css/palettes/dark.system.css";
+
+/* Custom Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* Basic Resets to allow Tailwind full control */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Ionic Component Overrides for Glassmorphism */
+ion-content {
+  --background: transparent;
+}
+
+ion-toolbar {
+  --background: transparent;
+  --border-style: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Utility Animations */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+.animate-delay-500 { animation-delay: 500ms; }
+
+/* Light Theme Variables and Overrides */
+body.light-theme {
+  /* Override Custom Theme Variables */
+  --color-medical-dark: #f8fafc;
+  --color-dark-deep: #f1f5f9;
+  --color-dark-secondary: #ffffff;
+  --color-dark-card: #ffffff;
+  --color-glass-light: #ffffff;
+  --color-glass-heavy: #f1f5f9;
+  --color-glass-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+
+  /* Force background override for hardcoded utility classes */
+  .bg-medical-dark {
+    background-color: #f8fafc !important;
+  }
+  .bg-dark-secondary, .bg-slate-800 {
+    background-color: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .bg-dark-secondary\/50, .bg-dark-secondary\/80 {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(16px);
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .bg-glass-light {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .bg-white\/5 {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .bg-white\/10 {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  .bg-white\/\[0\.02\] {
+    background-color: rgba(0, 0, 0, 0.015) !important;
+  }
+  .bg-white\/\[0\.01\] {
+    background-color: rgba(0, 0, 0, 0.008) !important;
+  }
+  .hover\:bg-white\/\[0\.03\]:hover {
+    background-color: rgba(0, 0, 0, 0.025) !important;
+  }
+  .hover\:bg-slate-700:hover {
+    background-color: #f1f5f9 !important;
+  }
+  .border-glass-border {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .border-slate-700 {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  /* Text and Icon Override */
+  .text-white {
+    color: #0f172a !important;
+  }
+  .text-white\/30 {
+    color: rgba(15, 23, 42, 0.3) !important;
+  }
+  .text-white\/70 {
+    color: rgba(15, 23, 42, 0.7) !important;
+  }
+  .text-text-muted {
+    color: #64748b !important;
+  }
+  .text-text-secondary {
+    color: #475569 !important;
+  }
+  .logo-text, h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+  }
+  
+  /* Controls and Forms */
+  input, select, textarea {
+    color: #0f172a !important;
+    background-color: rgba(0, 0, 0, 0.02) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+  input::placeholder {
+    color: rgba(15, 23, 42, 0.3) !important;
+  }
+  select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .bg-primary\/5 {
+    background-color: rgba(67, 97, 238, 0.05) !important;
+  }
+  .bg-emerald-500\/10 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+  }
+  
+  /* Additional UI tweaks */
+  .hub-footer {
+    border-top-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .mobile-navbar {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-top-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .top-bar {
+    background-color: rgba(248, 250, 252, 0.8) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+/* Premium Sidebar Hover Expand/Collapse Animation */
+@media (min-width: 1024px) {
+  /* Sidebar default collapsed state */
+  aside.sidebar {
+    width: 80px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* Sidebar expanded state on hover */
+  aside.sidebar:hover {
+    width: 256px !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+
+  /* Main content adjusts to the collapsed sidebar width.
+     Keep this margin constant so that the sidebar overlays on top of the content
+     instead of shifting the entire layout. */
+  main.main-content {
+    margin-left: 80px !important;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* Hide textual elements inside the sidebar when collapsed */
+  aside.sidebar .logo-text,
+  aside.sidebar .sidebar-nav .nav-item span,
+  aside.sidebar .sidebar-footer .nav-item span,
+  aside.sidebar .profile-box .user-details {
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    margin-left: 0 !important;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-block !important;
+  }
+
+  /* Show textual elements when sidebar is hovered */
+  aside.sidebar:hover .logo-text,
+  aside.sidebar:hover .sidebar-nav .nav-item span,
+  aside.sidebar:hover .sidebar-footer .nav-item span,
+  aside.sidebar:hover .profile-box .user-details {
+    opacity: 1 !important;
+    width: auto !important;
+    max-width: 200px !important;
+    margin-left: 12px !important; /* matches gap-3 spacing */
+  }
+
+  /* Align profile name correctly */
+  aside.sidebar:hover .profile-box .user-details {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Adjust spacing gaps when collapsed vs expanded */
+  aside.sidebar .sidebar-header,
+  aside.sidebar .sidebar-nav .nav-item,
+  aside.sidebar .sidebar-footer .nav-item,
+  aside.sidebar .profile-box {
+    gap: 0px !important;
+    transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  aside.sidebar:hover .sidebar-header,
+  aside.sidebar:hover .sidebar-nav .nav-item,
+  aside.sidebar:hover .sidebar-footer .nav-item,
+  aside.sidebar:hover .profile-box {
+    gap: 12px !important;
+  }
+
+  /* Center the interactive items when collapsed for a grid-like appearance */
+  aside.sidebar .sidebar-header {
+    justify-content: center !important;
+  }
+  
+  aside.sidebar:hover .sidebar-header {
+    justify-content: flex-start !important;
+  }
+
+  aside.sidebar .sidebar-nav .nav-item,
+  aside.sidebar .sidebar-footer .nav-item {
+    justify-content: center !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  aside.sidebar:hover .sidebar-nav .nav-item,
+  aside.sidebar:hover .sidebar-footer .nav-item {
+    justify-content: flex-start !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  aside.sidebar .profile-box {
+    justify-content: center !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+
+  aside.sidebar:hover .profile-box {
+    justify-content: flex-start !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
+
+/* Minimalist SaaS Card, Spacing, and Shadow overrides */
+.bg-glass-light {
+  background-color: var(--color-dark-card, #1e293b) !important;
+  border: 1px solid var(--color-glass-border, #334155) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25) !important;
+  backdrop-filter: none !important;
+}
+
+.bg-glass-heavy {
+  background-color: var(--color-glass-heavy, #334155) !important;
+  border: 1px solid var(--color-glass-border, #334155) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Remove glow elements and standardise shadow sizes */
+.shadow-xl, .shadow-2xl, .shadow-lg {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+}
+.shadow-primary\/20, .shadow-primary\/30, .shadow-emerald-500\/20, .shadow-emerald-500\/30, .shadow-xl\/20, .shadow-xl\/30, .shadow-xl\/10 {
+  box-shadow: none !important;
+}
+
+/* Standardise input fields to look minimalist */
+input, select, textarea {
+  background-color: var(--color-dark-deep, #020617) !important;
+  border: 1px solid var(--color-glass-border, #334155) !important;
+  color: var(--color-text-primary, #f8fafc) !important;
+  border-radius: 12px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary, #4f46e5) !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
+  outline: none !important;
+}
+
+/* Clean up table styling */
+table {
+  border-collapse: collapse !important;
+}
+
+table tr {
+  border-bottom: 1px solid var(--color-glass-border, #334155) !important;
+  transition: background-color 0.2s ease !important;
+}
+
+table tr:hover {
+  background-color: var(--color-glass-heavy, #334155) !important;
+}
+
+/* Clean up mobile and top bar layouts to match minimalist headers */
+.top-bar {
+  background-color: var(--color-medical-dark, #0f172a) !important;
+  border-bottom: 1px solid var(--color-glass-border, #334155) !important;
+  backdrop-filter: none !important;
+}
+
+.mobile-header {
+  background-color: var(--color-dark-secondary, #0f172a) !important;
+  border-bottom: 1px solid var(--color-glass-border, #334155) !important;
+  backdrop-filter: none !important;
+}
+
+/* Style active items with flat accents */
+.bg-primary\/10 {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+  color: var(--color-primary) !important;
+}

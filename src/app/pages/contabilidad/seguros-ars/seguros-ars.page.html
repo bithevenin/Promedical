@@ -1,0 +1,482 @@
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-20 lg:pb-0">
+  <!-- Mobile Header -->
+  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
+    <div class="logo flex items-center gap-3" routerLink="/main">
+      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button class="p-2 text-text-secondary hover:text-white transition-colors" (click)="volver()">
+        <ion-icon name="arrow-back-outline" class="text-2xl"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
+      </div>
+      }
+    </nav>
+
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0">
+    <!-- Top Bar -->
+    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
+      <div class="flex items-center gap-4">
+        <button class="w-10 h-10 bg-glass-light border border-glass-border rounded-xl flex items-center justify-center text-white hover:bg-white/10 transition-colors" (click)="volver()">
+          <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
+        </button>
+        <div class="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+        </div>
+        <div>
+          <h4 class="text-base font-black text-white uppercase tracking-tight">Gestión de Seguros ARS</h4>
+          <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Facturación mensual por aseguradoras</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition" (click)="exportarExcel()">
+             <ion-icon name="document-text-outline" class="text-base"></ion-icon> EXCEL
+        </button>
+        <button class="px-4 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition" (click)="exportarPDF()">
+             <ion-icon name="download-outline" class="text-base"></ion-icon> PDF
+        </button>
+      </div>
+    </header>
+
+    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 w-full animate-fade-in">
+            
+            <!-- 1. Key Statistics Dashboard - Tailwind Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                
+                <div class="bg-slate-800 border-l-4 border-l-blue-600 border border-slate-700 rounded-2xl p-6 shadow-lg hover:-translate-y-1 transition-transform">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="text-slate-400 font-bold text-xs tracking-wider uppercase mb-1">
+                                {{ viewMode() === 'facturas' ? 'TOTAL FACTURADO' : 'TOTAL ENVIADO' }}
+                            </div>
+                            <div class="text-white font-black text-3xl mb-2">
+                                RD$ {{ (viewMode() === 'facturas' ? totalMonto() : totalEnviadoReportes()).toLocaleString() }}
+                            </div>
+                            <div class="text-blue-500 font-bold text-xs bg-blue-500/10 inline-block px-2 py-1 rounded">Periodo Actual</div>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center text-2xl">
+                            <ion-icon name="wallet"></ion-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border-l-4 border-l-cyan-500 border border-slate-700 rounded-2xl p-6 shadow-lg hover:-translate-y-1 transition-transform">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="text-slate-400 font-bold text-xs tracking-wider uppercase mb-1">RECEPCIÓN (CHEQUES)</div>
+                            <div class="text-white font-black text-3xl mb-2">
+                                RD$ {{ totalRecibidoReportes().toLocaleString() }}
+                            </div>
+                            <div class="text-cyan-500 font-bold text-xs bg-cyan-500/10 inline-block px-2 py-1 rounded">Monto Liquidado</div>
+                        </div>
+                        <div class="w-12 h-12 bg-cyan-500/20 text-cyan-400 rounded-xl flex items-center justify-center text-2xl">
+                            <ion-icon name="checkmark-done"></ion-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border-l-4 border border-slate-700 rounded-2xl p-6 shadow-lg hover:-translate-y-1 transition-transform"
+                     [ngClass]="balanceAcumulado() > 0 ? 'border-l-red-500' : 'border-l-emerald-500'">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="text-slate-400 font-bold text-xs tracking-wider uppercase mb-1">BALANCE DE CUENTA</div>
+                            <div class="text-white font-black text-3xl mb-2">
+                                RD$ {{ balanceAcumulado().toLocaleString() }}
+                            </div>
+                            <div class="font-bold text-xs inline-block px-2 py-1 rounded"
+                                 [ngClass]="balanceAcumulado() > 0 ? 'text-red-500 bg-red-500/10' : 'text-emerald-500 bg-emerald-500/10'">
+                                {{ balanceAcumulado() > 0 ? 'Seguro Adeuda' : 'Cuenta al Día' }}
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                             [ngClass]="balanceAcumulado() > 0 ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'">
+                            <ion-icon [name]="balanceAcumulado() > 0 ? 'alert-circle' : 'shield-checkmark'"></ion-icon>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 2. Optimized Filter Toolbar - Tailwind Flex -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="w-full md:w-auto">
+                    <ion-segment [value]="viewMode()" (ionChange)="onViewModeChange($event)" mode="ios">
+                        <ion-segment-button value="facturas">
+                            <ion-label class="font-bold">Individuales</ion-label>
+                        </ion-segment-button>
+                        <ion-segment-button value="pagos">
+                            <ion-label class="font-bold">Reportes</ion-label>
+                        </ion-segment-button>
+                    </ion-segment>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 w-full md:w-auto">
+                        <ion-icon name="business" class="text-blue-500 text-xl"></ion-icon>
+                        <select class="bg-transparent text-white font-semibold outline-none w-full md:w-48 cursor-pointer" [value]="seguroSeleccionado()" (change)="onSeguroChange($event)">
+                            @for (seguro of segurosDisponibles; track seguro.value) {
+                                <option [value]="seguro.value" class="bg-slate-800 text-white">{{ seguro.label }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 cursor-pointer select-none" (click)="togglePendientes()">
+                        <div class="w-10 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out flex items-center"
+                             [ngClass]="mostrarSoloPendientes() ? 'bg-blue-600' : 'bg-slate-700'">
+                            <div class="w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ease-in-out transform"
+                                 [ngClass]="mostrarSoloPendientes() ? 'translate-x-4' : 'translate-x-0'"></div>
+                        </div>
+                        <span class="text-white font-bold text-sm tracking-wide">SOLO PENDIENTES</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Professional Data Content -->
+            @if (viewMode() === 'facturas') {
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="p-5 border-b border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h5 class="m-0 font-bold text-white text-lg tracking-wide uppercase">Listado de Facturas</h5>
+                        <button class="bg-blue-600 hover:bg-blue-500 transition-colors text-white text-sm font-bold py-2 px-5 rounded-full flex items-center gap-2" (click)="abrirModalAgregar()">
+                            <ion-icon name="add" class="text-xl"></ion-icon>
+                            NUEVA FACTURA
+                        </button>
+                    </div>
+
+                    <div class="overflow-auto max-h-[500px] custom-scrollbar border-b border-slate-700">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900">
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">PACIENTE / FECHA</th>
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">CARNET</th>
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">SEGURO ARS</th>
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">MONTO</th>
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">ESTADO</th>
+                                    <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">ACCIÓN</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700">
+                                @for (factura of facturasFiltradas(); track factura.id) {
+                                    <tr class="hover:bg-slate-700/30 transition-colors group">
+                                        <td class="p-4">
+                                            <div class="font-bold text-white">{{ factura.nombrePaciente }}</div>
+                                            <div class="text-xs text-slate-400 mt-1">{{ factura.fecha }} • {{ factura.cedula }}</div>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="inline-block bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs px-3 py-1 rounded-md">
+                                                {{ factura.carnetSeguro }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="font-bold text-cyan-400 text-sm uppercase">{{ factura.seguro }}</span>
+                                        </td>
+                                        <td class="p-4 font-black text-white text-lg">
+                                            RD$ {{ factura.monto.toLocaleString() }}
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="inline-block text-xs font-bold px-3 py-1 rounded-full border"
+                                                  [ngClass]="factura.estado === 'pendiente' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'">
+                                                {{ factura.estado === 'pendiente' ? 'PENDIENTE' : 'PAGADO' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-right">
+                                            @if (factura.estado === 'pendiente') {
+                                                <button class="bg-emerald-600/20 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-all w-10 h-10 rounded-full flex items-center justify-center ml-auto" (click)="marcarPagada(factura)">
+                                                    <ion-icon name="checkmark" class="text-xl"></ion-icon>
+                                                </button>
+                                            } @else {
+                                                <div class="w-10 h-10 flex items-center justify-center ml-auto">
+                                                    <ion-icon name="checkmark-done" class="text-emerald-500 text-2xl"></ion-icon>
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                } @empty {
+                                    <tr>
+                                        <td colspan="6" class="p-8 text-center text-slate-500">
+                                            <ion-icon name="document-text-outline" class="text-6xl mb-4 opacity-50"></ion-icon>
+                                            <p class="font-semibold">No hay facturas que coincidan con los filtros</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            } @else {
+                <!-- Reports View Mode - Tailwind Grid -->
+                <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                     <h4 class="m-0 font-bold text-white text-xl">Comparativa de Envío</h4>
+                     <button class="bg-blue-600 hover:bg-blue-500 transition-colors text-white font-bold py-2 px-6 rounded-full flex items-center gap-2" (click)="abrirModalReporte()">
+                        <ion-icon name="cloud-upload" class="text-xl"></ion-icon>
+                        NUEVO REPORTE
+                     </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @for (reporte of reportesFiltrados(); track reporte.id) {
+                        <div class="bg-slate-800 border rounded-2xl p-6 flex flex-col hover:-translate-y-1 transition-transform shadow-lg"
+                             [ngClass]="reporte.estado === 'completado' ? 'border-emerald-500/50' : 'border-slate-700'">
+                            
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <div class="text-blue-400 font-bold text-sm tracking-wider uppercase mb-1">{{ reporte.seguro }}</div>
+                                    <h4 class="text-white font-black text-2xl m-0">{{ reporte.mes }}</h4>
+                                </div>
+                                <span class="text-xs font-bold px-3 py-1 rounded-full border"
+                                      [ngClass]="reporte.estado === 'pendiente' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'">
+                                    {{ reporte.estado === 'pendiente' ? 'EN PROCESO' : 'LIQUIDADO' }}
+                                </span>
+                            </div>
+
+                            <div class="flex flex-col gap-4 mb-6">
+                                <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                                    <span class="text-slate-400 text-sm font-bold tracking-wide">ENVIADO</span>
+                                    <span class="text-white font-black text-lg">RD$ {{ reporte.montoEnviado.toLocaleString() }}</span>
+                                </div>
+                                
+                                @if (reporte.estado === 'completado') {
+                                    <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                                        <span class="text-slate-400 text-sm font-bold tracking-wide">RECIBIDO</span>
+                                        <span class="text-emerald-400 font-black text-lg">RD$ {{ reporte.montoRecibido?.toLocaleString() }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-400 text-sm font-bold tracking-wide">EFICIENCIA</span>
+                                        <span class="text-blue-400 font-black text-lg">
+                                            {{ ((reporte.montoRecibido! / reporte.montoEnviado) * 100).toFixed(1) }}%
+                                        </span>
+                                    </div>
+                                } @else {
+                                    <div class="bg-slate-900/50 rounded-xl p-4 text-center mt-2 border border-slate-700/50">
+                                        <button class="w-full border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition-colors font-bold text-sm py-2 rounded-full" (click)="abrirModalPago(reporte)">
+                                            REGISTRAR PAGO
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (reporte.comentario) {
+                                <div class="mt-auto pt-4 border-t border-slate-700">
+                                    <p class="text-slate-400 italic text-sm m-0">"{{ reporte.comentario }}"</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- Modal Layout Refinement -->
+    @if (showAddModal) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-medical-dark/90 backdrop-blur-md animate-fade-in" (click)="cerrarModal()"></div>
+        <div class="relative w-full max-w-lg bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+            <div class="border-b border-slate-700 p-6 flex justify-between items-center bg-slate-900/50">
+                <h5 class="font-bold m-0 text-white">AGREGAR FACTURA</h5>
+                <button class="bg-slate-800 hover:bg-slate-700 text-white w-10 h-10 rounded-lg flex items-center justify-center transition" (click)="cerrarModal()">
+                    <ion-icon name="close" class="text-xl"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-slate-400 text-xs font-bold mb-2">PACIENTE</label>
+                        <input type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.nombrePaciente">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">CÉDULA</label>
+                        <input type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.cedula">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">EDAD</label>
+                        <input type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.edad">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-slate-400 text-xs font-bold mb-2"># CARNET</label>
+                        <input type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.carnetSeguro">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">ARS</label>
+                        <select class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.seguro">
+                            @for (seguro of segurosDisponibles; track seguro.value) {
+                                @if (seguro.value !== 'todos') {
+                                    <option [value]="seguro.value">{{ seguro.label }}</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">MONTO RD$</label>
+                        <input type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevaFactura.monto">
+                    </div>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-500 text-white w-full py-3 mt-6 font-bold rounded-xl transition shadow-lg shadow-blue-500/20" (click)="guardarFactura()">
+                    GUARDAR FACTURA
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Modal: Reportar Envío -->
+    @if (showReporteModal) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-medical-dark/90 backdrop-blur-md animate-fade-in" (click)="cerrarModal()"></div>
+        <div class="relative w-full max-w-lg bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+            <div class="border-b border-slate-700 p-6 flex justify-between items-center bg-slate-900/50">
+                <h5 class="font-bold m-0 text-white">REPORTE DE ENVÍO</h5>
+                <button class="bg-slate-800 hover:bg-slate-700 text-white w-10 h-10 rounded-lg flex items-center justify-center transition" (click)="cerrarModal()">
+                    <ion-icon name="close" class="text-xl"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-slate-400 text-xs font-bold mb-2">ARS</label>
+                        <select class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevoReporte.seguro">
+                            @for (seguro of segurosDisponibles; track seguro.value) {
+                                @if (seguro.value !== 'todos') {
+                                    <option [value]="seguro.value">{{ seguro.label }}</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">PERIODO</label>
+                        <input type="month" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevoReporte.mes">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">MONTO RD$</label>
+                        <input type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevoReporte.montoEnviado">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-slate-400 text-xs font-bold mb-2">OBSERVACIÓN (OPCIONAL)</label>
+                        <textarea class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevoReporte.comentario" rows="2"></textarea>
+                    </div>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-500 text-white w-full py-3 mt-6 font-bold rounded-xl transition shadow-lg shadow-blue-500/20" (click)="guardarReporte()">
+                    GENERAR REPORTE
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Modal: Registrar Pago Recibido -->
+    @if (showPagoModal) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-medical-dark/90 backdrop-blur-md animate-fade-in" (click)="cerrarModal()"></div>
+        <div class="relative w-full max-w-lg bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+            <div class="border-b border-slate-700 p-6 flex justify-between items-center bg-slate-900/50">
+                <h5 class="font-bold m-0 text-white">LIQUIDAR PAGO</h5>
+                <button class="bg-slate-800 hover:bg-slate-700 text-white w-10 h-10 rounded-lg flex items-center justify-center transition" (click)="cerrarModal()">
+                    <ion-icon name="close" class="text-xl"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body-custom p-4 text-center">
+                <div class="mb-6">
+                    <div class="inline-block bg-blue-500/10 text-blue-400 font-bold px-3 py-1 rounded border border-blue-500/20 mb-2">{{ reporteSeleccionado?.seguro }}</div>
+                    <h4 class="text-white font-black text-2xl uppercase">{{ reporteSeleccionado?.mes }}</h4>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">RECIBIDO RD$</label>
+                        <input type="number" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition text-lg font-bold" [(ngModel)]="nuevoPago.montoRecibido">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2">FECHA</label>
+                        <input type="date" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" [(ngModel)]="nuevoPago.fechaPago">
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl mt-6 text-left shadow-inner flex items-center justify-between">
+                    <div>
+                        <div class="text-slate-400 text-xs font-bold tracking-wider mb-1">DIFERENCIA</div>
+                        <div class="text-white text-xl font-black">
+                            RD$ {{ ((reporteSeleccionado?.montoEnviado || 0) - nuevoPago.montoRecibido).toLocaleString() }}
+                        </div>
+                    </div>
+                    <ion-icon name="calculator" class="text-slate-600 text-4xl"></ion-icon>
+                </div>
+
+                <button class="bg-emerald-600 hover:bg-emerald-500 text-white w-full py-3 mt-6 font-bold rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2" (click)="guardarPago()">
+                    <ion-icon name="checkmark-circle" class="text-xl"></ion-icon>
+                    CONFIRMAR PAGO
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-navbar flex lg:hidden items-center justify-around fixed bottom-0 left-0 right-0 h-20 bg-dark-secondary/80 backdrop-blur-xl border-t border-glass-border px-4 pb-2 z-50">
+        <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/main">
+            <ion-icon name="home-outline" class="text-2xl"></ion-icon>
+            <span class="text-[9px] font-bold uppercase mt-1">Inicio</span>
+        </div>
+        <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/dashboard">
+            <ion-icon name="grid-outline" class="text-2xl"></ion-icon>
+            <span class="text-[9px] font-bold uppercase mt-1">Panel</span>
+        </div>
+        <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/citas">
+            <ion-icon name="calendar-outline" class="text-2xl"></ion-icon>
+            <span class="text-[9px] font-bold uppercase mt-1">Citas</span>
+        </div>
+        <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/pacientes">
+            <ion-icon name="people-outline" class="text-2xl"></ion-icon>
+            <span class="text-[9px] font-bold uppercase mt-1">Pacientes</span>
+        </div>
+        <div class="flex flex-col items-center justify-center p-3 text-primary bg-primary/10 rounded-2xl shadow-lg ring-1 ring-primary/20" routerLink="/contabilidad">
+            <ion-icon name="wallet-outline" class="text-2xl"></ion-icon>
+            <span class="text-[9px] font-bold uppercase mt-1">Cash</span>
+        </div>
+    </nav>
+</div>

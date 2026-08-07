@@ -1,0 +1,320 @@
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-24 lg:pb-0">
+  <!-- Mobile Header -->
+  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary text-xl shadow-lg ring-1 ring-primary/20">
+        <ion-icon name="settings-outline"></ion-icon>
+      </div>
+      <span class="text-lg font-black tracking-tight uppercase">Ajustes</span>
+    </div>
+    <button class="p-2 text-text-secondary hover:text-white transition-colors" routerLink="/main">
+      <ion-icon name="home-outline" class="text-2xl"></ion-icon>
+    </button>
+  </div>
+
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <!-- Header -->
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
+      </div>
+      }
+    </nav>
+
+    <!-- Footer Profile/Logout -->
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Doctor' }}
+            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0" *ngIf="config">
+    <!-- Top Bar -->
+    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+        <div>
+          <h4 class="text-base font-black text-white uppercase tracking-tight">Panel de Control</h4>
+          <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Configuración y Usuarios</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Theme Toggle Button -->
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
+        <div class="user-info text-right">
+          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Administración' }}</span>
+          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">Control Maestro</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 max-w-full mx-auto animate-fade-in">
+      <!-- Segment Selector -->
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-5 mb-8">
+        <div class="flex bg-glass-light border border-glass-border p-1 rounded-2xl w-full lg:w-auto shadow-xl">
+           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+                   [class.bg-primary]="selectedSegment === 'consultorio'" [class.text-white]="selectedSegment === 'consultorio'" 
+                   [class.text-text-muted]="selectedSegment !== 'consultorio'" (click)="selectedSegment = 'consultorio'">
+             <ion-icon name="business" class="text-sm"></ion-icon>
+             Consultorio
+           </button>
+           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+                   [class.bg-primary]="selectedSegment === 'usuarios'" [class.text-white]="selectedSegment === 'usuarios'" 
+                   [class.text-text-muted]="selectedSegment !== 'usuarios'" (click)="selectedSegment = 'usuarios'">
+             <ion-icon name="people" class="text-sm"></ion-icon>
+             Usuarios
+           </button>
+           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+                   [class.bg-primary]="selectedSegment === 'datos'" [class.text-white]="selectedSegment === 'datos'" 
+                   [class.text-text-muted]="selectedSegment !== 'datos'" (click)="selectedSegment = 'datos'">
+             <ion-icon name="cloud-download" class="text-sm"></ion-icon>
+             Datos
+           </button>
+        </div>
+
+        <button class="hidden lg:flex items-center gap-2 px-6 py-3 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-deep transition-all active:scale-95 disabled:opacity-50" (click)="guardarConfiguracion()" [disabled]="guardando">
+           <ion-icon [name]="guardando ? 'sync' : 'save'" [class.animate-spin]="guardando" class="text-base"></ion-icon>
+           {{ guardando ? 'Guardando...' : 'Aplicar Cambios' }}
+        </button>
+      </div>
+
+      <!-- SECCIÓN CONSULTORIO -->
+      <div *ngIf="selectedSegment === 'consultorio'" class="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in-up">
+        <div class="xl:col-span-4 space-y-6">
+           <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl">
+              <div class="flex items-center gap-3 mb-6">
+                <div class="w-1 h-5 bg-primary rounded-full"></div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">Identidad Clínica</h5>
+              </div>
+              <div class="space-y-4">
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Nombre Comercial</label>
+                    <input type="text" [(ngModel)]="config.nombreDoctor" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-primary/50 transition-all" placeholder="Nombre">
+                 </div>
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Especialidad</label>
+                    <input type="text" [(ngModel)]="config.especialidad" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-primary/50 transition-all" placeholder="Especialidad">
+                 </div>
+                 <div class="pt-2">
+                    <div class="flex flex-col items-center justify-center p-5 bg-white/5 border border-dashed border-glass-border rounded-xl hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden group">
+                       <div class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center text-primary text-2xl mb-2">
+                          <img *ngIf="config.fotoUrl" [src]="config.fotoUrl" class="w-full h-full object-cover">
+                          <ion-icon *ngIf="!config.fotoUrl" name="camera"></ion-icon>
+                       </div>
+                       <p class="text-[8px] font-black uppercase text-text-muted group-hover:text-primary transition-colors">Digitalizar Logo</p>
+                       <input type="file" accept="image/*" (change)="actualizarFoto($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Card Tarifa -->
+           <div class="bg-primary/10 border border-primary/20 rounded-2xl p-6 shadow-xl text-center">
+              <p class="text-[8px] font-black text-primary uppercase tracking-widest mb-1">Consulta Particular</p>
+              <div class="flex items-center justify-center gap-1">
+                 <span class="text-xs font-black text-primary opacity-50 mb-1">RD$</span>
+                 <input type="number" [(ngModel)]="config.montoConsultaParticular" class="bg-transparent border-b border-primary/20 text-3xl font-black text-white focus:outline-none focus:border-primary transition-all w-32 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+              </div>
+           </div>
+        </div>
+
+        <div class="xl:col-span-8">
+           <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl shadow-xl flex flex-col h-full">
+              <div class="p-6 lg:p-7 border-b border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                 <div class="flex items-center gap-3">
+                    <div class="w-1 h-5 bg-sky-400 rounded-full"></div>
+                    <h5 class="text-xs font-black text-white uppercase tracking-tight">Tabulación de Seguros</h5>
+                 </div>
+                 <div class="flex items-center gap-2 w-full sm:w-auto bg-white/5 p-1 rounded-xl border border-glass-border">
+                    <input type="text" [(ngModel)]="nuevoSeguro.seguro" class="bg-transparent px-3 py-1.5 text-[9px] font-black text-white focus:outline-none placeholder:text-text-muted/40 w-full sm:w-32" placeholder="ARS...">
+                    <button class="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-lg shadow-lg hover:bg-primary-deep transition-all disabled:opacity-30" (click)="agregarSeguro()" [disabled]="!nuevoSeguro.seguro"><ion-icon name="add"></ion-icon></button>
+                 </div>
+              </div>
+
+              <div class="overflow-x-auto flex-grow">
+                 <table class="w-full text-left">
+                    <thead>
+                       <tr class="bg-white/[0.02] text-text-muted uppercase text-[8px] font-black tracking-widest border-b border-glass-border">
+                          <th class="px-6 py-3">Proveedor</th>
+                          <th class="px-6 py-3 text-center">Cobertura</th>
+                          <th class="px-6 py-3 text-center">Copago</th>
+                          <th class="px-6 py-3 text-center">Total</th>
+                          <th class="px-6 py-3 text-right">Acción</th>
+                       </tr>
+                    </thead>
+                    <tbody class="divide-y divide-glass-border/50">
+                       @for (tarifa of config.tarifasSeguros; track tarifa.seguro) {
+                       <tr class="hover:bg-white/[0.03] transition-colors group">
+                          <td class="px-6 py-3">
+                             <div class="flex items-center gap-3">
+                                <div class="w-7 h-7 rounded-md bg-sky-500/10 flex items-center justify-center text-sky-400 text-[10px] font-black">{{ tarifa.seguro.charAt(0) }}</div>
+                                <span class="text-[11px] font-black text-white">{{ tarifa.seguro }}</span>
+                             </div>
+                          </td>
+                          <td class="px-6 py-3 text-center">
+                             <input type="number" [(ngModel)]="tarifa.montoCobertura" class="bg-white/5 border border-glass-border rounded-lg px-2 py-1 text-[10px] font-black text-white w-20 text-center focus:border-sky-500/50 outline-none">
+                          </td>
+                          <td class="px-6 py-3 text-center">
+                             <input type="number" [(ngModel)]="tarifa.copago" class="bg-white/5 border border-glass-border rounded-lg px-2 py-1 text-[10px] font-black text-white w-20 text-center focus:border-amber-500/50 outline-none">
+                          </td>
+                          <td class="px-6 py-3 text-center">
+                             <span class="text-[11px] font-black text-emerald-400 tracking-tighter">{{ formatMonto(tarifa.montoCobertura + tarifa.copago) }}</span>
+                          </td>
+                          <td class="px-6 py-3 text-right">
+                             <button class="p-1.5 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg transition-all" (click)="eliminarSeguro(tarifa.seguro)"><ion-icon name="trash"></ion-icon></button>
+                          </td>
+                       </tr>
+                       } @empty {
+                       <tr>
+                          <td colspan="5" class="py-16 text-center opacity-20">
+                             <ion-icon name="shield-outline" class="text-3xl mb-2"></ion-icon>
+                             <p class="text-[9px] font-black uppercase">Sin proveedores</p>
+                          </td>
+                       </tr>
+                       }
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN USUARIOS -->
+      <div *ngIf="selectedSegment === 'usuarios'" class="animate-fade-in-up space-y-8">
+        <!-- Registro Usuario -->
+        <div class="bg-glass-light border border-glass-border rounded-2xl p-6 lg:p-8 shadow-xl">
+           <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+              <div class="md:col-span-3 flex flex-col items-center">
+                 <div class="w-32 h-32 rounded-3xl overflow-hidden border-2 border-primary/20 shadow-xl relative group">
+                    <img [src]="nuevoUsuario.fotoUrl" class="w-full h-full object-cover">
+                    <input type="file" accept="image/*" (change)="actualizarFotoNuevoUsuario($event)" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                    <div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><ion-icon name="camera" class="text-2xl text-white"></ion-icon></div>
+                 </div>
+                 <p class="text-[9px] font-black text-primary uppercase mt-3">Nueva Credencial</p>
+              </div>
+              <div class="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Nombre</label>
+                    <input type="text" [(ngModel)]="nuevoUsuario.nombre" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[11px] font-black text-white focus:border-primary/50 outline-none" placeholder="Apellido, Nombre">
+                 </div>
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Email</label>
+                    <input type="email" [(ngModel)]="nuevoUsuario.email" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[11px] font-black text-white focus:border-primary/50 outline-none" placeholder="id@promedical.com">
+                 </div>
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Nivel de Acceso</label>
+                    <select [(ngModel)]="nuevoUsuario.rol" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[11px] font-black text-white focus:border-primary/50 outline-none uppercase tracking-widest">
+                       @for (rol of roles; track rol.value) { <option [value]="rol.value" class="bg-dark-deep">{{ rol.label }}</option> }
+                    </select>
+                 </div>
+                 <div class="space-y-1">
+                    <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Token de Acceso</label>
+                    <input type="password" [(ngModel)]="nuevoUsuario.password" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[11px] font-black text-white focus:border-primary/50 outline-none" placeholder="********">
+                 </div>
+                 <div class="sm:col-span-2 pt-2">
+                    <button class="w-full py-3 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl shadow-lg hover:bg-primary-deep transition-all flex items-center justify-center gap-2" (click)="guardarNuevoUsuario()" [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
+                       <ion-icon name="person-add"></ion-icon>
+                       Inicializar Usuario
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
+           @for (user of usuarios; track user.id) {
+           <div class="bg-glass-light border border-glass-border rounded-2xl p-5 shadow-lg group hover:border-primary/30 transition-all">
+              <div class="flex items-center gap-4 mb-4">
+                 <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 relative">
+                    <img [src]="user.foto_url || 'https://ui-avatars.com/api/?name=' + user.nombre" class="w-full h-full object-cover">
+                    <input type="file" accept="image/*" (change)="actualizarFotoUsuarioExistente($event, user)" class="absolute inset-0 opacity-0 cursor-pointer">
+                 </div>
+                 <div class="flex-grow overflow-hidden">
+                    <h6 class="text-[11px] font-black text-white uppercase truncate">{{ user.nombre }}</h6>
+                    <p class="text-[8px] font-bold text-text-muted truncate">{{ user.correo }}</p>
+                 </div>
+              </div>
+              <div class="space-y-3 mb-4">
+                 <div class="flex items-center justify-between text-[8px] font-black uppercase text-text-muted">
+                    <span>Acceso:</span>
+                    <span class="text-primary">{{ user.rol }}</span>
+                 </div>
+              </div>
+              <button class="w-full py-2 bg-white/5 border border-glass-border text-text-muted hover:text-primary hover:border-primary/30 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all" (click)="guardarEdicionUsuario(user)">Sincronizar</button>
+           </div>
+           }
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-navbar flex lg:hidden items-center justify-around fixed bottom-0 left-0 right-0 h-20 bg-dark-secondary/80 backdrop-blur-xl border-t border-glass-border px-4 pb-2 z-50">
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/main">
+      <ion-icon name="home-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Inicio</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/dashboard">
+      <ion-icon name="grid-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Panel</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/citas">
+      <ion-icon name="calendar-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Citas</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/consulta">
+      <ion-icon name="medical-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Mèdica</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-3 text-primary bg-primary/10 rounded-2xl shadow-lg ring-1 ring-primary/20" routerLink="/configuracion">
+      <ion-icon name="settings-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Ajustes</span>
+    </div>
+  </nav>
+
+  <!-- Floating Hub Button Desktop -->
+  <button class="hidden lg:flex fixed bottom-12 right-12 w-16 h-16 bg-primary text-white rounded-full items-center justify-center text-3xl shadow-2xl shadow-primary/30 hover:scale-110 active:scale-90 transition-all z-50 group" routerLink="/main">
+     <ion-icon name="apps" class="group-hover:rotate-90 transition-transform duration-500"></ion-icon>
+     <div class="absolute right-20 bg-dark-deep border border-glass-border px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all transform translate-x-5 group-hover:translate-x-0 pointer-events-none shadow-2xl backdrop-blur-md">Nucleo ProMedical</div>
+  </button>
+
+  <!-- Global Glass Background Decor -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+     <div class="absolute top-0 right-0 w-1/3 h-full bg-sky-500/5 blur-[150px] rounded-full"></div>
+     <div class="absolute bottom-0 left-0 w-1/4 h-1/2 bg-amber-500/5 blur-[150px] rounded-full"></div>
+  </div>
+</div>
