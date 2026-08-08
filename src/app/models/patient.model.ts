@@ -6,6 +6,7 @@ export interface SignoVital {
   peso: number;
   talla: number;
   imc: number;
+  saturacionOxigeno?: number;
 }
 
 export interface Paciente {

@@ -84,7 +84,8 @@ export class ConsultaPage implements OnInit {
     temperatura: 0,
     peso: 0,
     talla: 0,
-    imc: 0
+    imc: 0,
+    saturacionOxigeno: 0
   };
 
   // Antecedentes Modal
@@ -284,6 +285,7 @@ export class ConsultaPage implements OnInit {
       this.printRecetaService.imprimirReceta({
         pacienteNombre: this.pacienteSeleccionado.nombre,
         pacienteEdad: this.pacienteSeleccionado.edad,
+        pacienteSexo: this.pacienteSeleccionado.sexo === 'M' ? 'Masculino' : (this.pacienteSeleccionado.sexo === 'F' ? 'Femenino' : 'No especificado'),
         receta: this.nuevaConsulta.receta
       });
     } else {
@@ -330,7 +332,7 @@ export class ConsultaPage implements OnInit {
           this.pacienteSeleccionado.signosVitales = [...fullPatient.signosVitales];
         }
         // Reset form
-        this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0 };
+        this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0, saturacionOxigeno: 0 };
       }
     }
   }

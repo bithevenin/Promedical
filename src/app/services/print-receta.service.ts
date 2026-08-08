@@ -9,6 +9,7 @@ import {
 interface DatosReceta {
   pacienteNombre: string;
   pacienteEdad: number;
+  pacienteSexo: string;
   receta: string;
 }
 
@@ -248,13 +249,16 @@ export class PrintRecetaService {
     <img class="rx-symbol" src="data:image/png;base64,${this.getRxSymbol()}" alt="Rx">
     <div class="patient-info">
       <div class="patient-field">
+        <span class="patient-label">Fecha:</span> ${fecha}
+      </div>
+      <div class="patient-field">
         <span class="patient-label">Nombre:</span> ${datos.pacienteNombre}
       </div>
       <div class="patient-field">
         <span class="patient-label">Edad:</span> ${datos.pacienteEdad} años
       </div>
       <div class="patient-field">
-        <span class="patient-label">Fecha:</span> ${fecha}
+        <span class="patient-label">Sexo:</span> ${datos.pacienteSexo}
       </div>
     </div>
   </div>

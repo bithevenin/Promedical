@@ -6,7 +6,7 @@ import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
 import { Paciente, Consulta, UserProfile } from '../../models';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
-import { ToastController } from '@ionic/angular';
+import { ToastController, AlertController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import jsPDF from 'jspdf';
 
@@ -34,6 +34,13 @@ interface JceResult {
 export class PacientesPage implements OnInit {
   pacientes: Paciente[] = [];
   filtroNombre: string = '';
+  displayLimit: number = 50;
+
+  onFiltroChange(valor: string) {
+    this.filtroNombre = valor;
+    this.displayLimit = 50;
+    this.actualizarFiltro();
+  }
 
   currentProfile = signal<UserProfile | null>(null);
 
@@ -58,6 +65,8 @@ export class PacientesPage implements OnInit {
   showHistoryModal = false;
   showEditModal = false;
   showCartasModal = false;
+  pacienteAEliminar: Paciente | null = null;
+  confirmarEliminarTodos = false;
 
   // Consent letters state
   cartasFiltroPaciente: string = '';
@@ -127,12 +136,14 @@ export class PacientesPage implements OnInit {
     private router: Router,
     private authService: AuthService,
     private toastController: ToastController,
+    private alertController: AlertController,
     public themeService: ThemeService
   ) { }
 
   ngOnInit() {
     this.patientService.patients$.subscribe(patients => {
       this.pacientes = patients;
+      this.actualizarFiltro();
       // Auto-load photos for patients without one, once the list is ready
       if (!this.cargandoFotos && patients.length > 0) {
         this.cargarFotosEnSegundoPlano();
@@ -175,11 +186,27 @@ export class PacientesPage implements OnInit {
     this.cargandoFotos = false;
   }
 
-  get pacientesFiltrados() {
-    return this.pacientes.filter(p =>
-      p.nombre.toLowerCase().includes(this.filtroNombre.toLowerCase()) ||
+  pacientesFiltradosTodos: Paciente[] = [];
+
+  actualizarFiltro() {
+    const term = this.filtroNombre.toLowerCase();
+    this.pacientesFiltradosTodos = this.pacientes.filter(p =>
+      p.nombre.toLowerCase().includes(term) ||
       p.cedula.includes(this.filtroNombre)
     );
+  }
+
+  get pacientesFiltrados() {
+    return this.pacientesFiltradosTodos.slice(0, this.displayLimit);
+  }
+
+  onScroll(event: any) {
+    const element = event.target;
+    if (element.scrollHeight - element.scrollTop <= element.clientHeight + 100) {
+      if (this.displayLimit < this.pacientesFiltradosTodos.length) {
+        this.displayLimit += 50;
+      }
+    }
   }
 
   verHistorial(paciente: Paciente) {
@@ -192,6 +219,18 @@ export class PacientesPage implements OnInit {
     this.pacienteSeleccionado = paciente;
     this.editData = { ...paciente };
     this.showEditModal = true;
+  }
+
+  eliminarPaciente(paciente: Paciente) {
+    this.pacienteAEliminar = paciente;
+  }
+
+  async confirmarEliminacion() {
+    if (this.pacienteAEliminar) {
+      await this.patientService.deletePatient(this.pacienteAEliminar.cedula);
+      this.presentToast('Paciente eliminado exitosamente', 'success');
+      this.pacienteAEliminar = null;
+    }
   }
 
   async buscarJCE() {
@@ -252,13 +291,14 @@ export class PacientesPage implements OnInit {
     }
   }
 
-  async eliminarTodosLosPacientes() {
-    if (confirm('¿Estás seguro de que deseas eliminar TODOS los pacientes del sistema? Esta acción NO se puede deshacer.')) {
-      if (confirm('Última advertencia: Esto borrará por completo la base de datos de pacientes. ¿Deseas continuar?')) {
-        await this.patientService.deleteAllPatients();
-        this.presentToast('Todos los pacientes han sido eliminados.', 'success');
-      }
-    }
+  eliminarTodosLosPacientes() {
+    this.confirmarEliminarTodos = true;
+  }
+
+  async confirmarEliminacionTodos() {
+    await this.patientService.deleteAllPatients();
+    this.presentToast('Todos los pacientes han sido eliminados.', 'success');
+    this.confirmarEliminarTodos = false;
   }
 
   closeModals() {
@@ -267,6 +307,8 @@ export class PacientesPage implements OnInit {
     this.showCartasModal = false;
     this.showPrintStudioModal = false;
     this.pacienteSeleccionado = null;
+    this.pacienteAEliminar = null;
+    this.confirmarEliminarTodos = false;
     this.activeTab = 'consultas';
   }
 

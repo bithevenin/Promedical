@@ -351,11 +351,13 @@ export class ConfiguracionPage implements OnInit {
             const formatExcelDate = (val: any): string => {
                 if (!val) return '';
                 if (val instanceof Date) {
+                    if (isNaN(val.getTime())) return '';
                     return val.toISOString().split('T')[0];
                 }
                 if (typeof val === 'number') {
                     // Excel date serial to JS Date (offset 25569 days from 1900 to 1970)
                     const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    if (isNaN(date.getTime())) return '';
                     return date.toISOString().split('T')[0];
                 }
                 return String(val).trim();
@@ -446,10 +448,13 @@ export class ConfiguracionPage implements OnInit {
             const formatExcelDate = (val: any): string => {
                 if (!val) return '';
                 if (val instanceof Date) {
+                    if (isNaN(val.getTime())) return '';
                     return val.toISOString().split('T')[0];
                 }
                 if (typeof val === 'number') {
+                    // Excel date serial to JS Date (offset 25569 days from 1900 to 1970)
                     const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    if (isNaN(date.getTime())) return '';
                     return date.toISOString().split('T')[0];
                 }
                 return String(val).trim();

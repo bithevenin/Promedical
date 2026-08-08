@@ -402,9 +402,13 @@
               </div>
               
               <div class="grid grid-cols-2 gap-6">
-                 <div class="col-span-2">
+                 <div>
                     <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 block">Presión Arterial</label>
                     <input type="text" class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-3.5 text-sm font-black text-white focus:outline-none focus:border-primary/50 transition-all font-inter" placeholder="120/80" [(ngModel)]="signosForm.presionArterial">
+                 </div>
+                 <div>
+                    <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 block">Sat. O2 (%)</label>
+                    <input type="number" class="w-full bg-white/5 border border-glass-border rounded-xl px-5 py-3.5 text-sm font-black text-white focus:outline-none focus:border-primary/50 transition-all font-inter" placeholder="98" [(ngModel)]="signosForm.saturacionOxigeno">
                  </div>
                  <div>
                     <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 block">Pulso (LPM)</label>
@@ -453,7 +457,7 @@
                           <span class="text-xs font-black text-white tracking-tighter">{{ sv.fecha.split('T')[0] }}</span>
                        </div>
                        <div>
-                          <span class="text-[13px] font-black text-white block mb-0.5 tracking-tight">{{ sv.presionArterial }} <small class="text-primary text-[10px] font-bold">mmHg</small></span>
+                          <span class="text-[13px] font-black text-white block mb-0.5 tracking-tight">{{ sv.presionArterial }} <small class="text-primary text-[10px] font-bold">mmHg</small> <span *ngIf="sv.saturacionOxigeno" class="ml-2 text-sky-400">O2: {{sv.saturacionOxigeno}}%</span></span>
                           <span class="text-[9px] font-black text-text-muted uppercase tracking-tightest">{{ sv.frecuenciaCardiaca }} pulsaciones • {{ sv.peso }}kg</span>
                        </div>
                     </div>
