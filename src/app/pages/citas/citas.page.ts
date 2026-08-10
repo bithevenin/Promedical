@@ -550,6 +550,15 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     this.carnetSeguroTemp = paciente.carnetSeguro || '';
     this.pacientesFiltrados = [];
     this.mostrarDropdownPacientes = false;
+
+    if (!paciente.fotoUrl && paciente.cedula) {
+      this.patientService.fetchPhotoIfMissing(paciente.cedula).then(() => {
+        const updated = this.patientService.findPatientByCedula(paciente.cedula);
+        if (updated && updated.fotoUrl) {
+          this.nuevoPaciente.fotoUrl = updated.fotoUrl;
+        }
+      });
+    }
   }
 
   limpiarFormulario() {

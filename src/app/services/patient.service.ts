@@ -294,13 +294,38 @@ export class PatientService {
     return age;
   }
 
+  private pendingPhotoFetches = new Set<string>();
+
+  async fetchPhotoIfMissing(cedula: string) {
+    if (!cedula) return;
+    const cleanDigits = cedula.replace(/[^0-9]/g, '');
+    if (cleanDigits.length !== 11) return;
+    if (this.pendingPhotoFetches.has(cleanDigits)) return;
+
+    const patient = this.findPatientByCedula(cedula);
+    if (patient && !patient.fotoUrl) {
+      this.pendingPhotoFetches.add(cleanDigits);
+      try {
+        const result = await this.consultarJCE(cleanDigits) as any;
+        if (result && result.fotoUrl) {
+          patient.fotoUrl = result.fotoUrl;
+          await this.savePatient({ ...patient });
+        }
+      } catch {
+        // Ignore error if JCE lookup fails
+      } finally {
+        this.pendingPhotoFetches.delete(cleanDigits);
+      }
+    }
+  }
+
   findPatientByCedula(cedula: string): Paciente | undefined {
     if (!cedula) return undefined;
     const target = cedula.trim().toLowerCase();
     const cleanTarget = target.replace(/[^0-9a-z]/g, '');
     const digitsOnly = target.replace(/[^0-9]/g, '');
 
-    return this.getPatients().find(p => {
+    const patient = this.getPatients().find(p => {
       if (!p.cedula) return false;
       const pCedula = p.cedula.trim().toLowerCase();
       if (pCedula === target) return true;
@@ -315,6 +340,12 @@ export class PatientService {
 
       return false;
     });
+
+    if (patient && !patient.fotoUrl && digitsOnly && digitsOnly.length === 11) {
+      this.fetchPhotoIfMissing(patient.cedula);
+    }
+
+    return patient;
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
