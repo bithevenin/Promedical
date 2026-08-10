@@ -143,6 +143,12 @@ export class ConsultaPage implements OnInit {
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
+  ionViewWillEnter() {
+    this.patientService.refreshPatients();
+    this.appointmentService.refreshAppointments();
+    this.consultationService.refreshConsultas();
+  }
+
   cargarPacienteDirecto(cedula: string) {
     const paciente = this.patientService.findPatientByCedula(cedula);
     if (paciente) {

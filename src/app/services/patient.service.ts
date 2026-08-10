@@ -51,6 +51,26 @@ export class PatientService {
     private offlineService: OfflineService
   ) {
     this.refreshPatients();
+    this.setupAutoSync();
+  }
+
+  private setupAutoSync() {
+    setInterval(() => {
+      if (navigator.onLine) {
+        this.refreshPatients();
+      }
+    }, 15000);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        if (navigator.onLine) this.refreshPatients();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          this.refreshPatients();
+        }
+      });
+    }
   }
 
   async refreshPatients() {

@@ -472,6 +472,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
   ionViewWillEnter() {
     this.patientService.refreshPatients();
+    this.appointmentService.refreshAppointments();
   }
 
   filtrarPacientes(event: any) {
