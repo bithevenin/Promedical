@@ -422,6 +422,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
       this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
 
       // 1. Guardar/Actualizar en el registro de pacientes
+      const existingPatient = this.patientService.findPatientByCedula(this.cedulaOriginal || this.nuevoPaciente.cedula);
       const datosPaciente: Paciente = {
         cedula: this.nuevoPaciente.cedula,
         nombre: this.nuevoPaciente.nombre,
@@ -435,8 +436,12 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         telefono: this.nuevoPaciente.telefono,
         carnetSeguro: this.carnetSeguroTemp,
         tipo_sangre: this.nuevoPaciente.tipo_sangre,
-        fotoUrl: this.nuevoPaciente.fotoUrl,
-        direccion: this.nuevoPaciente.direccion
+        fotoUrl: this.nuevoPaciente.fotoUrl || existingPatient?.fotoUrl,
+        direccion: this.nuevoPaciente.direccion,
+        antecedentesPersonales: existingPatient?.antecedentesPersonales || (existingPatient as any)?.antecedentes_personales || '',
+        antecedentesFamiliares: existingPatient?.antecedentesFamiliares || (existingPatient as any)?.antecedentes_familiares || '',
+        alergias: existingPatient?.alergias || '',
+        email: existingPatient?.email || ''
       };
       await this.patientService.savePatient(datosPaciente, this.cedulaOriginal);
 

@@ -177,31 +177,32 @@ export class ConsultaPage implements OnInit {
   }
 
   async seleccionarPaciente(paciente: Cita) {
-    this.pacienteSeleccionado = paciente;
-    this.historialPasado = this.consultationService.getPatientHistory(paciente.cedula);
-    this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
-    this.updateEditorContents();
-
-    if (paciente.estado === 'espera') {
-      await this.appointmentService.updateAppointmentStatus(paciente.turno, 'consulta');
-    }
-
     let fullPatient = this.patientService.findPatientByCedula(paciente.cedula);
     if (!fullPatient && paciente.nombre) {
       fullPatient = this.patientService.getPatients().find(p => p.nombre.toLowerCase().trim() === paciente.nombre.toLowerCase().trim());
     }
 
-    if (fullPatient) {
-      this.pacienteSeleccionado = {
-        ...this.pacienteSeleccionado,
-        cedula: fullPatient.cedula || this.pacienteSeleccionado.cedula,
-        signosVitales: fullPatient.signosVitales || this.pacienteSeleccionado.signosVitales,
-        antecedentesPersonales: fullPatient.antecedentesPersonales || (fullPatient as any).antecedentes_personales || this.pacienteSeleccionado.antecedentesPersonales,
-        antecedentesFamiliares: fullPatient.antecedentesFamiliares || (fullPatient as any).antecedentes_familiares || this.pacienteSeleccionado.antecedentesFamiliares,
-        alergias: fullPatient.alergias || this.pacienteSeleccionado.alergias
-      };
-      (this.pacienteSeleccionado as any).antecedentes_personales = this.pacienteSeleccionado.antecedentesPersonales;
-      (this.pacienteSeleccionado as any).antecedentes_familiares = this.pacienteSeleccionado.antecedentesFamiliares;
+    const realCedula = fullPatient?.cedula || paciente.cedula;
+
+    this.pacienteSeleccionado = {
+      ...paciente,
+      ...(fullPatient || {}),
+      cedula: realCedula,
+      nombre: fullPatient?.nombre || paciente.nombre,
+      antecedentesPersonales: fullPatient?.antecedentesPersonales || (fullPatient as any)?.antecedentes_personales || (paciente as any)?.antecedentesPersonales || '',
+      antecedentesFamiliares: fullPatient?.antecedentesFamiliares || (fullPatient as any)?.antecedentes_familiares || (paciente as any)?.antecedentesFamiliares || '',
+      alergias: fullPatient?.alergias || (paciente as any)?.alergias || '',
+      signosVitales: (fullPatient?.signosVitales && fullPatient.signosVitales.length > 0) ? fullPatient.signosVitales : paciente.signosVitales
+    };
+    (this.pacienteSeleccionado as any).antecedentes_personales = this.pacienteSeleccionado.antecedentesPersonales;
+    (this.pacienteSeleccionado as any).antecedentes_familiares = this.pacienteSeleccionado.antecedentesFamiliares;
+
+    this.historialPasado = this.consultationService.getPatientHistory(realCedula);
+    this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
+    this.updateEditorContents();
+
+    if (paciente.estado === 'espera') {
+      await this.appointmentService.updateAppointmentStatus(paciente.turno, 'consulta');
     }
   }
 
