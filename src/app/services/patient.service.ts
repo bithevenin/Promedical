@@ -13,6 +13,7 @@ interface DbSignoVital {
   peso: number;
   talla: number;
   imc: number;
+  saturacion_oxigeno?: number;
 }
 
 interface DbPaciente {
@@ -54,11 +55,35 @@ export class PatientService {
 
   async refreshPatients() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('pacientes').select('*, signos_vitales(*)');
-        if (error) throw error;
+      // 1. Cargar rápido desde almacenamiento local para que la UI no espere
+      const localPatients = await this.offlineService.getLocalData<Paciente>('pacientes');
+      if (localPatients && localPatients.length > 0) {
+        this.patientsSubject.next(localPatients);
+      }
 
-        if (data) {
+      if (navigator.onLine) {
+        let allData: DbPaciente[] = [];
+        let from = 0;
+        const step = 1000;
+        
+        while (true) {
+          const { data, error } = await this.supabase
+            .from('pacientes')
+            .select('*, signos_vitales(*)')
+            .range(from, from + step - 1);
+            
+          if (error) throw error;
+          if (data && data.length > 0) {
+            allData = allData.concat(data);
+          }
+          if (!data || data.length < step) {
+            break;
+          }
+          from += step;
+        }
+
+        if (allData.length >= 0) {
+          const data = allData;
           await this.offlineService.clearStore('pacientes');
           const patients: Paciente[] = data.map((p: DbPaciente) => ({
             cedula: p.cedula,
@@ -73,8 +98,8 @@ export class PatientService {
             altura: p.altura || '',
             peso: p.peso || '',
             carnetSeguro: p.carnet_seguro || '',
-            antecedentesPersonales: p.antecedentes_personales || '',
-            antecedentesFamiliares: p.antecedentes_familiares || '',
+            antecedentesPersonales: p.antecedentes_personales || (p as any).antecedentesPersonales || '',
+            antecedentesFamiliares: p.antecedentes_familiares || (p as any).antecedentesFamiliares || '',
             alergias: p.alergias || '',
             tipo_sangre: p.tipo_sangre || '',
             fotoUrl: p.foto_url || '',
@@ -86,7 +111,8 @@ export class PatientService {
               temperatura: sv.temperatura,
               peso: sv.peso,
               talla: sv.talla,
-              imc: sv.imc
+              imc: sv.imc,
+              saturacionOxigeno: sv.saturacion_oxigeno
             }))
           }));
 
@@ -109,8 +135,12 @@ export class PatientService {
     return this.patientsSubject.value;
   }
 
-  async savePatient(paciente: Paciente) {
+  async savePatient(paciente: Paciente, oldCedula?: string) {
     try {
+      if (oldCedula && oldCedula !== paciente.cedula) {
+        await this.deletePatient(oldCedula);
+      }
+
       // 1. Save locally first
       const fullPatient = {
         ...paciente,
@@ -124,20 +154,20 @@ export class PatientService {
         nombre: paciente.nombre,
         edad: fullPatient.edad,
         fecha_nacimiento: paciente.fecha_nacimiento || null,
-        profesion: paciente.profesion,
-        seguro: paciente.seguro,
-        sexo: paciente.sexo,
-        telefono: paciente.telefono,
-        email: paciente.email,
-        altura: paciente.altura,
-        peso: paciente.peso,
-        carnet_seguro: paciente.carnetSeguro,
-        antecedentes_personales: paciente.antecedentesPersonales,
-        antecedentes_familiares: paciente.antecedentesFamiliares,
-        alergias: paciente.alergias,
-        tipo_sangre: paciente.tipo_sangre || '',
-        foto_url: paciente.fotoUrl || '',
-        direccion: paciente.direccion || ''
+        profesion: paciente.profesion || null,
+        seguro: paciente.seguro || null,
+        sexo: paciente.sexo || null,
+        telefono: paciente.telefono || null,
+        email: paciente.email || null,
+        altura: (paciente.altura === '' || paciente.altura === undefined) ? null : paciente.altura,
+        peso: (paciente.peso === '' || paciente.peso === undefined) ? null : paciente.peso,
+        carnet_seguro: paciente.carnetSeguro || null,
+        antecedentes_personales: paciente.antecedentesPersonales || null,
+        antecedentes_familiares: paciente.antecedentesFamiliares || null,
+        alergias: paciente.alergias || null,
+        tipo_sangre: paciente.tipo_sangre || null,
+        foto_url: paciente.fotoUrl || null,
+        direccion: paciente.direccion || null
       };
 
       if (navigator.onLine) {
@@ -147,29 +177,67 @@ export class PatientService {
         await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
       }
     } catch (error) {
-      const dbData = {
+      console.error('Error saving patient to Supabase, queuing for offline sync:', error);
+      const dbDataOffline = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
         edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad,
         fecha_nacimiento: paciente.fecha_nacimiento || null,
-        profesion: paciente.profesion,
-        seguro: paciente.seguro,
-        sexo: paciente.sexo,
-        telefono: paciente.telefono,
-        email: paciente.email,
-        altura: paciente.altura,
-        peso: paciente.peso,
-        carnet_seguro: paciente.carnetSeguro,
-        antecedentes_personales: paciente.antecedentesPersonales,
-        antecedentes_familiares: paciente.antecedentesFamiliares,
-        alergias: paciente.alergias,
-        tipo_sangre: paciente.tipo_sangre || '',
-        foto_url: paciente.fotoUrl || '',
-        direccion: paciente.direccion || ''
+        profesion: paciente.profesion || null,
+        seguro: paciente.seguro || null,
+        sexo: paciente.sexo || null,
+        telefono: paciente.telefono || null,
+        email: paciente.email || null,
+        altura: (paciente.altura === '' || paciente.altura === undefined) ? null : paciente.altura,
+        peso: (paciente.peso === '' || paciente.peso === undefined) ? null : paciente.peso,
+        carnet_seguro: paciente.carnetSeguro || null,
+        antecedentes_personales: paciente.antecedentesPersonales || null,
+        antecedentes_familiares: paciente.antecedentesFamiliares || null,
+        alergias: paciente.alergias || null,
+        tipo_sangre: paciente.tipo_sangre || null,
+        foto_url: paciente.fotoUrl || null,
+        direccion: paciente.direccion || null
       };
-      await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
+      await this.offlineService.addToQueue('pacientes', 'upsert', dbDataOffline);
     } finally {
-      await this.refreshPatients();
+      // Actualizar memoria RAM directamente sin recargar 21,000 registros
+      const current = this.patientsSubject.getValue();
+      const idx = current.findIndex(p => p.cedula === paciente.cedula);
+      
+      // Asegurarnos de que tenemos el fullPatient con edad calculada
+      const fullPatient = {
+        ...paciente,
+        edad: paciente.fecha_nacimiento ? this.calcularEdad(paciente.fecha_nacimiento) : paciente.edad
+      };
+
+      if (idx >= 0) {
+        current[idx] = fullPatient;
+      } else {
+        current.unshift(fullPatient);
+      }
+      this.patientsSubject.next([...current]);
+    }
+  }
+
+  async deletePatient(cedula: string) {
+    try {
+      // 1. Eliminar localmente
+      await this.offlineService.deleteLocalData('pacientes', cedula);
+      
+      // 2. Actualizar memoria RAM instantáneamente
+      const current = this.patientsSubject.getValue().filter(p => p.cedula !== cedula);
+      this.patientsSubject.next(current);
+
+      // 3. Eliminar en Supabase o encolar
+      if (navigator.onLine) {
+        const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
+        if (error) throw error;
+      } else {
+        await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
+      }
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
     }
   }
 
@@ -207,7 +275,26 @@ export class PatientService {
   }
 
   findPatientByCedula(cedula: string): Paciente | undefined {
-    return this.getPatients().find(p => p.cedula === cedula);
+    if (!cedula) return undefined;
+    const target = cedula.trim().toLowerCase();
+    const cleanTarget = target.replace(/[^0-9a-z]/g, '');
+    const digitsOnly = target.replace(/[^0-9]/g, '');
+
+    return this.getPatients().find(p => {
+      if (!p.cedula) return false;
+      const pCedula = p.cedula.trim().toLowerCase();
+      if (pCedula === target) return true;
+
+      const pClean = pCedula.replace(/[^0-9a-z]/g, '');
+      if (cleanTarget && pClean === cleanTarget) return true;
+
+      if (digitsOnly && digitsOnly.length >= 5) {
+        const pDigits = pCedula.replace(/[^0-9]/g, '');
+        if (pDigits === digitsOnly) return true;
+      }
+
+      return false;
+    });
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
@@ -258,34 +345,47 @@ export class PatientService {
 
   async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
     try {
-      // 1. Update locally
+      // 1. Update local patient object in RAM & offline storage
       const patient = this.findPatientByCedula(cedula);
       if (patient) {
-        patient.antecedentesPersonales = data.personales;
-        patient.antecedentesFamiliares = data.familiares;
-        patient.alergias = data.alergias;
+        patient.antecedentesPersonales = data.personales || '';
+        (patient as any).antecedentes_personales = data.personales || '';
+        patient.antecedentesFamiliares = data.familiares || '';
+        (patient as any).antecedentes_familiares = data.familiares || '';
+        patient.alergias = data.alergias || '';
         await this.offlineService.saveLocalData('pacientes', patient);
-        this.patientsSubject.next(this.getPatients());
       }
 
-      // 2. Sync
+      // 2. Sync to Supabase table
       const dbPayload = {
-        antecedentes_personales: data.personales,
-        antecedentes_familiares: data.familiares,
-        alergias: data.alergias
+        antecedentes_personales: data.personales || null,
+        antecedentes_familiares: data.familiares || null,
+        alergias: data.alergias || null
       };
 
       if (navigator.onLine) {
         const { error } = await this.supabase.from('pacientes').update(dbPayload).eq('cedula', cedula);
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating antecedentes in Supabase:', error);
+          throw error;
+        }
       } else {
         await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
       }
+
+      // Notify all subscribers of patients$ with updated array reference
+      const current = this.patientsSubject.getValue();
+      const idx = current.findIndex(p => p.cedula === cedula);
+      if (idx >= 0 && patient) {
+        current[idx] = { ...patient };
+        this.patientsSubject.next([...current]);
+      }
     } catch (error) {
+      console.error('Error updating antecedentes:', error);
       const dbPayload = {
-        antecedentes_personales: data.personales,
-        antecedentes_familiares: data.familiares,
-        alergias: data.alergias
+        antecedentes_personales: data.personales || null,
+        antecedentes_familiares: data.familiares || null,
+        alergias: data.alergias || null
       };
       await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
     }

@@ -429,3 +429,32 @@ ion-alert {
     color: var(--color-primary);
   }
 }
+
+.premium-alert-success {
+  --background: var(--color-dark-card, #1e293b);
+  
+  &::part(button) {
+    color: #10b981; /* emerald-500 */
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 12px;
+    margin: 8px 16px 16px;
+    padding: 12px;
+  }
+}
+
+.premium-alert-error {
+  --background: var(--color-dark-card, #1e293b);
+  
+  &::part(button) {
+    color: #ef4444; /* red-500 */
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 12px;
+    margin: 8px 16px 16px;
+    padding: 12px;
+  }
+}
+
+/* Fix SweetAlert2 z-index in Ionic */
+.swal2-container {
+  z-index: 99999 !important;
+}

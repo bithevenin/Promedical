@@ -209,10 +209,21 @@ export class FinancialService {
       }
 
       if (cita) {
+        let conceptoStr = `Consulta Médica - ${cita.nombre}`;
+        if (monto === 0) {
+          if (cita.instruccionCobro === 'gratis') {
+            conceptoStr += ' (Consulta Gratis / Cortesía)';
+          } else if (cita.seguro && cita.seguro !== 'Particular') {
+            conceptoStr += ` (Cubierto 100% por ${cita.seguro})`;
+          } else {
+            conceptoStr += ' (Cubierto 100% por Seguro)';
+          }
+        }
+
         const nuevaTrans: Transaccion = {
           id: Date.now(),
           fecha: today,
-          concepto: `Consulta Médica - ${cita.nombre}`,
+          concepto: conceptoStr,
           categoria: 'Ingreso',
           monto: monto,
           paciente: cita.nombre
@@ -294,7 +305,7 @@ export class FinancialService {
 
   async marcarFacturaPagada(id: number) {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       // 1. Update locally
       const local = await this.offlineService.getLocalData<FacturaSeguro>('facturas_seguro');
@@ -320,7 +331,7 @@ export class FinancialService {
       }
     } catch (error) {
       console.warn('Error marking invoice paid online, queueing update:', error);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const dbPayload = {
         estado: 'pagado',
         fecha_pago: today

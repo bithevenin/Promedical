@@ -53,6 +53,11 @@ const routes: Routes = [
     data: { roles: ['doctor', 'admin'] }
   },
   {
+    path: 'cierre-turno',
+    loadChildren: () => import('./pages/cierre-turno/cierre-turno.module').then(m => m.CierreTurnoPageModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: '',
     redirectTo: 'auth/login',
     pathMatch: 'full'

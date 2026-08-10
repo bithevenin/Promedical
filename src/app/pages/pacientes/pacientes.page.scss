@@ -291,3 +291,74 @@
 .bg-primary-light {
     background: rgba(67, 97, 238, 0.15) !important;
 }
+
+.patient-cedula {
+  color: #ffffff !important;
+}
+
+:host-context(body.light-theme) .patient-cedula,
+body.light-theme .patient-cedula {
+  color: #000000 !important;
+}
+
+.patient-date-text {
+  color: #ffffff !important;
+}
+
+:host-context(body.light-theme) .patient-date-text,
+body.light-theme .patient-date-text {
+  color: #000000 !important;
+}
+
+.patient-avatar-box {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+:host-context(body.light-theme) .patient-avatar-box,
+body.light-theme .patient-avatar-box {
+  background-color: #e2e8f0 !important;
+  color: #000000 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.btn-action-eye {
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+
+  ion-icon {
+    color: #38bdf8 !important;
+  }
+
+  &:hover {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
+
+    ion-icon {
+      color: #ffffff !important;
+    }
+  }
+}
+
+:host-context(body.light-theme) .btn-action-eye,
+body.light-theme .btn-action-eye {
+  background-color: #e2e8f0 !important;
+  color: #0284c7 !important;
+  border-color: #cbd5e1 !important;
+
+  ion-icon {
+    color: #0284c7 !important;
+  }
+
+  &:hover {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+
+    ion-icon {
+      color: #ffffff !important;
+    }
+  }
+}
