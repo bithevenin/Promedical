@@ -6,7 +6,7 @@ import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
 import { Paciente, Consulta, UserProfile } from '../../models';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
-import { ToastController } from '@ionic/angular';
+import { ToastController, AlertController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import jsPDF from 'jspdf';
 
@@ -34,6 +34,13 @@ interface JceResult {
 export class PacientesPage implements OnInit {
   pacientes: Paciente[] = [];
   filtroNombre: string = '';
+  displayLimit: number = 50;
+
+  onFiltroChange(valor: string) {
+    this.filtroNombre = valor;
+    this.displayLimit = 50;
+    this.actualizarFiltro();
+  }
 
   currentProfile = signal<UserProfile | null>(null);
 
@@ -51,13 +58,15 @@ export class PacientesPage implements OnInit {
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
-    return base;
+    if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {      base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });    }    return base;
   });
 
   // Modals state
   showHistoryModal = false;
   showEditModal = false;
   showCartasModal = false;
+  pacienteAEliminar: Paciente | null = null;
+  confirmarEliminarTodos = false;
 
   // Consent letters state
   cartasFiltroPaciente: string = '';
@@ -127,12 +136,14 @@ export class PacientesPage implements OnInit {
     private router: Router,
     private authService: AuthService,
     private toastController: ToastController,
+    private alertController: AlertController,
     public themeService: ThemeService
   ) { }
 
   ngOnInit() {
     this.patientService.patients$.subscribe(patients => {
       this.pacientes = patients;
+      this.actualizarFiltro();
       // Auto-load photos for patients without one, once the list is ready
       if (!this.cargandoFotos && patients.length > 0) {
         this.cargarFotosEnSegundoPlano();
@@ -175,11 +186,27 @@ export class PacientesPage implements OnInit {
     this.cargandoFotos = false;
   }
 
-  get pacientesFiltrados() {
-    return this.pacientes.filter(p =>
-      p.nombre.toLowerCase().includes(this.filtroNombre.toLowerCase()) ||
+  pacientesFiltradosTodos: Paciente[] = [];
+
+  actualizarFiltro() {
+    const term = this.filtroNombre.toLowerCase();
+    this.pacientesFiltradosTodos = this.pacientes.filter(p =>
+      p.nombre.toLowerCase().includes(term) ||
       p.cedula.includes(this.filtroNombre)
     );
+  }
+
+  get pacientesFiltrados() {
+    return this.pacientesFiltradosTodos.slice(0, this.displayLimit);
+  }
+
+  onScroll(event: any) {
+    const element = event.target;
+    if (element.scrollHeight - element.scrollTop <= element.clientHeight + 100) {
+      if (this.displayLimit < this.pacientesFiltradosTodos.length) {
+        this.displayLimit += 50;
+      }
+    }
   }
 
   verHistorial(paciente: Paciente) {
@@ -190,8 +217,24 @@ export class PacientesPage implements OnInit {
 
   editarPaciente(paciente: Paciente) {
     this.pacienteSeleccionado = paciente;
-    this.editData = { ...paciente };
+    this.editData = {
+      ...paciente,
+      antecedentesPersonales: paciente.antecedentesPersonales || (paciente as any).antecedentes_personales || '',
+      antecedentesFamiliares: paciente.antecedentesFamiliares || (paciente as any).antecedentes_familiares || ''
+    };
     this.showEditModal = true;
+  }
+
+  eliminarPaciente(paciente: Paciente) {
+    this.pacienteAEliminar = paciente;
+  }
+
+  async confirmarEliminacion() {
+    if (this.pacienteAEliminar) {
+      await this.patientService.deletePatient(this.pacienteAEliminar.cedula);
+      this.presentToast('Paciente eliminado exitosamente', 'success');
+      this.pacienteAEliminar = null;
+    }
   }
 
   async buscarJCE() {
@@ -252,13 +295,14 @@ export class PacientesPage implements OnInit {
     }
   }
 
-  async eliminarTodosLosPacientes() {
-    if (confirm('¿Estás seguro de que deseas eliminar TODOS los pacientes del sistema? Esta acción NO se puede deshacer.')) {
-      if (confirm('Última advertencia: Esto borrará por completo la base de datos de pacientes. ¿Deseas continuar?')) {
-        await this.patientService.deleteAllPatients();
-        this.presentToast('Todos los pacientes han sido eliminados.', 'success');
-      }
-    }
+  eliminarTodosLosPacientes() {
+    this.confirmarEliminarTodos = true;
+  }
+
+  async confirmarEliminacionTodos() {
+    await this.patientService.deleteAllPatients();
+    this.presentToast('Todos los pacientes han sido eliminados.', 'success');
+    this.confirmarEliminarTodos = false;
   }
 
   closeModals() {
@@ -267,6 +311,8 @@ export class PacientesPage implements OnInit {
     this.showCartasModal = false;
     this.showPrintStudioModal = false;
     this.pacienteSeleccionado = null;
+    this.pacienteAEliminar = null;
+    this.confirmarEliminarTodos = false;
     this.activeTab = 'consultas';
   }
 
@@ -755,5 +801,90 @@ export class PacientesPage implements OnInit {
   async logout() {
     await this.authService.signOut();
     this.router.navigate(['/auth/login']);
+  }
+
+  formatFechaLegible(fechaStr: string | null | undefined): string {
+    if (!fechaStr) return '-';
+    
+    if (!fechaStr.includes('T') && !fechaStr.includes(':')) {
+      const parts = fechaStr.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
+        return fechaStr;
+      }
+      return fechaStr;
+    }
+
+    try {
+      const d = new Date(fechaStr);
+      if (isNaN(d.getTime())) return fechaStr;
+
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+
+      const rawHours = d.getHours();
+      const rawMinutes = d.getMinutes();
+
+      if (rawHours === 0 && rawMinutes === 0) {
+        return `${day}/${month}/${year}`;
+      }
+
+      const ampm = rawHours >= 12 ? 'PM' : 'AM';
+      const hours = rawHours % 12 || 12;
+      const minutes = String(rawMinutes).padStart(2, '0');
+
+      return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  // ─── Evaluadores clínicos de signos vitales ───────────────────────────────
+  private vitalsStyle(level: 'normal' | 'warning' | 'danger'): { border: string; dot: string; text: string; label: string } {
+    const map = {
+      normal:  { border: 'border-emerald-500/40', dot: 'bg-emerald-400', text: 'text-emerald-400', label: '' },
+      warning: { border: 'border-amber-400/50',   dot: 'bg-amber-400',   text: 'text-amber-400',   label: '' },
+      danger:  { border: 'border-red-500/50',      dot: 'bg-red-400',     text: 'text-red-400',     label: '' },
+    };
+    return map[level];
+  }
+
+  evalPresion(value: string): { border: string; dot: string; text: string; label: string } {
+    if (!value || !value.includes('/')) return this.vitalsStyle('normal');
+    const [sys, dia] = value.split('/').map(Number);
+    if (isNaN(sys) || isNaN(dia)) return this.vitalsStyle('normal');
+    if (sys < 90 || dia < 60) return { ...this.vitalsStyle('warning'), label: 'Presión baja (hipotensión)' };
+    if (sys <= 120 && dia <= 80) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (sys <= 129 && dia < 80) return { ...this.vitalsStyle('warning'), label: 'Presión elevada' };
+    if (sys <= 139 || dia <= 89) return { ...this.vitalsStyle('warning'), label: 'Hipertensión Etapa 1' };
+    return { ...this.vitalsStyle('danger'), label: sys >= 180 || dia >= 120 ? '⚠ Crisis hipertensiva' : 'Hipertensión Etapa 2' };
+  }
+
+  evalSatO2(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value >= 95) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value >= 90) return { ...this.vitalsStyle('warning'), label: 'Hipoxia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Hipoxia severa' };
+  }
+
+  evalPulso(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 60) return { ...this.vitalsStyle('warning'), label: 'Bradicardia' };
+    if (value <= 100) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 120) return { ...this.vitalsStyle('warning'), label: 'Taquicardia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Taquicardia severa' };
+  }
+
+  evalTemp(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 35) return { ...this.vitalsStyle('danger'), label: '⚠ Hipotermia' };
+    if (value < 36.5) return { ...this.vitalsStyle('warning'), label: 'Hipotermia leve' };
+    if (value <= 37.3) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 38) return { ...this.vitalsStyle('warning'), label: 'Febrícula' };
+    if (value <= 39) return { ...this.vitalsStyle('warning'), label: 'Fiebre moderada' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Fiebre alta' };
   }
 }

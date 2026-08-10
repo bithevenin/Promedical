@@ -6,6 +6,7 @@ export interface SignoVital {
   peso: number;
   talla: number;
   imc: number;
+  saturacionOxigeno?: number;
 }
 
 export interface Paciente {
@@ -22,7 +23,9 @@ export interface Paciente {
   peso?: string;
   carnetSeguro?: string;
   antecedentesPersonales?: string;
+  antecedentes_personales?: string;
   antecedentesFamiliares?: string;
+  antecedentes_familiares?: string;
   alergias?: string;
   tipo_sangre?: string;
   fotoUrl?: string;

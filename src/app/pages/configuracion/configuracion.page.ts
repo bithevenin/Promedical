@@ -1,10 +1,12 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { ConfigService } from '../../services/config.service';
 import { PatientService } from '../../services/patient.service';
 import { ConsultationService } from '../../services/consultation.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { NotificationService } from '../../services/notification.service';
 import { formatMonto } from '../../utils/format.utils';
 import { ConfiguracionDoctor, TarifaSeguro, Paciente, Consulta, UserProfile } from '../../models';
 import * as XLSX from 'xlsx';
@@ -15,7 +17,8 @@ import * as XLSX from 'xlsx';
     styleUrls: ['./configuracion.page.scss'],
     standalone: false,
 })
-export class ConfiguracionPage implements OnInit {
+export class ConfiguracionPage implements OnInit, OnDestroy {
+    private configSub?: Subscription;
     config: ConfiguracionDoctor = {
         nombreDoctor: '',
         especialidad: '',
@@ -47,7 +50,7 @@ export class ConfiguracionPage implements OnInit {
             base.push({ icon: 'settings-outline', label: 'Ajustes', active: true, route: '/configuracion' });
         }
 
-        return base;
+        if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {          base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });        }        return base;
     });
 
     // Gestión de Usuarios
@@ -82,13 +85,22 @@ export class ConfiguracionPage implements OnInit {
         private consultationService: ConsultationService,
         private authService: AuthService,
         private router: Router,
-        public themeService: ThemeService
+        public themeService: ThemeService,
+        private notificationService: NotificationService
     ) { }
 
     ngOnInit() {
-        this.cargarConfiguracion();
+        // Suscribirse al observable para recibir datos en tiempo real desde Supabase
+        this.configSub = this.configService.config$.subscribe(cfg => {
+            this.config = { ...cfg };
+            this.config.tarifasSeguros = cfg.tarifasSeguros.map(t => ({ ...t }));
+        });
         this.cargarUsuarios();
         this.authService.profile$.subscribe(p => this.currentProfile.set(p));
+    }
+
+    ngOnDestroy() {
+        this.configSub?.unsubscribe();
     }
 
     cargarConfiguracion() {
@@ -117,12 +129,10 @@ export class ConfiguracionPage implements OnInit {
                 // Opcional: Actualizar el usuario actual si coincide el email
             }
 
-            this.mensajeExito = '¡Configuración guardada exitosamente!';
-            setTimeout(() => {
-                this.mensajeExito = '';
-            }, 3000);
+            this.notificationService.showSuccess('¡Configuración Guardada!', 'Los ajustes del consultorio se actualizaron correctamente.');
         } catch (error) {
             console.error('Error al guardar configuración:', error);
+            this.notificationService.showError('Error', 'No se pudo guardar la configuración. Revisa tu conexión.');
         } finally {
             this.guardando = false;
         }
@@ -176,7 +186,7 @@ export class ConfiguracionPage implements OnInit {
 
             } catch (error) {
                 console.error('Error al subir avatar:', error);
-                alert('Error al subir la imagen');
+                this.notificationService.showError('Error', 'No se pudo subir la imagen');
             }
         }
     }
@@ -203,7 +213,6 @@ export class ConfiguracionPage implements OnInit {
                 this.nuevoUsuario.especialidad
             );
 
-            this.mensajeExito = '¡Usuario registrado exitosamente!';
             this.nuevoUsuario = {
                 nombre: '',
                 email: '',
@@ -213,13 +222,10 @@ export class ConfiguracionPage implements OnInit {
                 especialidad: ''
             };
             await this.cargarUsuarios();
-
-            setTimeout(() => {
-                this.mensajeExito = '';
-            }, 3000);
+            this.notificationService.showSuccess('¡Usuario Creado!', 'El nuevo usuario ha sido registrado exitosamente.');
         } catch (error: any) {
             console.error('Error al registrar usuario:', error);
-            alert('Error: ' + (error.message || 'No se pudo crear el usuario'));
+            this.notificationService.showError('Error de Registro', error.message || 'No se pudo crear el usuario');
         } finally {
             this.guardando = false;
         }
@@ -228,9 +234,10 @@ export class ConfiguracionPage implements OnInit {
     async guardarEdicionUsuario(usuario: any) {
         try {
             await this.authService.updateUser(usuario.id, usuario.nombre, usuario.foto_url, usuario.rol, usuario.especialidad);
-            alert('Usuario actualizado correctamente');
+            this.notificationService.showSuccess('Sincronizado', 'Usuario actualizado correctamente');
         } catch (error) {
             console.error('Error al actualizar usuario:', error);
+            this.notificationService.showError('Error', 'No se pudo actualizar el usuario');
         }
     }
 
@@ -252,11 +259,11 @@ export class ConfiguracionPage implements OnInit {
 
                 // Actualizar inmediatamente en BD
                 await this.authService.updateUser(usuario.id, usuario.nombre, publicUrl, usuario.rol, usuario.especialidad);
-                alert('Foto actualizada correctamente');
+                this.notificationService.showSuccess('Actualizado', 'Foto de perfil actualizada.');
 
             } catch (error) {
                 console.error('Error al subir/actualizar avatar:', error);
-                alert('Error al subir la imagen');
+                this.notificationService.showError('Error', 'No se pudo subir la imagen');
             }
         }
     }
@@ -351,11 +358,13 @@ export class ConfiguracionPage implements OnInit {
             const formatExcelDate = (val: any): string => {
                 if (!val) return '';
                 if (val instanceof Date) {
+                    if (isNaN(val.getTime())) return '';
                     return val.toISOString().split('T')[0];
                 }
                 if (typeof val === 'number') {
                     // Excel date serial to JS Date (offset 25569 days from 1900 to 1970)
                     const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    if (isNaN(date.getTime())) return '';
                     return date.toISOString().split('T')[0];
                 }
                 return String(val).trim();
@@ -379,14 +388,14 @@ export class ConfiguracionPage implements OnInit {
                     })).filter((p: any) => p.cedula && p.nombre);
 
                     if (pacientes.length === 0) {
-                        alert('No se encontraron pacientes válidos. Verifique que las columnas "cedula" y "nombre" tengan datos.');
+                        this.notificationService.showError('Sin Datos', 'No se encontraron pacientes válidos. Verifique que las columnas "cedula" y "nombre" tengan datos.');
                         this.guardando = false;
                         return;
                     }
 
                     const error = await this.patientService.importPatients(pacientes);
                     if (error) {
-                        alert('Error al guardar pacientes: ' + ((error as any).message || JSON.stringify(error)));
+                        this.notificationService.showError('Error de Importación', ((error as any).message || JSON.stringify(error)));
                         this.guardando = false;
                         return;
                     }
@@ -400,25 +409,23 @@ export class ConfiguracionPage implements OnInit {
                     })).filter((c: Consulta) => c.cedula && c.diagnostico);
 
                     if (consultas.length === 0) {
-                        alert('No se encontraron historias clínicas válidas.');
+                        this.notificationService.showError('Sin Datos', 'No se encontraron historias clínicas válidas.');
                         this.guardando = false;
                         return;
                     }
 
                     const error = await this.consultationService.importConsultations(consultas);
                     if (error) {
-                        alert('Error al guardar historias: ' + ((error as any).message || JSON.stringify(error)));
+                        this.notificationService.showError('Error de Importación', ((error as any).message || JSON.stringify(error)));
                         this.guardando = false;
                         return;
                     }
                 }
 
-                alert(`¡Se han importado ${tipo} correctamente!`);
-                this.mensajeExito = `¡Importación de ${tipo} completada con éxito!`;
-                setTimeout(() => this.mensajeExito = '', 3000);
+                this.notificationService.showSuccess('Importación Exitosa', `¡Se han importado los registros correctamente!`);
             } catch (error) {
                 console.error('Error al importar:', error);
-                alert('Error al procesar el archivo. Verifique el formato.');
+                this.notificationService.showError('Archivo Corrupto', 'Error al procesar el archivo. Verifique el formato.');
             } finally {
                 this.guardando = false;
                 event.target.value = ''; // Reset input
@@ -446,10 +453,13 @@ export class ConfiguracionPage implements OnInit {
             const formatExcelDate = (val: any): string => {
                 if (!val) return '';
                 if (val instanceof Date) {
+                    if (isNaN(val.getTime())) return '';
                     return val.toISOString().split('T')[0];
                 }
                 if (typeof val === 'number') {
+                    // Excel date serial to JS Date (offset 25569 days from 1900 to 1970)
                     const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    if (isNaN(date.getTime())) return '';
                     return date.toISOString().split('T')[0];
                 }
                 return String(val).trim();
@@ -504,7 +514,7 @@ export class ConfiguracionPage implements OnInit {
                 }
 
                 if (pacientes.length === 0) {
-                    alert('No se encontraron pacientes válidos para importar en el formato especificado.');
+                    this.notificationService.showError('Sin Datos', 'No se encontraron pacientes válidos para importar en el formato especificado.');
                     this.guardando = false;
                     return;
                 }
@@ -518,15 +528,13 @@ export class ConfiguracionPage implements OnInit {
                     this.progresoImportacion = Math.round(((i + 1) / pacientes.length) * 100);
                 }
 
-                alert(`¡Se han importado ${pacientes.length} pacientes del sistema viejo correctamente!`);
-                this.mensajeExito = `¡Importación completada con éxito!`;
+                this.notificationService.showSuccess('Migración Exitosa', `¡Se han importado ${pacientes.length} pacientes del sistema antiguo correctamente!`);
                 setTimeout(() => {
-                    this.mensajeExito = '';
                     this.progresoImportacion = 0;
-                }, 3000);
+                }, 1500);
             } catch (error) {
                 console.error('Error al importar sistema viejo:', error);
-                alert('Error al procesar el archivo. Verifique el formato.');
+                this.notificationService.showError('Error de Archivo', 'Error al procesar el archivo CSV. Verifique el formato.');
             } finally {
                 this.guardando = false;
                 event.target.value = ''; // Reset input

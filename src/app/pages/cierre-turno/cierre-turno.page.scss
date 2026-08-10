@@ -1,0 +1,18 @@
+.btn-cerrar-turno {
+  color: #ffffff !important;
+  
+  ion-icon {
+    color: #ffffff !important;
+  }
+}
+
+:host-context(body.light-theme) .btn-cerrar-turno,
+body.light-theme .btn-cerrar-turno {
+  color: #000000 !important;
+  background-color: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
+
+  ion-icon {
+    color: #000000 !important;
+  }
+}

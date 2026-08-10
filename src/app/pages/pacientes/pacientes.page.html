@@ -80,8 +80,8 @@
           </div>
           <div class="w-px h-8 bg-glass-border"></div>
           <div class="text-center">
-            <span class="block text-xl font-black text-primary">{{ pacientesFiltrados.length }}</span>
-            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Visibles</span>
+            <span class="block text-xl font-black text-primary">{{ pacientesFiltradosTodos.length }}</span>
+            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Encontrados</span>
           </div>
         </div>
         <div class="w-px h-8 bg-glass-border"></div>
@@ -105,7 +105,7 @@
         <div>
           <h5 class="text-lg font-black text-white tracking-tight">Pacientes Registrados</h5>
           <div class="flex items-center gap-3 mt-0.5">
-            <p class="text-[10px] text-text-muted font-black uppercase tracking-widest">{{ pacientesFiltrados.length }} registros encontrados</p>
+            <p class="text-[10px] text-text-muted font-black uppercase tracking-widest">{{ pacientesFiltradosTodos.length }} registros encontrados</p>
             @if (cargandoFotos) {
               <span class="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-lg text-[9px] font-black text-primary uppercase tracking-wider animate-pulse">
                 <ion-spinner name="crescent" class="text-[10px]"></ion-spinner>
@@ -137,14 +137,15 @@
             <input type="text" 
                    class="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-glass-light border border-glass-border rounded-xl text-sm text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
                    placeholder="Buscar nombre o cédula..."
-                   [(ngModel)]="filtroNombre">
+                   [ngModel]="filtroNombre"
+                   (ngModelChange)="onFiltroChange($event)">
           </div>
         </div>
       </div>
 
       <!-- Table Card - Full Width, Flex Grow to Fill Floor -->
       <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl flex flex-col flex-grow overflow-hidden mb-2">
-        <div class="overflow-auto custom-scrollbar flex-grow border-b border-glass-border">
+        <div class="overflow-auto custom-scrollbar flex-grow border-b border-glass-border" (scroll)="onScroll($event)">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-white/[0.03] text-text-muted uppercase text-[9px] font-black tracking-[0.15em] border-b border-glass-border">
@@ -159,13 +160,13 @@
             <tbody class="divide-y divide-glass-border/50">
               @for (paciente of pacientesFiltrados; track paciente.cedula) {
               <tr class="hover:bg-white/[0.04] transition-colors group">
-                <td class="px-5 py-3.5 text-[12px] font-black text-primary tracking-tight">{{ paciente.cedula }}</td>
+                <td class="patient-cedula px-5 py-3.5 text-[12px] font-black tracking-tight">{{ paciente.cedula }}</td>
                 <td class="px-5 py-3.5">
                   <div class="flex items-center gap-3">
                     @if (paciente.fotoUrl) {
                       <img [src]="paciente.fotoUrl" class="w-9 h-9 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
                     } @else {
-                      <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm shrink-0">
+                      <div class="patient-avatar-box w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
                         {{ paciente.nombre.charAt(0).toUpperCase() }}
                       </div>
                     }
@@ -190,13 +191,17 @@
                             (click)="consultarPaciente(paciente)" title="Iniciar Consulta">
                       <ion-icon name="medical-outline" class="text-base"></ion-icon>
                     </button>
-                    <button class="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all" 
+                    <button class="btn-action-eye p-1.5 rounded-lg transition-all" 
                             (click)="verHistorial(paciente)" title="Ver Historial">
                       <ion-icon name="eye-outline" class="text-base"></ion-icon>
                     </button>
                     <button class="p-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-all" 
                             (click)="editarPaciente(paciente)" title="Editar Paciente">
                       <ion-icon name="create-outline" class="text-base"></ion-icon>
+                    </button>
+                    <button class="p-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-all" 
+                            (click)="eliminarPaciente(paciente)" title="Eliminar Paciente">
+                      <ion-icon name="trash-outline" class="text-base"></ion-icon>
                     </button>
                   </div>
                 </td>
@@ -327,15 +332,55 @@
                 <tbody class="divide-y divide-glass-border">
                   @for (sv of pacienteSeleccionado?.signosVitales?.slice()?.reverse(); track $index) {
                   <tr class="hover:bg-white/5 transition-colors">
-                    <td class="px-4 py-3 font-bold text-primary">{{ sv.fecha }}</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.presionArterial }}</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.frecuenciaCardiaca }} <span class="text-[10px] opacity-50">lpm</span></td>
-                    <td class="px-4 py-3 font-bold">{{ sv.temperatura }}°C</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.peso }}kg</td>
-                    <td class="px-4 py-3">
-                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest uppercase"
-                            [ngClass]="sv.imc < 25 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'">
-                        {{ sv.imc }}
+                    <td class="patient-date-text px-4 py-3.5 font-bold text-xs">{{ formatFechaLegible(sv.fecha) }}</td>
+                    
+                    <!-- Presión -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.presionArterial || '-' }}</span>
+                        @if (sv.presionArterial && evalPresion(sv.presionArterial).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalPresion(sv.presionArterial).text, evalPresion(sv.presionArterial).border, 'bg-white/5']">
+                            {{ evalPresion(sv.presionArterial).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Pulso -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.frecuenciaCardiaca }} <span class="text-[9px] opacity-50">lpm</span></span>
+                        @if (sv.frecuenciaCardiaca && evalPulso(sv.frecuenciaCardiaca).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalPulso(sv.frecuenciaCardiaca).text, evalPulso(sv.frecuenciaCardiaca).border, 'bg-white/5']">
+                            {{ evalPulso(sv.frecuenciaCardiaca).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Temperatura -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.temperatura }}°C</span>
+                        @if (sv.temperatura && evalTemp(sv.temperatura).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalTemp(sv.temperatura).text, evalTemp(sv.temperatura).border, 'bg-white/5']">
+                            {{ evalTemp(sv.temperatura).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Peso -->
+                    <td class="px-4 py-3.5 font-bold text-white text-xs">{{ sv.peso }} kg</td>
+
+                    <!-- IMC -->
+                    <td class="px-4 py-3.5">
+                      <span class="px-2 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase inline-block border"
+                            [ngClass]="sv.imc < 25 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'">
+                        {{ sv.imc }} ({{ sv.imc < 18.5 ? 'Bajo peso' : sv.imc < 25 ? 'Normal' : sv.imc < 30 ? 'Sobrepeso' : 'Obesidad' }})
                       </span>
                     </td>
                   </tr>
@@ -931,6 +976,56 @@
 
       </div>
 
+    </div>
+  </div>
+  }
+
+  <!-- Delete Patient Modal -->
+  @if (pacienteAEliminar) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-medical-dark/90 backdrop-blur-2xl animate-fade-in" (click)="pacienteAEliminar = null"></div>
+    <div class="relative w-full max-w-md bg-dark-secondary border border-glass-border rounded-[2rem] shadow-2xl animate-scale-in overflow-hidden">
+      <div class="p-8 text-center">
+        <div class="w-16 h-16 bg-rose-500/20 text-rose-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
+          <ion-icon name="trash-outline"></ion-icon>
+        </div>
+        <h3 class="text-xl font-black text-white mb-2">Eliminar Paciente</h3>
+        <p class="text-sm text-text-secondary mb-8">¿Estás seguro de que deseas eliminar permanentemente a <strong class="text-white">{{ pacienteAEliminar.nombre }}</strong>? Esta acción no se puede deshacer.</p>
+        
+        <div class="flex gap-4">
+          <button class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-colors" (click)="pacienteAEliminar = null">
+            Cancelar
+          </button>
+          <button class="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-rose-500/30" (click)="confirmarEliminacion()">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Delete All Modal -->
+  @if (confirmarEliminarTodos) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-rose-900/40 backdrop-blur-2xl animate-fade-in" (click)="confirmarEliminarTodos = false"></div>
+    <div class="relative w-full max-w-lg bg-dark-secondary border border-rose-500/30 rounded-[2rem] shadow-2xl animate-scale-in overflow-hidden">
+      <div class="p-8 text-center border-t-4 border-rose-500">
+        <div class="w-20 h-20 bg-rose-500/20 text-rose-500 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 ring-4 ring-rose-500/10">
+          <ion-icon name="warning-outline"></ion-icon>
+        </div>
+        <h3 class="text-2xl font-black text-rose-500 mb-3 uppercase tracking-tight">¡Advertencia Crítica!</h3>
+        <p class="text-sm text-text-secondary mb-8">¿Estás <strong>absolutamente seguro</strong> de que deseas eliminar a <strong>TODOS</strong> los pacientes del sistema? <br><br>Esta acción borrará la base de datos completa de expedientes y <strong>NO SE PUEDE DESHACER</strong>.</p>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
+          <button class="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-black uppercase tracking-wider transition-colors" (click)="confirmarEliminarTodos = false">
+            Mejor No
+          </button>
+          <button class="flex-1 py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-black uppercase tracking-wider transition-colors shadow-xl shadow-rose-500/30 flex items-center justify-center gap-2" (click)="confirmarEliminacionTodos()">
+            <ion-icon name="trash"></ion-icon> Sí, Eliminar Todos
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   }

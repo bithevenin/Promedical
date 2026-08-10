@@ -5,7 +5,7 @@ import { PatientService } from '../../services/patient.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
-import { formatMonto } from '../../utils/format.utils';
+import { formatMonto, getLocalDateString } from '../../utils/format.utils';
 import { Paciente, Transaccion, UserProfile, Cita } from '../../models';
 
 interface NavItem {
@@ -47,7 +47,7 @@ export class DashboardPage implements OnInit {
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
-    return base;
+    if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {      base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });    }    return base;
   });
 
   allCitas = signal<Cita[]>([]);
@@ -55,7 +55,7 @@ export class DashboardPage implements OnInit {
   allTransactions = signal<Transaccion[]>([]);
   currentProfile = signal<UserProfile | null>(null);
 
-  selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
+  selectedDate = signal<string>(getLocalDateString());
 
   stats = computed<StatCard[]>(() => {
     const selectedDateStr = this.selectedDate();
@@ -69,7 +69,7 @@ export class DashboardPage implements OnInit {
       selectedDateObj = new Date(selectedDateStr);
     }
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const citasHoy = this.allCitas().filter(c => c.fecha === today).length;
     const pacientesTotales = this.allPatients().length;
