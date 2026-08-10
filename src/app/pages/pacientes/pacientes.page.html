@@ -160,13 +160,13 @@
             <tbody class="divide-y divide-glass-border/50">
               @for (paciente of pacientesFiltrados; track paciente.cedula) {
               <tr class="hover:bg-white/[0.04] transition-colors group">
-                <td class="px-5 py-3.5 text-[12px] font-black text-primary tracking-tight">{{ paciente.cedula }}</td>
+                <td class="patient-cedula px-5 py-3.5 text-[12px] font-black tracking-tight">{{ paciente.cedula }}</td>
                 <td class="px-5 py-3.5">
                   <div class="flex items-center gap-3">
                     @if (paciente.fotoUrl) {
                       <img [src]="paciente.fotoUrl" class="w-9 h-9 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
                     } @else {
-                      <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm shrink-0">
+                      <div class="patient-avatar-box w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
                         {{ paciente.nombre.charAt(0).toUpperCase() }}
                       </div>
                     }
@@ -191,7 +191,7 @@
                             (click)="consultarPaciente(paciente)" title="Iniciar Consulta">
                       <ion-icon name="medical-outline" class="text-base"></ion-icon>
                     </button>
-                    <button class="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all" 
+                    <button class="btn-action-eye p-1.5 rounded-lg transition-all" 
                             (click)="verHistorial(paciente)" title="Ver Historial">
                       <ion-icon name="eye-outline" class="text-base"></ion-icon>
                     </button>
@@ -332,15 +332,55 @@
                 <tbody class="divide-y divide-glass-border">
                   @for (sv of pacienteSeleccionado?.signosVitales?.slice()?.reverse(); track $index) {
                   <tr class="hover:bg-white/5 transition-colors">
-                    <td class="px-4 py-3 font-bold text-primary">{{ sv.fecha }}</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.presionArterial }}</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.frecuenciaCardiaca }} <span class="text-[10px] opacity-50">lpm</span></td>
-                    <td class="px-4 py-3 font-bold">{{ sv.temperatura }}°C</td>
-                    <td class="px-4 py-3 font-bold">{{ sv.peso }}kg</td>
-                    <td class="px-4 py-3">
-                      <span class="px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest uppercase"
-                            [ngClass]="sv.imc < 25 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'">
-                        {{ sv.imc }}
+                    <td class="patient-date-text px-4 py-3.5 font-bold text-xs">{{ formatFechaLegible(sv.fecha) }}</td>
+                    
+                    <!-- Presión -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.presionArterial || '-' }}</span>
+                        @if (sv.presionArterial && evalPresion(sv.presionArterial).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalPresion(sv.presionArterial).text, evalPresion(sv.presionArterial).border, 'bg-white/5']">
+                            {{ evalPresion(sv.presionArterial).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Pulso -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.frecuenciaCardiaca }} <span class="text-[9px] opacity-50">lpm</span></span>
+                        @if (sv.frecuenciaCardiaca && evalPulso(sv.frecuenciaCardiaca).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalPulso(sv.frecuenciaCardiaca).text, evalPulso(sv.frecuenciaCardiaca).border, 'bg-white/5']">
+                            {{ evalPulso(sv.frecuenciaCardiaca).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Temperatura -->
+                    <td class="px-4 py-3.5 font-bold">
+                      <div class="flex flex-col">
+                        <span class="text-white text-xs font-black">{{ sv.temperatura }}°C</span>
+                        @if (sv.temperatura && evalTemp(sv.temperatura).label) {
+                          <span class="text-[8px] font-black uppercase tracking-wider inline-block mt-0.5 px-1.5 py-0.5 rounded border border-glass-border"
+                                [ngClass]="[evalTemp(sv.temperatura).text, evalTemp(sv.temperatura).border, 'bg-white/5']">
+                            {{ evalTemp(sv.temperatura).label }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Peso -->
+                    <td class="px-4 py-3.5 font-bold text-white text-xs">{{ sv.peso }} kg</td>
+
+                    <!-- IMC -->
+                    <td class="px-4 py-3.5">
+                      <span class="px-2 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase inline-block border"
+                            [ngClass]="sv.imc < 25 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'">
+                        {{ sv.imc }} ({{ sv.imc < 18.5 ? 'Bajo peso' : sv.imc < 25 ? 'Normal' : sv.imc < 30 ? 'Sobrepeso' : 'Obesidad' }})
                       </span>
                     </td>
                   </tr>

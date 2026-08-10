@@ -23,7 +23,9 @@ export interface Paciente {
   peso?: string;
   carnetSeguro?: string;
   antecedentesPersonales?: string;
+  antecedentes_personales?: string;
   antecedentesFamiliares?: string;
+  antecedentes_familiares?: string;
   alergias?: string;
   tipo_sangre?: string;
   fotoUrl?: string;

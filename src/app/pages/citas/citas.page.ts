@@ -55,6 +55,8 @@ export class CitasPage implements OnInit {
   isLoadingJce = false;
   fotoTemporal = '';
 
+  cedulaOriginal: string = '';
+
   // Listado de ARS (se carga dinámicamente)
   listaSeguros: string[] = ['Particular'];
 
@@ -100,7 +102,7 @@ export class CitasPage implements OnInit {
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
-    return base;
+    if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {      base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });    }    return base;
   });
 
   // Exponer Math y utilidades para el template
@@ -220,6 +222,21 @@ export class CitasPage implements OnInit {
     this.calcularTotal();
   }
 
+  get montoCobroInput(): number {
+    return this.datosCobro.diferencia;
+  }
+
+  set montoCobroInput(val: number) {
+    this.datosCobro.diferencia = val;
+    this.calcularTotal();
+  }
+
+  onInstruccionCobroChange() {
+    if (this.citaParaCobrar) {
+      this.cobrar(this.citaParaCobrar);
+    }
+  }
+
   calcularTotal() {
     // El total a cobrar AL PACIENTE es solo la diferencia
     this.datosCobro.totalACobrar = this.datosCobro.diferencia;
@@ -318,24 +335,21 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
       this.errorBusqueda = 'Por favor, ingrese un número de cédula.';
       return;
     }
-    const cleanCedula = this.nuevoPaciente.cedula.replace(/[^0-9]/g, '');
-    if (cleanCedula.length !== 11) {
-      this.errorBusqueda = 'La cédula debe contener exactamente 11 dígitos.';
-      return;
-    }
 
     this.isLoadingJce = true;
     this.errorBusqueda = '';
     try {
-      const localPatient = this.patientService.findPatientByCedula(cleanCedula);
+      // 1. Buscar primero en la base de datos local (soporta cédulas normales e IMPORTADAS tipo IMP-...)
+      const localPatient = this.patientService.findPatientByCedula(this.nuevoPaciente.cedula);
       if (localPatient) {
         this.nuevoPaciente = {
           ...this.nuevoPaciente,
+          cedula: localPatient.cedula,
           nombre: localPatient.nombre,
           edad: localPatient.edad,
           fecha_nacimiento: localPatient.fecha_nacimiento || '',
-          profesion: localPatient.profesion,
-          seguro: localPatient.seguro,
+          profesion: localPatient.profesion || '',
+          seguro: localPatient.seguro || 'Particular',
           sexo: localPatient.sexo || 'M',
           altura: localPatient.altura || '',
           peso: localPatient.peso || '',
@@ -345,11 +359,16 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
           direccion: localPatient.direccion || ''
         };
         this.carnetSeguroTemp = localPatient.carnetSeguro || '';
+        this.isLoadingJce = false;
+        return;
+      }
 
-        if (localPatient.fotoUrl) {
-          this.isLoadingJce = false;
-          return;
-        }
+      // 2. Si no es un paciente guardado, consultar la JCE (requiere 11 dígitos)
+      const cleanCedula = this.nuevoPaciente.cedula.replace(/[^0-9]/g, '');
+      if (cleanCedula.length !== 11) {
+        this.errorBusqueda = 'La cédula debe contener exactamente 11 dígitos para consultar JCE.';
+        this.isLoadingJce = false;
+        return;
       }
 
       const result = await this.patientService.consultarJCE(cleanCedula) as JceResult;
@@ -388,19 +407,6 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         // Foto
         this.fotoTemporal = result.fotoUrl || '';
         this.nuevoPaciente.fotoUrl = result.fotoUrl || this.nuevoPaciente.fotoUrl || '';
-
-        // Si el paciente ya existe localmente, actualizamos sus datos con la nueva foto/datos
-        if (localPatient) {
-          const updatedPatient = {
-            ...localPatient,
-            fecha_nacimiento: this.nuevoPaciente.fecha_nacimiento || localPatient.fecha_nacimiento,
-            sexo: this.nuevoPaciente.sexo || localPatient.sexo,
-            fotoUrl: this.nuevoPaciente.fotoUrl || localPatient.fotoUrl,
-            direccion: this.nuevoPaciente.direccion || localPatient.direccion,
-            edad: this.nuevoPaciente.edad || localPatient.edad
-          };
-          await this.patientService.savePatient(updatedPatient);
-        }
       }
     } catch (error: any) {
       console.error('Error JCE lookup in Citas:', error);
@@ -432,7 +438,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         fotoUrl: this.nuevoPaciente.fotoUrl,
         direccion: this.nuevoPaciente.direccion
       };
-      await this.patientService.savePatient(datosPaciente);
+      await this.patientService.savePatient(datosPaciente, this.cedulaOriginal);
 
       // 2. Crear la cita
       const nuevaCita: Cita = {
@@ -464,27 +470,66 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     }
   }
 
+  ionViewWillEnter() {
+    this.patientService.refreshPatients();
+  }
+
   filtrarPacientes(event: any) {
-    const val = (event.target.value || '').toLowerCase().trim();
-    if (!val) {
+    const rawVal = (event.target.value || '').trim();
+    if (!rawVal) {
       this.pacientesFiltrados = [];
       this.mostrarDropdownPacientes = false;
       return;
     }
 
-    const cleanVal = val.replace(/[^0-9a-zA-Z]/g, '');
+    const normQuery = rawVal.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const queryWords: string[] = normQuery.split(/\s+/).filter(Boolean);
+    const cleanDigits = rawVal.replace(/[^0-9]/g, '');
 
-    this.pacientesFiltrados = this.listaPacientes.filter(p => {
-      const matchNombre = p.nombre.toLowerCase().includes(val);
-      const cleanCedula = p.cedula.replace(/[^0-9]/g, '');
-      const matchCedula = cleanCedula.includes(cleanVal);
-      return matchNombre || matchCedula;
-    }).slice(0, 5); // Limit to 5 results
+    let matches: Paciente[] = [];
 
+    if (this.activeSearchField === 'cedula') {
+      matches = this.listaPacientes.filter(p => {
+        if (!p.cedula) return false;
+        const cleanCedula = p.cedula.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+        return cleanCedula.includes(normQuery) || (cleanDigits !== '' && cleanCedula.includes(cleanDigits));
+      });
+    } else {
+      // Búsqueda por Nombre Completo
+      matches = this.listaPacientes.filter(p => {
+        if (!p.nombre) return false;
+        const normNombre = p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return queryWords.length > 0 && queryWords.every((word: string) => normNombre.includes(word));
+      });
+
+      // Ordenar por relevancia:
+      // 1. Nombres que comiencen exactamente con el texto ingresado (Ej: "A" -> "Abad", "Abreu", "Antonio")
+      // 2. Nombres con alguna palabra que comience con el texto ingresado
+      // 3. Orden alfabético
+      matches.sort((a, b) => {
+        const nameA = (a.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const nameB = (b.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+        const aStartsWith = nameA.startsWith(normQuery);
+        const bStartsWith = nameB.startsWith(normQuery);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+
+        const aWordStarts = nameA.split(/\s+/).some(w => w.startsWith(normQuery));
+        const bWordStarts = nameB.split(/\s+/).some(w => w.startsWith(normQuery));
+        if (aWordStarts && !bWordStarts) return -1;
+        if (!aWordStarts && bWordStarts) return 1;
+
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    this.pacientesFiltrados = matches.slice(0, 15);
     this.mostrarDropdownPacientes = this.pacientesFiltrados.length > 0;
   }
 
   seleccionarPacienteDeLista(paciente: Paciente) {
+    this.cedulaOriginal = paciente.cedula;
     this.nuevoPaciente = {
       nombre: paciente.nombre,
       cedula: paciente.cedula,
@@ -506,6 +551,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
   }
 
   limpiarFormulario() {
+    this.cedulaOriginal = '';
     this.nuevoPaciente = {
       nombre: '',
       cedula: '',

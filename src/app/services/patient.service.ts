@@ -98,8 +98,8 @@ export class PatientService {
             altura: p.altura || '',
             peso: p.peso || '',
             carnetSeguro: p.carnet_seguro || '',
-            antecedentesPersonales: p.antecedentes_personales || '',
-            antecedentesFamiliares: p.antecedentes_familiares || '',
+            antecedentesPersonales: p.antecedentes_personales || (p as any).antecedentesPersonales || '',
+            antecedentesFamiliares: p.antecedentes_familiares || (p as any).antecedentesFamiliares || '',
             alergias: p.alergias || '',
             tipo_sangre: p.tipo_sangre || '',
             fotoUrl: p.foto_url || '',
@@ -135,8 +135,12 @@ export class PatientService {
     return this.patientsSubject.value;
   }
 
-  async savePatient(paciente: Paciente) {
+  async savePatient(paciente: Paciente, oldCedula?: string) {
     try {
+      if (oldCedula && oldCedula !== paciente.cedula) {
+        await this.deletePatient(oldCedula);
+      }
+
       // 1. Save locally first
       const fullPatient = {
         ...paciente,
@@ -271,7 +275,26 @@ export class PatientService {
   }
 
   findPatientByCedula(cedula: string): Paciente | undefined {
-    return this.getPatients().find(p => p.cedula === cedula);
+    if (!cedula) return undefined;
+    const target = cedula.trim().toLowerCase();
+    const cleanTarget = target.replace(/[^0-9a-z]/g, '');
+    const digitsOnly = target.replace(/[^0-9]/g, '');
+
+    return this.getPatients().find(p => {
+      if (!p.cedula) return false;
+      const pCedula = p.cedula.trim().toLowerCase();
+      if (pCedula === target) return true;
+
+      const pClean = pCedula.replace(/[^0-9a-z]/g, '');
+      if (cleanTarget && pClean === cleanTarget) return true;
+
+      if (digitsOnly && digitsOnly.length >= 5) {
+        const pDigits = pCedula.replace(/[^0-9]/g, '');
+        if (pDigits === digitsOnly) return true;
+      }
+
+      return false;
+    });
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
@@ -322,34 +345,47 @@ export class PatientService {
 
   async updateAntecedentes(cedula: string, data: { personales?: string, familiares?: string, alergias?: string }) {
     try {
-      // 1. Update locally
+      // 1. Update local patient object in RAM & offline storage
       const patient = this.findPatientByCedula(cedula);
       if (patient) {
-        patient.antecedentesPersonales = data.personales;
-        patient.antecedentesFamiliares = data.familiares;
-        patient.alergias = data.alergias;
+        patient.antecedentesPersonales = data.personales || '';
+        (patient as any).antecedentes_personales = data.personales || '';
+        patient.antecedentesFamiliares = data.familiares || '';
+        (patient as any).antecedentes_familiares = data.familiares || '';
+        patient.alergias = data.alergias || '';
         await this.offlineService.saveLocalData('pacientes', patient);
-        this.patientsSubject.next(this.getPatients());
       }
 
-      // 2. Sync
+      // 2. Sync to Supabase table
       const dbPayload = {
-        antecedentes_personales: data.personales,
-        antecedentes_familiares: data.familiares,
-        alergias: data.alergias
+        antecedentes_personales: data.personales || null,
+        antecedentes_familiares: data.familiares || null,
+        alergias: data.alergias || null
       };
 
       if (navigator.onLine) {
         const { error } = await this.supabase.from('pacientes').update(dbPayload).eq('cedula', cedula);
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating antecedentes in Supabase:', error);
+          throw error;
+        }
       } else {
         await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
       }
+
+      // Notify all subscribers of patients$ with updated array reference
+      const current = this.patientsSubject.getValue();
+      const idx = current.findIndex(p => p.cedula === cedula);
+      if (idx >= 0 && patient) {
+        current[idx] = { ...patient };
+        this.patientsSubject.next([...current]);
+      }
     } catch (error) {
+      console.error('Error updating antecedentes:', error);
       const dbPayload = {
-        antecedentes_personales: data.personales,
-        antecedentes_familiares: data.familiares,
-        alergias: data.alergias
+        antecedentes_personales: data.personales || null,
+        antecedentes_familiares: data.familiares || null,
+        alergias: data.alergias || null
       };
       await this.offlineService.addToQueue('pacientes', 'update', dbPayload, 'cedula', cedula);
     }

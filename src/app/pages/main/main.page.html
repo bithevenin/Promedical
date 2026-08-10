@@ -147,6 +147,21 @@
         <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
       </article>
 
+      <!-- Cierre de Turno Card -->
+      <article *ngIf="profile?.rol === 'secretaria' || profile?.rol === 'admin' || profile?.rol === 'doctor'" class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-primary rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/cierre-turno">
+        <div class="relative z-10">
+          <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-2xl text-primary mb-5 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+          </div>
+          <h3 class="text-lg font-black text-white mb-1 tracking-tight">Turno</h3>
+          <p class="text-[11px] text-text-muted font-medium leading-relaxed mb-4">Reporte diario y cierre de caja administrativo.</p>
+          <div class="flex items-center gap-1.5 text-[9px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+             Cerrar Turno <ion-icon name="arrow-forward"></ion-icon>
+          </div>
+        </div>
+        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </article>
+
     </div>
   </main>
 

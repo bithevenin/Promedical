@@ -40,7 +40,7 @@ export class SegurosArsPage implements OnInit {
             base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
         }
 
-        return base;
+        if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {          base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });        }        return base;
     });
 
     // Modal para agregar factura manual

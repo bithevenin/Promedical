@@ -6,6 +6,7 @@ import { ConsultationService } from '../../services/consultation.service';
 import { PrintRecetaService } from '../../services/print-receta.service';
 import { AuthService } from '../../services/auth.service';
 import { Cita, Paciente, Consulta, UserProfile } from '../../models';
+import { SignoVital } from '../../models/patient.model';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import { getLocalDateString } from '../../utils/format.utils';
@@ -57,7 +58,7 @@ export class ConsultaPage implements OnInit {
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
-    return base;
+    if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {      base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });    }    return base;
   });
 
   // Flag para indicar si es consulta directa (sin cita previa)
@@ -175,21 +176,26 @@ export class ConsultaPage implements OnInit {
     this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
     this.updateEditorContents();
 
-    // Si estaba en espera, pasarlo a consulta
     if (paciente.estado === 'espera') {
       await this.appointmentService.updateAppointmentStatus(paciente.turno, 'consulta');
     }
 
-    // Asegurarnos de que el paciente seleccionado tenga todos los datos clínicos (signos vitales, antecedentes)
-    const fullPatient = this.patientService.findPatientByCedula(paciente.cedula);
+    let fullPatient = this.patientService.findPatientByCedula(paciente.cedula);
+    if (!fullPatient && paciente.nombre) {
+      fullPatient = this.patientService.getPatients().find(p => p.nombre.toLowerCase().trim() === paciente.nombre.toLowerCase().trim());
+    }
+
     if (fullPatient) {
       this.pacienteSeleccionado = {
         ...this.pacienteSeleccionado,
-        signosVitales: fullPatient.signosVitales,
-        antecedentesPersonales: fullPatient.antecedentesPersonales,
-        antecedentesFamiliares: fullPatient.antecedentesFamiliares,
-        alergias: fullPatient.alergias
+        cedula: fullPatient.cedula || this.pacienteSeleccionado.cedula,
+        signosVitales: fullPatient.signosVitales || this.pacienteSeleccionado.signosVitales,
+        antecedentesPersonales: fullPatient.antecedentesPersonales || (fullPatient as any).antecedentes_personales || this.pacienteSeleccionado.antecedentesPersonales,
+        antecedentesFamiliares: fullPatient.antecedentesFamiliares || (fullPatient as any).antecedentes_familiares || this.pacienteSeleccionado.antecedentesFamiliares,
+        alergias: fullPatient.alergias || this.pacienteSeleccionado.alergias
       };
+      (this.pacienteSeleccionado as any).antecedentes_personales = this.pacienteSeleccionado.antecedentesPersonales;
+      (this.pacienteSeleccionado as any).antecedentes_familiares = this.pacienteSeleccionado.antecedentesFamiliares;
     }
   }
 
@@ -204,15 +210,12 @@ export class ConsultaPage implements OnInit {
 
       await this.consultationService.saveConsultation(consulta);
 
-      // Si es consulta directa (desde página de pacientes), no hay cita que actualizar
       if (!this.esConsultaDirecta) {
-        // Pasar a por_pagar con la instrucción de cobro
         await this.appointmentService.updateAppointmentStatus(this.pacienteSeleccionado.turno, 'por_pagar', {
           instruccionCobro: this.nuevaConsulta.instruccionCobro
         });
       }
 
-      // Limpiar
       this.pacienteSeleccionado = null;
       this.historialPasado = [];
       this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
@@ -221,19 +224,12 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  // --- Rich Text Editing Toolbar Helpers ---
   savedSelection: Range | null = null;
 
   saveSelection() {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      // Ensure the selection is within one of our editors
-      const host = range.commonAncestorContainer;
-      const editor = host.nodeType === 3 ? host.parentNode : host;
-      if (editor && (editor as HTMLElement).closest('.rich-textarea-editor')) {
-        this.savedSelection = range.cloneRange();
-      }
+      this.savedSelection = sel.getRangeAt(0).cloneRange();
     }
   }
 
@@ -247,17 +243,25 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  formatText(command: string, value: string = '') {
-    if (this.lastActiveEditor) {
-      const editorEl = this.lastActiveEditor === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
-      if (editorEl && editorEl.nativeElement) {
-        editorEl.nativeElement.focus();
-        this.restoreSelection();
+  formatText(command: string, value: string | undefined = undefined) {
+    this.restoreSelection();
+    document.execCommand(command, false, value);
+    const editorEl = this.lastActiveEditor === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    if (editorEl?.nativeElement) {
+      if (this.lastActiveEditor === 'diagnostico') {
+        this.nuevaConsulta.diagnostico = editorEl.nativeElement.innerHTML;
+      } else {
+        this.nuevaConsulta.receta = editorEl.nativeElement.innerHTML;
       }
     }
-    document.execCommand(command, false, value);
-    // Save selection again after formatting
-    this.saveSelection();
+  }
+
+  changeFont(fontName: string) {
+    this.formatText('fontName', fontName);
+  }
+
+  changeFontSize(size: string) {
+    this.formatText('fontSize', size);
   }
 
   onEditorInput(field: 'diagnostico' | 'receta', event: any) {
@@ -270,14 +274,12 @@ export class ConsultaPage implements OnInit {
   }
 
   updateEditorContents() {
-    setTimeout(() => {
-      if (this.diagnosticoEditor?.nativeElement) {
-        this.diagnosticoEditor.nativeElement.innerHTML = this.nuevaConsulta.diagnostico || '';
-      }
-      if (this.recetaEditor?.nativeElement) {
-        this.recetaEditor.nativeElement.innerHTML = this.nuevaConsulta.receta || '';
-      }
-    }, 100);
+    if (this.diagnosticoEditor?.nativeElement) {
+      this.diagnosticoEditor.nativeElement.innerHTML = this.nuevaConsulta.diagnostico || '';
+    }
+    if (this.recetaEditor?.nativeElement) {
+      this.recetaEditor.nativeElement.innerHTML = this.nuevaConsulta.receta || '';
+    }
   }
 
   imprimirReceta() {
@@ -285,7 +287,7 @@ export class ConsultaPage implements OnInit {
       this.printRecetaService.imprimirReceta({
         pacienteNombre: this.pacienteSeleccionado.nombre,
         pacienteEdad: this.pacienteSeleccionado.edad,
-        pacienteSexo: this.pacienteSeleccionado.sexo === 'M' ? 'Masculino' : (this.pacienteSeleccionado.sexo === 'F' ? 'Femenino' : 'No especificado'),
+        pacienteSexo: this.pacienteSeleccionado.sexo || 'M',
         receta: this.nuevaConsulta.receta
       });
     } else {
@@ -293,14 +295,211 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  // --- Signos Vitales ---
   abrirModalSignos() {
-    if (!this.pacienteSeleccionado) return;
+    this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0, saturacionOxigeno: 0 };
     this.showVitalSignsModal = true;
   }
 
   cerrarModalSignos() {
     this.showVitalSignsModal = false;
+  }
+
+  async guardarSignosVitales() {
+    if (this.pacienteSeleccionado) {
+      const sv: SignoVital = {
+        fecha: getLocalDateString(),
+        presionArterial: this.signosForm.presionArterial,
+        frecuenciaCardiaca: Number(this.signosForm.frecuenciaCardiaca) || 0,
+        temperatura: Number(this.signosForm.temperatura) || 0,
+        peso: Number(this.signosForm.peso) || 0,
+        talla: Number(this.signosForm.talla) || 0,
+        imc: Number(this.signosForm.imc) || 0,
+        saturacionOxigeno: Number(this.signosForm.saturacionOxigeno) || 0
+      };
+
+      await this.patientService.addSignosVitales(this.pacienteSeleccionado.cedula, sv);
+      this.presentToast('Signos vitales guardados con éxito', 'success');
+      this.cerrarModalSignos();
+
+      const fullPatient = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+      if (fullPatient && this.pacienteSeleccionado && fullPatient.signosVitales) {
+        this.pacienteSeleccionado.signosVitales = [...fullPatient.signosVitales];
+      }
+      this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0, saturacionOxigeno: 0 };
+    }
+  }
+
+  abrirModalAntecedentes() {
+    if (!this.pacienteSeleccionado) return;
+
+    let p = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+    if (!p && this.pacienteSeleccionado.nombre) {
+      p = this.patientService.getPatients().find(pt => pt.nombre.toLowerCase().trim() === this.pacienteSeleccionado!.nombre.toLowerCase().trim());
+    }
+    const source = p || this.pacienteSeleccionado;
+
+    this.antecedentesForm = {
+      personales: source.antecedentesPersonales || (source as any).antecedentes_personales || '',
+      familiares: source.antecedentesFamiliares || (source as any).antecedentes_familiares || '',
+      alergias: source.alergias || ''
+    };
+
+    this.showAntecedentesModal = true;
+  }
+
+  cerrarModalAntecedentes() {
+    this.showAntecedentesModal = false;
+  }
+
+  async guardarAntecedentes() {
+    if (!this.pacienteSeleccionado) return;
+
+    let p = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+    if (!p && this.pacienteSeleccionado.nombre) {
+      p = this.patientService.getPatients().find(pt => pt.nombre.toLowerCase().trim() === this.pacienteSeleccionado!.nombre.toLowerCase().trim());
+    }
+    const targetCedula = p?.cedula || this.pacienteSeleccionado.cedula;
+
+    await this.patientService.updateAntecedentes(targetCedula, {
+      personales: this.antecedentesForm.personales,
+      familiares: this.antecedentesForm.familiares,
+      alergias: this.antecedentesForm.alergias
+    });
+
+    this.pacienteSeleccionado.antecedentesPersonales = this.antecedentesForm.personales;
+    (this.pacienteSeleccionado as any).antecedentes_personales = this.antecedentesForm.personales;
+    this.pacienteSeleccionado.antecedentesFamiliares = this.antecedentesForm.familiares;
+    (this.pacienteSeleccionado as any).antecedentes_familiares = this.antecedentesForm.familiares;
+    this.pacienteSeleccionado.alergias = this.antecedentesForm.alergias;
+
+    this.presentToast('Antecedentes actualizados con éxito', 'success');
+    this.cerrarModalAntecedentes();
+  }
+
+  showDetalleConsultaModal = false;
+  consultaDetalleSeleccionada: Consulta | null = null;
+
+  verDetalleConsulta(consulta: Consulta) {
+    this.consultaDetalleSeleccionada = consulta;
+    this.showDetalleConsultaModal = true;
+  }
+
+  cerrarModalDetalleConsulta() {
+    this.showDetalleConsultaModal = false;
+    this.consultaDetalleSeleccionada = null;
+  }
+
+  imprimirRecetaHistorica() {
+    if (this.pacienteSeleccionado && this.consultaDetalleSeleccionada?.receta) {
+      this.printRecetaService.imprimirReceta({
+        pacienteNombre: this.pacienteSeleccionado.nombre,
+        pacienteEdad: this.pacienteSeleccionado.edad,
+        pacienteSexo: this.pacienteSeleccionado.sexo || 'M',
+        receta: this.consultaDetalleSeleccionada.receta
+      });
+    }
+  }
+
+  getPatientPhoto(cedula: string): string {
+    const p = this.patientService.findPatientByCedula(cedula);
+    return p?.fotoUrl || '';
+  }
+
+  async presentToast(message: string, color: 'success' | 'danger' | 'info') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color: color === 'info' ? 'primary' : color,
+      position: 'bottom',
+      cssClass: 'custom-toast'
+    });
+    await toast.present();
+  }
+
+  formatFechaLegible(fechaStr: string | null | undefined): string {
+    if (!fechaStr) return '-';
+    
+    if (!fechaStr.includes('T') && !fechaStr.includes(':')) {
+      const parts = fechaStr.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
+        return fechaStr;
+      }
+    }
+    return fechaStr;
+  }
+
+  private vitalsStyle(level: 'normal' | 'warning' | 'danger'): { border: string; dot: string; text: string; label: string } {
+    const map = {
+      normal:  { border: 'border-emerald-500/40', dot: 'bg-emerald-400', text: 'text-emerald-400', label: '' },
+      warning: { border: 'border-amber-400/50',   dot: 'bg-amber-400',   text: 'text-amber-400',   label: '' },
+      danger:  { border: 'border-red-500/50',      dot: 'bg-red-400',     text: 'text-red-400',     label: '' },
+    };
+    return map[level];
+  }
+
+  evalPresion(value: string): { border: string; dot: string; text: string; label: string } {
+    if (!value || !value.includes('/')) return this.vitalsStyle('normal');
+    const [sys, dia] = value.split('/').map(Number);
+    if (isNaN(sys) || isNaN(dia)) return this.vitalsStyle('normal');
+    // Hipotensión
+    if (sys < 90 || dia < 60) return { ...this.vitalsStyle('warning'), label: 'Presión baja (hipotensión)' };
+    // Normal
+    if (sys <= 120 && dia <= 80) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    // Elevada
+    if (sys <= 129 && dia < 80) return { ...this.vitalsStyle('warning'), label: 'Presión elevada' };
+    // HTA Etapa 1
+    if (sys <= 139 || dia <= 89) return { ...this.vitalsStyle('warning'), label: 'Hipertensión Etapa 1' };
+    // HTA Etapa 2 o crisis
+    return { ...this.vitalsStyle('danger'), label: sys >= 180 || dia >= 120 ? '⚠ Crisis hipertensiva' : 'Hipertensión Etapa 2' };
+  }
+
+  evalSatO2(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value >= 95) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value >= 90) return { ...this.vitalsStyle('warning'), label: 'Hipoxia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Hipoxia severa' };
+  }
+
+  evalPulso(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 60) return { ...this.vitalsStyle('warning'), label: 'Bradicardia' };
+    if (value <= 100) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 120) return { ...this.vitalsStyle('warning'), label: 'Taquicardia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Taquicardia severa' };
+  }
+
+  evalTemp(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 35) return { ...this.vitalsStyle('danger'), label: '⚠ Hipotermia' };
+    if (value < 36.5) return { ...this.vitalsStyle('warning'), label: 'Hipotermia leve' };
+    if (value <= 37.3) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 38) return { ...this.vitalsStyle('warning'), label: 'Febrícula' };
+    if (value <= 39) return { ...this.vitalsStyle('warning'), label: 'Fiebre moderada' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Fiebre alta' };
+  }
+
+  formatearPresion(event: Event) {
+    const input = event.target as HTMLInputElement;
+    // Remove anything that's not a digit or slash
+    let raw = input.value.replace(/[^\d/]/g, '');
+
+    // Remove extra slashes, keep only one
+    const parts = raw.split('/');
+    const systolic = parts[0].slice(0, 3);   // Max 3 digits for systolic (e.g. 120)
+    const diastolic = parts[1]?.slice(0, 2) ?? ''; // Max 2 digits for diastolic (e.g. 80)
+
+    let formatted = systolic;
+
+    // Auto-add slash when systolic reaches 3 digits or user typed a slash
+    if (systolic.length === 3 || (parts.length > 1)) {
+      formatted = systolic + '/' + diastolic;
+    }
+
+    input.value = formatted;
+    this.signosForm.presionArterial = formatted;
   }
 
   calcularIMC() {
@@ -326,72 +525,13 @@ export class ConsultaPage implements OnInit {
       } else {
         this.presentToast('Signos vitales guardados con éxito', 'success');
         this.cerrarModalSignos();
-        // Recargar datos del paciente para ver el historial actualizado
         const fullPatient = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
         if (fullPatient && this.pacienteSeleccionado && fullPatient.signosVitales) {
           this.pacienteSeleccionado.signosVitales = [...fullPatient.signosVitales];
         }
-        // Reset form
         this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0, saturacionOxigeno: 0 };
       }
     }
-  }
-
-  // --- Antecedentes ---
-  abrirModalAntecedentes() {
-    if (!this.pacienteSeleccionado) return;
-
-    // Cargar datos actuales del paciente al formulario
-    const p = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
-    if (p) {
-      this.antecedentesForm = {
-        personales: p.antecedentesPersonales || '',
-        familiares: p.antecedentesFamiliares || '',
-        alergias: p.alergias || ''
-      };
-    }
-
-    this.showAntecedentesModal = true;
-  }
-
-  cerrarModalAntecedentes() {
-    this.showAntecedentesModal = false;
-  }
-
-  async guardarAntecedentes() {
-    if (this.pacienteSeleccionado) {
-      await this.patientService.updateAntecedentes(this.pacienteSeleccionado.cedula, {
-        personales: this.antecedentesForm.personales,
-        familiares: this.antecedentesForm.familiares,
-        alergias: this.antecedentesForm.alergias
-      });
-
-      this.presentToast('Antecedentes actualizados con éxito', 'success');
-      this.cerrarModalAntecedentes();
-
-      // Actualizar vista local
-      if (this.pacienteSeleccionado) {
-        this.pacienteSeleccionado.antecedentesPersonales = this.antecedentesForm.personales;
-        this.pacienteSeleccionado.antecedentesFamiliares = this.antecedentesForm.familiares;
-        this.pacienteSeleccionado.alergias = this.antecedentesForm.alergias;
-      }
-    }
-  }
-
-  getPatientPhoto(cedula: string): string {
-    const p = this.patientService.findPatientByCedula(cedula);
-    return p?.fotoUrl || '';
-  }
-
-  async presentToast(message: string, color: 'success' | 'danger' | 'info') {
-    const toast = await this.toastController.create({
-      message,
-      duration: 3000,
-      color: color === 'info' ? 'primary' : color,
-      position: 'bottom',
-      cssClass: 'custom-toast'
-    });
-    await toast.present();
   }
 
   async logout() {

@@ -58,7 +58,7 @@ export class PacientesPage implements OnInit {
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });
     }
 
-    return base;
+    if (this.currentProfile()?.rol === 'secretaria' || this.currentProfile()?.rol === 'admin' || this.currentProfile()?.rol === 'doctor') {      base.push({ icon: 'lock-closed-outline', label: 'Turno', route: '/cierre-turno' });    }    return base;
   });
 
   // Modals state
@@ -217,7 +217,11 @@ export class PacientesPage implements OnInit {
 
   editarPaciente(paciente: Paciente) {
     this.pacienteSeleccionado = paciente;
-    this.editData = { ...paciente };
+    this.editData = {
+      ...paciente,
+      antecedentesPersonales: paciente.antecedentesPersonales || (paciente as any).antecedentes_personales || '',
+      antecedentesFamiliares: paciente.antecedentesFamiliares || (paciente as any).antecedentes_familiares || ''
+    };
     this.showEditModal = true;
   }
 
@@ -797,5 +801,90 @@ export class PacientesPage implements OnInit {
   async logout() {
     await this.authService.signOut();
     this.router.navigate(['/auth/login']);
+  }
+
+  formatFechaLegible(fechaStr: string | null | undefined): string {
+    if (!fechaStr) return '-';
+    
+    if (!fechaStr.includes('T') && !fechaStr.includes(':')) {
+      const parts = fechaStr.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
+        return fechaStr;
+      }
+      return fechaStr;
+    }
+
+    try {
+      const d = new Date(fechaStr);
+      if (isNaN(d.getTime())) return fechaStr;
+
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+
+      const rawHours = d.getHours();
+      const rawMinutes = d.getMinutes();
+
+      if (rawHours === 0 && rawMinutes === 0) {
+        return `${day}/${month}/${year}`;
+      }
+
+      const ampm = rawHours >= 12 ? 'PM' : 'AM';
+      const hours = rawHours % 12 || 12;
+      const minutes = String(rawMinutes).padStart(2, '0');
+
+      return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+    } catch {
+      return fechaStr;
+    }
+  }
+
+  // ─── Evaluadores clínicos de signos vitales ───────────────────────────────
+  private vitalsStyle(level: 'normal' | 'warning' | 'danger'): { border: string; dot: string; text: string; label: string } {
+    const map = {
+      normal:  { border: 'border-emerald-500/40', dot: 'bg-emerald-400', text: 'text-emerald-400', label: '' },
+      warning: { border: 'border-amber-400/50',   dot: 'bg-amber-400',   text: 'text-amber-400',   label: '' },
+      danger:  { border: 'border-red-500/50',      dot: 'bg-red-400',     text: 'text-red-400',     label: '' },
+    };
+    return map[level];
+  }
+
+  evalPresion(value: string): { border: string; dot: string; text: string; label: string } {
+    if (!value || !value.includes('/')) return this.vitalsStyle('normal');
+    const [sys, dia] = value.split('/').map(Number);
+    if (isNaN(sys) || isNaN(dia)) return this.vitalsStyle('normal');
+    if (sys < 90 || dia < 60) return { ...this.vitalsStyle('warning'), label: 'Presión baja (hipotensión)' };
+    if (sys <= 120 && dia <= 80) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (sys <= 129 && dia < 80) return { ...this.vitalsStyle('warning'), label: 'Presión elevada' };
+    if (sys <= 139 || dia <= 89) return { ...this.vitalsStyle('warning'), label: 'Hipertensión Etapa 1' };
+    return { ...this.vitalsStyle('danger'), label: sys >= 180 || dia >= 120 ? '⚠ Crisis hipertensiva' : 'Hipertensión Etapa 2' };
+  }
+
+  evalSatO2(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value >= 95) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value >= 90) return { ...this.vitalsStyle('warning'), label: 'Hipoxia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Hipoxia severa' };
+  }
+
+  evalPulso(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 60) return { ...this.vitalsStyle('warning'), label: 'Bradicardia' };
+    if (value <= 100) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 120) return { ...this.vitalsStyle('warning'), label: 'Taquicardia leve' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Taquicardia severa' };
+  }
+
+  evalTemp(value: number): { border: string; dot: string; text: string; label: string } {
+    if (!value || value === 0) return this.vitalsStyle('normal');
+    if (value < 35) return { ...this.vitalsStyle('danger'), label: '⚠ Hipotermia' };
+    if (value < 36.5) return { ...this.vitalsStyle('warning'), label: 'Hipotermia leve' };
+    if (value <= 37.3) return { ...this.vitalsStyle('normal'), label: 'Normal ✓' };
+    if (value <= 38) return { ...this.vitalsStyle('warning'), label: 'Febrícula' };
+    if (value <= 39) return { ...this.vitalsStyle('warning'), label: 'Fiebre moderada' };
+    return { ...this.vitalsStyle('danger'), label: '⚠ Fiebre alta' };
   }
 }

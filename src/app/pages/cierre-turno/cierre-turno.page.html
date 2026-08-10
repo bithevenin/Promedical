@@ -1,0 +1,235 @@
+<div class="dashboard-wrapper h-[100dvh] overflow-y-auto overflow-x-hidden bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-20 lg:pb-0">
+  <!-- Mobile Header -->
+  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
+    <div class="logo flex items-center gap-3" routerLink="/main">
+      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+    <div class="header-actions">
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
+    </div>
+  </div>
+
+  <!-- Sidebar (Desktop) -->
+  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
+    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
+      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+        <ion-icon name="pulse-outline"></ion-icon>
+      </div>
+      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+    </div>
+
+    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+      @for (item of navigationItems(); track item.label) {
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
+           [class.bg-primary/10]="item.active" 
+           [class.text-primary]="item.active"
+           [class.text-text-secondary]="!item.active"
+           [routerLink]="item.route">
+        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
+      </div>
+      }
+    </nav>
+
+    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
+      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
+        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
+        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+      </div>
+
+      <div class="profile-box flex items-center gap-3 px-2">
+        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+          <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
+        </div>
+        <div class="user-details overflow-hidden">
+          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical' }}</span>
+          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
+            {{ currentProfile()?.rol || 'Secretaria' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0">
+    <!-- Top Bar -->
+    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl">
+          <ion-icon name="lock-closed-outline"></ion-icon>
+        </div>
+        <div>
+          <h4 class="text-base font-black text-white uppercase tracking-tight">Cierre de Turno</h4>
+          <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Reporte diario de caja</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
+          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+        </button>
+        <div class="user-info text-right">
+          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Secretaria' }}</span>
+          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 max-w-full mx-auto animate-fade-in">
+      
+      <!-- Filtro y Resumen -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6 mb-6">
+        <!-- Fecha -->
+        <div class="xl:col-span-4 bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-4 lg:p-5 shadow-xl flex flex-col justify-center">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-1 h-5 bg-primary rounded-full"></div>
+            <h5 class="text-xs font-black text-white uppercase tracking-tight">Fecha del Reporte</h5>
+          </div>
+          <div>
+             <input type="date" class="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-[12px] font-black text-white focus:outline-none focus:border-primary/50 transition-all" [ngModel]="fechaReporte()" (ngModelChange)="fechaReporte.set($event)">
+          </div>
+          <div class="mt-4">
+            <p class="text-[10px] text-text-muted leading-relaxed font-bold">
+              <ion-icon name="information-circle-outline" class="align-middle text-primary mr-1"></ion-icon>
+              Esta caja es únicamente administrativa. No requiere fondo de apertura ni cuadre físico. Genera el reporte para entregar al final del turno.
+            </p>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Resumen -->
+        <div class="xl:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+          <!-- Ingresos -->
+          <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-center hover:scale-105 transition-transform">
+            <span class="text-[11px] font-black text-emerald-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+              <ion-icon name="arrow-down-circle"></ion-icon> Total Ingresado
+            </span>
+            <h3 class="text-3xl font-black text-white tracking-tighter">{{ formatMonto(totalIngresos()) }}</h3>
+          </div>
+          <!-- Gastos -->
+          <div class="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-center hover:scale-105 transition-transform">
+            <span class="text-[11px] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+              <ion-icon name="arrow-up-circle"></ion-icon> Total Gastos
+            </span>
+            <h3 class="text-3xl font-black text-white tracking-tighter">{{ formatMonto(totalGastos()) }}</h3>
+          </div>
+          <!-- Neto -->
+          <div class="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex flex-col justify-center border-dashed hover:scale-105 transition-transform">
+            <span class="text-[11px] font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+              <ion-icon name="wallet"></ion-icon> Efectivo Neto en Caja
+            </span>
+            <h3 class="text-3xl font-black text-white tracking-tighter">{{ formatMonto(balanceNeto()) }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Transacciones -->
+      <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-4 lg:p-6 border-b border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.01]">
+           <div class="flex items-center gap-3">
+             <h5 class="text-sm font-black text-white uppercase tracking-tight">Movimientos del Día</h5>
+           </div>
+           <div class="flex items-center gap-3">
+             <button class="btn-cerrar-turno flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-deep border border-primary/40 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95" (click)="cerrarTurno()">
+                <ion-icon name="lock-closed" class="text-base"></ion-icon> Cerrar Turno
+             </button>
+             <button class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarExcel()">
+                <ion-icon name="document-text-outline" class="text-base"></ion-icon> Excel
+             </button>
+             <button class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-rose-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarPDF()">
+                <ion-icon name="download-outline" class="text-base"></ion-icon> PDF
+             </button>
+           </div>
+        </div>
+
+        <div class="overflow-auto max-h-[500px] custom-scrollbar">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-white/[0.02] text-text-muted uppercase text-[9px] font-black tracking-widest border-b border-glass-border">
+                <th class="px-5 py-4">Hora</th>
+                <th class="px-5 py-4">Concepto</th>
+                <th class="px-5 py-4">Paciente</th>
+                <th class="px-5 py-4">Tipo</th>
+                <th class="px-5 py-4 text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-glass-border/50">
+              @for (t of transacciones(); track t.id) {
+              <tr class="hover:bg-white/[0.03] transition-colors group">
+                <td class="px-5 py-4 text-[11px] font-bold text-text-muted whitespace-nowrap">{{ t.fecha }}</td>
+                <td class="px-5 py-4">
+                  <div class="text-[13px] font-bold text-white leading-tight">{{ t.concepto }}</div>
+                  @if (t.monto === 0 && !t.concepto.includes('(')) {
+                    <span class="inline-block mt-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                      Cubierto 100% por Seguro
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-4">
+                  <span class="text-[12px] font-bold text-white/80" *ngIf="t.paciente">{{ t.paciente }}</span>
+                  <span class="text-[12px] font-bold text-text-muted italic" *ngIf="!t.paciente">-</span>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider" 
+                        [class.bg-emerald-500/10]="t.tipo === 'ingreso' && t.monto > 0" [class.text-emerald-500]="t.tipo === 'ingreso' && t.monto > 0"
+                        [class.bg-sky-500/10]="t.tipo === 'ingreso' && t.monto === 0" [class.text-sky-400]="t.tipo === 'ingreso' && t.monto === 0"
+                        [class.bg-rose-500/10]="t.tipo === 'gasto'" [class.text-rose-500]="t.tipo === 'gasto'"
+                        [class.bg-white/10]="t.tipo === 'apertura'" [class.text-white]="t.tipo === 'apertura'">
+                    {{ t.monto === 0 ? 'Seguro $0' : t.tipo }}
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-right">
+                  <span class="text-[14px] font-black tracking-tighter" 
+                        [class.text-sky-400]="t.monto === 0"
+                        [class.text-emerald-400]="t.monto > 0 && t.tipo === 'ingreso'" 
+                        [class.text-rose-400]="t.tipo === 'gasto'"
+                        [class.text-text-muted]="t.tipo === 'apertura'">
+                    <ng-container *ngIf="t.monto > 0">{{ t.tipo === 'ingreso' ? '+' : '-' }}</ng-container>{{ formatMonto(t.monto) }}
+                  </span>
+                  @if (t.monto === 0) {
+                    <span class="block text-[8px] font-black text-sky-400 uppercase tracking-widest mt-0.5">Cubierto 100%</span>
+                  }
+                </td>
+              </tr>
+              } @empty {
+              <tr>
+                <td colspan="5" class="py-16 text-center opacity-20">
+                  <ion-icon name="list-outline" class="text-4xl mb-2"></ion-icon>
+                  <p class="text-[10px] font-black uppercase tracking-widest">No hay movimientos registrados</p>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-navbar flex lg:hidden items-center justify-around fixed bottom-0 left-0 right-0 h-20 bg-dark-secondary/80 backdrop-blur-xl border-t border-glass-border px-4 pb-2 z-50">
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/main">
+      <ion-icon name="home-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Inicio</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/citas">
+      <ion-icon name="calendar-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Citas</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/pacientes">
+      <ion-icon name="people-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Pacientes</span>
+    </div>
+    <div class="flex flex-col items-center justify-center p-3 text-primary bg-primary/10 rounded-2xl shadow-lg ring-1 ring-primary/20" routerLink="/cierre-turno">
+      <ion-icon name="lock-closed-outline" class="text-2xl"></ion-icon>
+      <span class="text-[9px] font-bold uppercase mt-1">Turno</span>
+    </div>
+  </nav>
+
+  <!-- Backdrop Global -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+     <div class="absolute top-0 left-0 w-1/2 h-full bg-primary/5 blur-[150px] rounded-full"></div>
+     <div class="absolute bottom-0 right-0 w-1/3 h-1/2 bg-emerald-500/5 blur-[150px] rounded-full"></div>
+  </div>
+</div>

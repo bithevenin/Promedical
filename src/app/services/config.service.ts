@@ -54,6 +54,7 @@ export class ConfigService {
         if (tarifasError) throw tarifasError;
 
         if (configRows) {
+          console.log('[ConfigService] Row from Supabase:', JSON.stringify(configRows));
           const config: ConfiguracionDoctor = {
             nombreDoctor: configRows.nombre_doctor,
             especialidad: configRows.especialidad,
@@ -97,12 +98,15 @@ export class ConfigService {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
         foto_url: config.fotoUrl,
+        email: config.email,
         monto_consulta_particular: config.montoConsultaParticular,
         exequatur: config.exequatur
       };
 
       if (navigator.onLine) {
-        const { error: updateError } = await this.supabase.from('configuracion_doctor').update(dbConfigPayload).eq('id', 1);
+        console.log('[ConfigService] Saving to Supabase:', JSON.stringify(dbConfigPayload));
+        const { data: updData, error: updateError } = await this.supabase.from('configuracion_doctor').update(dbConfigPayload).eq('id', 1).select();
+        console.log('[ConfigService] Update result:', JSON.stringify(updData), 'Error:', updateError);
         if (updateError) throw updateError;
         
         // Sincronizar tarifas: borrar y re-insertar
@@ -137,6 +141,7 @@ export class ConfigService {
         nombre_doctor: config.nombreDoctor,
         especialidad: config.especialidad,
         foto_url: config.fotoUrl,
+        email: config.email,
         monto_consulta_particular: config.montoConsultaParticular,
         exequatur: config.exequatur
       };
