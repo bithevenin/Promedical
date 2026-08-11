@@ -40,9 +40,9 @@ export class SpellCheckService {
 
       // require() está disponible en webpack (lo sustituye en el bundle)
       const nspellFn = require('nspell');
-      this.spell = nspellFn({ aff, dic });
+      this.spell = nspellFn(aff, dic);
       this._isReady = true;
-      console.log('[SpellCheck] ✅ Diccionario español cargado — %d palabras aprox.', dic.split('\n').length);
+      console.log('[SpellCheck] ✅ Diccionario español cargado correctamente — %d palabras aprox.', dic.split('\n').length);
     } catch (err) {
       console.error('[SpellCheck] ❌ Error al cargar corrector:', err);
     }

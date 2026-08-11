@@ -148,7 +148,7 @@
 
         <!-- Panel de Consulta -->
         <div class="xl:col-span-9 flex flex-col">
-          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-7 shadow-xl relative overflow-hidden min-h-[calc(100vh-10rem)]">
+          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-7 shadow-xl relative min-h-[calc(100vh-10rem)]">
             @if (pacienteSeleccionado) {
             <!-- Header Paciente -->
             <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start gap-6 mb-7 pb-6 border-b border-glass-border">
@@ -235,85 +235,85 @@
                       </div>
 
                       <!-- Word Toolbar for Diagnóstico -->
-                      <div class="flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none">
+                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none">
                          <!-- Fuente -->
                          <div class="relative">
                             <button (click)="toggleDropdown('font-diag', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2 py-1 hover:bg-white/10 flex items-center gap-1">
+                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
                                Fuente <span class="opacity-40 text-[7px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'font-diag'" [class.block]="activeDropdown === 'font-diag'" class="absolute top-full left-0 mt-1 hidden bg-dark-secondary border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[110px]">
-                               <div (click)="formatText('fontName', 'Inter', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
-                               <div (click)="formatText('fontName', 'Arial', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
-                               <div (click)="formatText('fontName', 'Georgia', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
-                               <div (click)="formatText('fontName', 'Courier New', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
-                               <div (click)="formatText('fontName', 'Times New Roman', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
+                            <div [class.hidden]="activeDropdown !== 'font-diag'" [class.block]="activeDropdown === 'font-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[120px]">
+                               <div (click)="formatText('fontName', 'Inter', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
+                               <div (click)="formatText('fontName', 'Arial', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
+                               <div (click)="formatText('fontName', 'Georgia', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
+                               <div (click)="formatText('fontName', 'Courier New', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
+                               <div (click)="formatText('fontName', 'Times New Roman', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
                             </div>
                          </div>
 
                          <!-- Tamaño -->
                          <div class="relative">
                             <button (click)="toggleDropdown('size-diag', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2 py-1 hover:bg-white/10 flex items-center gap-1">
+                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
                                Tamaño <span class="opacity-40 text-[7px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'size-diag'" [class.block]="activeDropdown === 'size-diag'" class="absolute top-full left-0 mt-1 hidden bg-dark-secondary border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[100px]">
-                               <div (click)="formatText('fontSize', '2', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
-                               <div (click)="formatText('fontSize', '3', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
-                               <div (click)="formatText('fontSize', '4', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
-                               <div (click)="formatText('fontSize', '5', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
+                            <div [class.hidden]="activeDropdown !== 'size-diag'" [class.block]="activeDropdown === 'size-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[110px]">
+                               <div (click)="formatText('fontSize', '2', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
+                               <div (click)="formatText('fontSize', '3', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
+                               <div (click)="formatText('fontSize', '4', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
+                               <div (click)="formatText('fontSize', '5', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
                             </div>
                          </div>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('bold', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
                             B
                          </button>
 
                          <button (click)="formatText('italic', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
                             I
                          </button>
 
                          <button (click)="formatText('underline', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             U
                          </button>
 
                          <button (click)="formatText('strikeThrough', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
                             S
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('insertUnorderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
                             •=
                          </button>
 
                          <button (click)="formatText('insertOrderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
                             1.
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs transition-all" title="Centrar">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('removeFormat', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="px-2 py-0.5 hover:bg-white/10 rounded text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
+                                 class="px-2 py-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded text-[9px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
                             🧹 Limpiar
                          </button>
                       </div>
@@ -352,85 +352,85 @@
                       </div>
 
                       <!-- Word Toolbar for Receta -->
-                      <div class="flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none">
+                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none">
                          <!-- Fuente -->
                          <div class="relative">
                             <button (click)="toggleDropdown('font-rec', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2 py-1 hover:bg-white/10 flex items-center gap-1">
+                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
                                Fuente <span class="opacity-40 text-[7px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'font-rec'" [class.block]="activeDropdown === 'font-rec'" class="absolute top-full left-0 mt-1 hidden bg-dark-secondary border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[110px]">
-                               <div (click)="formatText('fontName', 'Inter', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
-                               <div (click)="formatText('fontName', 'Arial', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
-                               <div (click)="formatText('fontName', 'Georgia', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
-                               <div (click)="formatText('fontName', 'Courier New', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
-                               <div (click)="formatText('fontName', 'Times New Roman', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
+                            <div [class.hidden]="activeDropdown !== 'font-rec'" [class.block]="activeDropdown === 'font-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[120px]">
+                               <div (click)="formatText('fontName', 'Inter', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
+                               <div (click)="formatText('fontName', 'Arial', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
+                               <div (click)="formatText('fontName', 'Georgia', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
+                               <div (click)="formatText('fontName', 'Courier New', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
+                               <div (click)="formatText('fontName', 'Times New Roman', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
                             </div>
                          </div>
 
                          <!-- Tamaño -->
                          <div class="relative">
                             <button (click)="toggleDropdown('size-rec', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-white/10 rounded-lg text-[9px] font-black text-white uppercase tracking-widest px-2 py-1 hover:bg-white/10 flex items-center gap-1">
+                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
                                Tamaño <span class="opacity-40 text-[7px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'size-rec'" [class.block]="activeDropdown === 'size-rec'" class="absolute top-full left-0 mt-1 hidden bg-dark-secondary border border-glass-border rounded-xl p-1 shadow-2xl z-50 min-w-[100px]">
-                               <div (click)="formatText('fontSize', '2', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
-                               <div (click)="formatText('fontSize', '3', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
-                               <div (click)="formatText('fontSize', '4', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
-                               <div (click)="formatText('fontSize', '5', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-white hover:bg-primary/20 rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
+                            <div [class.hidden]="activeDropdown !== 'size-rec'" [class.block]="activeDropdown === 'size-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[110px]">
+                               <div (click)="formatText('fontSize', '2', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
+                               <div (click)="formatText('fontSize', '3', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
+                               <div (click)="formatText('fontSize', '4', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
+                               <div (click)="formatText('fontSize', '5', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
                             </div>
                          </div>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('bold', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
                             B
                          </button>
 
                          <button (click)="formatText('italic', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
                             I
                          </button>
 
                          <button (click)="formatText('underline', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             U
                          </button>
 
                          <button (click)="formatText('strikeThrough', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
                             S
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('insertUnorderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
                             •=
                          </button>
 
                          <button (click)="formatText('insertOrderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
                             1.
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-white/10 rounded text-white flex items-center justify-center text-xs transition-all" title="Centrar">
+                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
 
                          <div class="w-[1px] h-3 bg-glass-border"></div>
 
                          <button (click)="formatText('removeFormat', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="px-2 py-0.5 hover:bg-white/10 rounded text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
+                                 class="px-2 py-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded text-[9px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
                             🧹 Limpiar
                          </button>
                       </div>

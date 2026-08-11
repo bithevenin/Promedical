@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, signal, computed, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService } from '../../services/appointment.service';
 import { PatientService } from '../../services/patient.service';
@@ -18,7 +18,7 @@ import { SpellCheckService } from '../../services/spell-check.service';
   standalone: false,
   styleUrls: ['./consulta.page.scss'],
 })
-export class ConsultaPage implements OnInit {
+export class ConsultaPage implements OnInit, AfterViewInit {
   @ViewChild('diagnosticoEditor') diagnosticoEditor!: ElementRef;
   @ViewChild('recetaEditor') recetaEditor!: ElementRef;
 
@@ -166,6 +166,20 @@ export class ConsultaPage implements OnInit {
     });
 
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
+  }
+
+  ngAfterViewInit() {
+    this.spellCheckService.initialize().then(() => {
+      this.spellCheckLoading = false;
+      setTimeout(() => {
+        if (this.diagnosticoEditor?.nativeElement) {
+          this.performSpellCheck(this.diagnosticoEditor.nativeElement, 'diagnostico');
+        }
+        if (this.recetaEditor?.nativeElement) {
+          this.performSpellCheck(this.recetaEditor.nativeElement, 'receta');
+        }
+      }, 300);
+    });
   }
 
   cargarPacienteDirecto(cedula: string) {
@@ -334,7 +348,7 @@ export class ConsultaPage implements OnInit {
       if (editorEl?.nativeElement) {
         this.performSpellCheck(editorEl.nativeElement, field);
       }
-    }, 700);
+    }, 400);
   }
 
   /** Realiza la revisión ortográfica en el editor indicado */
