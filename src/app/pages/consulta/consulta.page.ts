@@ -10,6 +10,7 @@ import { SignoVital } from '../../models/patient.model';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import { getLocalDateString } from '../../utils/format.utils';
+import { SpellCheckService } from '../../services/spell-check.service';
 
 @Component({
   selector: 'app-consulta',
@@ -21,9 +22,9 @@ export class ConsultaPage implements OnInit {
   @ViewChild('diagnosticoEditor') diagnosticoEditor!: ElementRef;
   @ViewChild('recetaEditor') recetaEditor!: ElementRef;
 
-  activeDropdown: 'font' | 'size' | null = null;
+  activeDropdown: string | null = null;
 
-  toggleDropdown(dropdown: 'font' | 'size', event: Event) {
+  toggleDropdown(dropdown: string, event: Event) {
     event.preventDefault();
     event.stopPropagation();
     if (this.activeDropdown === dropdown) {
@@ -33,10 +34,30 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  @HostListener('document:click')
-  closeDropdowns() {
+  @HostListener('document:click', ['$event'])
+  closeDropdowns(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // Close spell popup if clicked outside the popup and not on a spell-error span
+    if (this.spellPopup.visible) {
+      if (!target.closest('.spell-popup-container') && !target.classList.contains('spell-error')) {
+        this.spellPopup.visible = false;
+      }
+    }
     this.activeDropdown = null;
   }
+
+  // ─── Spell Check State ───────────────────────────────────────────────────────
+  spellCheckLoading = true;
+  spellPopup: {
+    visible: boolean;
+    x: number;
+    y: number;
+    word: string;
+    suggestions: string[];
+    targetEl: HTMLElement | null;
+    field: 'diagnostico' | 'receta';
+  } = { visible: false, x: 0, y: 0, word: '', suggestions: [], targetEl: null, field: 'diagnostico' };
+  private spellTimers: { [k: string]: any } = {};
 
   pacientesEspera: Cita[] = [];
   pacienteSeleccionado: Cita | null = null;
@@ -106,10 +127,16 @@ export class ConsultaPage implements OnInit {
     private authService: AuthService,
     private toastController: ToastController,
     private router: Router,
-    public themeService: ThemeService
+    public themeService: ThemeService,
+    private spellCheckService: SpellCheckService
   ) { }
 
   ngOnInit() {
+    // Inicializar corrector ortográfico español
+    this.spellCheckService.initialize().then(() => {
+      this.spellCheckLoading = false;
+    });
+
     // Verificar si viene un paciente desde la página de pacientes
     this.route.queryParams.subscribe(params => {
       if (params['cedula']) {
@@ -126,14 +153,12 @@ export class ConsultaPage implements OnInit {
       this.pacientesEspera = appointments.filter(c => 
         (c.estado === 'espera' || c.estado === 'consulta') && c.fecha === today
       );
-      // Si hay uno en 'consulta' y no hemos seleccionado ninguno (y no es consulta directa), seleccionarlo automáticamente
       const enConsulta = this.pacientesEspera.find(c => c.estado === 'consulta');
       if (enConsulta && !this.pacienteSeleccionado && !this.esConsultaDirecta) {
         this.seleccionarPaciente(enConsulta);
       }
     });
 
-    // Actualizar historial del paciente seleccionado en tiempo real
     this.consultationService.consultations$.subscribe(() => {
       if (this.pacienteSeleccionado) {
         this.historialPasado = this.consultationService.getPatientHistory(this.pacienteSeleccionado.cedula);
@@ -243,12 +268,20 @@ export class ConsultaPage implements OnInit {
     }
   }
 
-  formatText(command: string, value: string | undefined = undefined) {
+  formatText(command: string, value: string | undefined = undefined, editorField?: 'diagnostico' | 'receta') {
+    if (editorField) {
+      this.lastActiveEditor = editorField;
+      const editorEl = editorField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+      if (editorEl?.nativeElement) {
+        editorEl.nativeElement.focus();
+      }
+    }
     this.restoreSelection();
     document.execCommand(command, false, value);
-    const editorEl = this.lastActiveEditor === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    const activeField = editorField || this.lastActiveEditor || 'diagnostico';
+    const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
     if (editorEl?.nativeElement) {
-      if (this.lastActiveEditor === 'diagnostico') {
+      if (activeField === 'diagnostico') {
         this.nuevaConsulta.diagnostico = editorEl.nativeElement.innerHTML;
       } else {
         this.nuevaConsulta.receta = editorEl.nativeElement.innerHTML;
@@ -265,21 +298,217 @@ export class ConsultaPage implements OnInit {
   }
 
   onEditorInput(field: 'diagnostico' | 'receta', event: any) {
-    const html = event.target.innerHTML;
+    // Guardar HTML limpio (sin marcadores de corrección) en el modelo
+    const html = this.getCleanHTML(event.target);
     if (field === 'diagnostico') {
       this.nuevaConsulta.diagnostico = html;
     } else {
       this.nuevaConsulta.receta = html;
     }
+    // Programar revisión ortográfica con debounce de 700ms
+    this.scheduleSpellCheck(field);
   }
 
   updateEditorContents() {
     if (this.diagnosticoEditor?.nativeElement) {
       this.diagnosticoEditor.nativeElement.innerHTML = this.nuevaConsulta.diagnostico || '';
+      if (this.nuevaConsulta.diagnostico) {
+        setTimeout(() => this.performSpellCheck(this.diagnosticoEditor.nativeElement, 'diagnostico'), 200);
+      }
     }
     if (this.recetaEditor?.nativeElement) {
       this.recetaEditor.nativeElement.innerHTML = this.nuevaConsulta.receta || '';
+      if (this.nuevaConsulta.receta) {
+        setTimeout(() => this.performSpellCheck(this.recetaEditor.nativeElement, 'receta'), 200);
+      }
     }
+  }
+
+  // ─── Métodos de Corrección Ortográfica Real (estilo Word) ────────────────────
+
+  /** Programa revisión ortográfica con debounce de 700ms para no interferir con la escritura */
+  scheduleSpellCheck(field: 'diagnostico' | 'receta') {
+    clearTimeout(this.spellTimers[field]);
+    this.spellTimers[field] = setTimeout(() => {
+      const editorEl = field === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+      if (editorEl?.nativeElement) {
+        this.performSpellCheck(editorEl.nativeElement, field);
+      }
+    }, 700);
+  }
+
+  /** Realiza la revisión ortográfica en el editor indicado */
+  performSpellCheck(el: HTMLElement, field: 'diagnostico' | 'receta') {
+    if (!this.spellCheckService.isReady) return;
+    if (!el) return;
+
+    const sel = window.getSelection();
+    let markerEl: HTMLSpanElement | null = null;
+
+    // 1. Insertar marcador de posición de cursor antes de modificar el DOM
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (el.contains(range.startContainer)) {
+        try {
+          markerEl = document.createElement('span');
+          markerEl.setAttribute('data-cursor-marker', 'true');
+          markerEl.style.display = 'none';
+          const markerRange = range.cloneRange();
+          markerRange.collapse(true);
+          markerRange.insertNode(markerEl);
+        } catch (e) {
+          markerEl = null;
+        }
+      }
+    }
+
+    // 2. Quitar spans de errores anteriores (desenvolver sin borrar texto)
+    const existingErrors = Array.from(el.querySelectorAll('.spell-error'));
+    for (const span of existingErrors) {
+      const parent = span.parentNode;
+      if (!parent) continue;
+      while (span.firstChild) parent.insertBefore(span.firstChild, span);
+      parent.removeChild(span);
+    }
+    el.normalize();
+
+    // 3. Recopilar todos los nodos de texto (excluyendo el marcador de cursor)
+    const textNodes: Text[] = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const parent = (node as Text).parentElement;
+      if (parent?.getAttribute('data-cursor-marker') === 'true') continue;
+      textNodes.push(node as Text);
+    }
+
+    // 4. Marcar palabras incorrectas
+    const wordPattern = /([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+)/g;
+    for (const textNode of textNodes) {
+      const text = textNode.textContent || '';
+      if (!text.trim()) continue;
+
+      const parts: { text: string; error: boolean }[] = [];
+      let lastIdx = 0;
+      let m: RegExpExecArray | null;
+      wordPattern.lastIndex = 0;
+
+      while ((m = wordPattern.exec(text)) !== null) {
+        if (m.index > lastIdx) {
+          parts.push({ text: text.slice(lastIdx, m.index), error: false });
+        }
+        const word = m[0];
+        parts.push({ text: word, error: word.length >= 2 && !this.spellCheckService.isCorrect(word) });
+        lastIdx = m.index + word.length;
+      }
+      if (lastIdx < text.length) parts.push({ text: text.slice(lastIdx), error: false });
+
+      if (!parts.some(p => p.error)) continue;
+
+      const fragment = document.createDocumentFragment();
+      for (const part of parts) {
+        if (!part.error) {
+          fragment.appendChild(document.createTextNode(part.text));
+        } else {
+          const errSpan = document.createElement('span');
+          errSpan.className = 'spell-error';
+          errSpan.setAttribute('data-word', part.text);
+          errSpan.textContent = part.text;
+          fragment.appendChild(errSpan);
+        }
+      }
+      if (textNode.parentNode) {
+        textNode.parentNode.replaceChild(fragment, textNode);
+      }
+    }
+
+    // 5. Restaurar posición del cursor
+    if (markerEl && markerEl.parentNode) {
+      try {
+        const restoreRange = document.createRange();
+        restoreRange.setStartAfter(markerEl);
+        restoreRange.collapse(true);
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(restoreRange);
+        }
+      } catch (e) { /* ignore */ }
+      markerEl.parentNode.removeChild(markerEl);
+    }
+  }
+
+  /** Gestiona el clic en el editor — abre popup de sugerencias al clic en palabra roja */
+  onEditorClick(event: MouseEvent, field: 'diagnostico' | 'receta') {
+    const target = event.target as HTMLElement;
+    if (!target.classList.contains('spell-error')) {
+      this.spellPopup.visible = false;
+      return;
+    }
+
+    event.stopPropagation();
+    const word = target.getAttribute('data-word') || target.textContent || '';
+    const suggestions = this.spellCheckService.suggest(word);
+    const rect = target.getBoundingClientRect();
+
+    this.spellPopup = {
+      visible: true,
+      x: rect.left,
+      y: rect.bottom + 6,
+      word,
+      suggestions,
+      targetEl: target,
+      field
+    };
+  }
+
+  /** Aplica la sugerencia seleccionada, reemplazando la palabra mal escrita */
+  applySuggestion(suggestion: string) {
+    if (!this.spellPopup.targetEl) return;
+
+    const span = this.spellPopup.targetEl;
+    const parent = span.parentNode;
+    if (!parent) return;
+
+    const textNode = document.createTextNode(suggestion);
+    parent.replaceChild(textNode, span);
+    parent.normalize();
+
+    const field = this.spellPopup.field;
+    const editorEl = field === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    if (editorEl?.nativeElement) {
+      const cleanHtml = this.getCleanHTML(editorEl.nativeElement);
+      if (field === 'diagnostico') {
+        this.nuevaConsulta.diagnostico = cleanHtml;
+      } else {
+        this.nuevaConsulta.receta = cleanHtml;
+      }
+    }
+
+    this.spellPopup.visible = false;
+    this.spellPopup.targetEl = null;
+  }
+
+  /** Ignora el error ortográfico de la palabra seleccionada */
+  ignoreSpellError() {
+    if (this.spellPopup.targetEl) {
+      this.spellPopup.targetEl.className = 'spell-ignored';
+      this.spellPopup.targetEl.removeAttribute('data-word');
+    }
+    this.spellPopup.visible = false;
+  }
+
+  /** Devuelve el HTML del editor sin marcadores de corrección ortográfica */
+  private getCleanHTML(el: HTMLElement): string {
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.spell-error, .spell-ignored').forEach(span => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      while (span.firstChild) parent.insertBefore(span.firstChild, span);
+      parent.removeChild(span);
+    });
+    clone.querySelectorAll('[data-cursor-marker]').forEach(el => el.remove());
+    clone.normalize();
+    return clone.innerHTML;
   }
 
   imprimirReceta() {

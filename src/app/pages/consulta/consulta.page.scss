@@ -29,3 +29,190 @@
     margin: 4px 0;
   }
 }
+
+// ─── Corrección Ortográfica Real (estilo Word) ────────────────────────────────
+
+// Palabra mal escrita: subrayado ondulado rojo (idéntico a Word)
+.spell-error {
+  text-decoration: underline wavy #ef4444;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+  }
+}
+
+// Palabra ignorada por el usuario (sin marcado)
+.spell-ignored {
+  // Sin estilos: el usuario eligió ignorar este error
+}
+
+// ─── Popup de sugerencias ortográficas (estilo Word) ─────────────────────────
+
+.spell-popup-container {
+  position: fixed;
+  z-index: 99999;
+  min-width: 180px;
+  max-width: 240px;
+  background: #1a2235;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 4px 20px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  animation: spellPopupIn 0.15s ease;
+
+  @keyframes spellPopupIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)  scale(1); }
+  }
+
+  // Modo claro
+  body.light-theme & {
+    background: #f0f4f8;
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.15),
+      0 4px 20px rgba(99, 102, 241, 0.1);
+  }
+
+  .spell-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    margin-bottom: 4px;
+
+    body.light-theme & {
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .spell-popup-icon {
+      color: #ef4444;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .spell-popup-word-label {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      color: #ef4444;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .spell-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .spell-popup-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.3);
+    padding: 2px 8px;
+
+    body.light-theme & {
+      color: rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  .spell-suggestion-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    body.light-theme & {
+      color: #1e293b;
+    }
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.18);
+      color: #818cf8;
+
+      body.light-theme & {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+      }
+    }
+  }
+
+  .spell-no-suggestions {
+    padding: 8px 10px;
+    font-size: 11px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.3);
+
+    body.light-theme & {
+      color: rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  .spell-popup-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin-top: 4px;
+    padding-top: 4px;
+
+    body.light-theme & {
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  .spell-ignore-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 5px 10px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.35);
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+
+    body.light-theme & {
+      color: rgba(0, 0, 0, 0.35);
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.7);
+
+      body.light-theme & {
+        background: rgba(0, 0, 0, 0.06);
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+  }
+}
+

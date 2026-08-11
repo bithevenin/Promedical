@@ -76,84 +76,113 @@ ion-toolbar {
 .animate-delay-400 { animation-delay: 400ms; }
 .animate-delay-500 { animation-delay: 500ms; }
 
-/* Light Theme Variables and Overrides */
+/* Light Theme Variables and Overrides - Eye-Friendly Layered Gray Palette */
 body.light-theme {
-  /* Override Custom Theme Variables */
-  --color-medical-dark: #f8fafc;
-  --color-dark-deep: #f1f5f9;
-  --color-dark-secondary: #ffffff;
-  --color-dark-card: #ffffff;
-  --color-glass-light: #ffffff;
-  --color-glass-heavy: #f1f5f9;
-  --color-glass-border: #e2e8f0;
+  /* Override Custom Theme Variables with layered greyish tones */
+  --color-medical-dark: #cbd5e1;
+  --color-dark-deep: #cbd5e1;
+  --color-dark-secondary: #e2e8f0;
+  --color-dark-card: #e2e8f0;
+  --color-glass-light: #e2e8f0;
+  --color-glass-heavy: #cbd5e1;
+  --color-glass-border: #94a3b8;
   --color-text-primary: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748b;
+  --color-text-secondary: #1e293b;
+  --color-text-muted: #475569;
+
+  background-color: #cbd5e1 !important;
 
   /* Force background override for hardcoded utility classes */
   .bg-medical-dark {
-    background-color: #f8fafc !important;
+    background-color: #cbd5e1 !important;
   }
   .bg-dark-deep {
-    background-color: #f1f5f9 !important;
+    background-color: #cbd5e1 !important;
   }
   .bg-dark-secondary, .bg-slate-800 {
-    background-color: #ffffff !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
   }
   .bg-dark-secondary\/50, .bg-dark-secondary\/80 {
-    background-color: rgba(255, 255, 255, 0.8) !important;
+    background-color: rgba(226, 232, 240, 0.95) !important;
     backdrop-filter: blur(16px);
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    border-color: #94a3b8 !important;
   }
   .bg-glass-light {
-    background-color: rgba(255, 255, 255, 0.6) !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+  }
+  .bg-glass-heavy {
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
   }
   .bg-white\/5 {
-    background-color: rgba(0, 0, 0, 0.03) !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
   }
   .bg-white\/10 {
-    background-color: rgba(0, 0, 0, 0.06) !important;
+    background-color: #94a3b8 !important;
   }
   .bg-white\/\[0\.02\] {
-    background-color: rgba(0, 0, 0, 0.015) !important;
+    background-color: rgba(0, 0, 0, 0.05) !important;
   }
   .bg-white\/\[0\.01\] {
-    background-color: rgba(0, 0, 0, 0.008) !important;
+    background-color: rgba(0, 0, 0, 0.03) !important;
   }
   .hover\:bg-white\/\[0\.03\]:hover {
-    background-color: rgba(0, 0, 0, 0.025) !important;
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  .hover\:bg-white\/10:hover {
+    background-color: #94a3b8 !important;
+  }
+  .hover\:bg-white\/5:hover {
+    background-color: #cbd5e1 !important;
   }
   .hover\:bg-slate-700:hover {
-    background-color: #f1f5f9 !important;
+    background-color: #cbd5e1 !important;
   }
   .border-glass-border {
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    border-color: #94a3b8 !important;
   }
   .border-slate-700 {
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    border-color: #94a3b8 !important;
+  }
+  
+  /* Sidebar and Navigation headers */
+  aside.sidebar {
+    background-color: #d1d5db !important;
+    border-right-color: #94a3b8 !important;
   }
   
   /* Text and Icon Override */
-  .text-white:not(.bg-primary):not(.bg-primary *) {
+  .text-white:not(.bg-primary):not(.bg-primary *):not(.bg-emerald-500):not(.bg-emerald-500 *) {
     color: #0f172a !important;
   }
   .text-white\/30:not(.bg-primary):not(.bg-primary *) {
-    color: rgba(15, 23, 42, 0.3) !important;
+    color: rgba(15, 23, 42, 0.45) !important;
   }
   .text-white\/70:not(.bg-primary):not(.bg-primary *) {
-    color: rgba(15, 23, 42, 0.7) !important;
+    color: rgba(15, 23, 42, 0.8) !important;
   }
   .text-text-muted {
-    color: #64748b !important;
+    color: #475569 !important;
   }
   .text-text-secondary {
-    color: #475569 !important;
+    color: #1e293b !important;
   }
   .logo-text, h1:not(.bg-primary *), h2:not(.bg-primary *), h3:not(.bg-primary *), h4:not(.bg-primary *), h5:not(.bg-primary *), h6:not(.bg-primary *) {
     color: #0f172a !important;
+  }
+
+  /* Rich textarea editor in Light Mode */
+  .rich-textarea-editor {
+    background-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+
+    &:empty::before {
+      color: rgba(15, 23, 42, 0.45) !important;
+    }
   }
   
   /* Force white text on primary backgrounds in light mode */
@@ -168,34 +197,34 @@ body.light-theme {
   /* Controls and Forms */
   input, select, textarea {
     color: #0f172a !important;
-    background-color: rgba(0, 0, 0, 0.02) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
   }
-  input::placeholder {
-    color: rgba(15, 23, 42, 0.3) !important;
+  input::placeholder, textarea::placeholder {
+    color: rgba(15, 23, 42, 0.45) !important;
   }
   select option {
-    background-color: #ffffff !important;
+    background-color: #e2e8f0 !important;
     color: #0f172a !important;
   }
   .bg-primary\/5 {
-    background-color: rgba(67, 97, 238, 0.05) !important;
+    background-color: rgba(67, 97, 238, 0.12) !important;
   }
   .bg-emerald-500\/10 {
-    background-color: rgba(16, 185, 129, 0.1) !important;
+    background-color: rgba(16, 185, 129, 0.15) !important;
   }
   
   /* Additional UI tweaks */
   .hub-footer {
-    border-top-color: rgba(0, 0, 0, 0.08) !important;
+    border-top-color: #94a3b8 !important;
   }
   .mobile-navbar {
-    background-color: rgba(255, 255, 255, 0.95) !important;
-    border-top-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: rgba(226, 232, 240, 0.95) !important;
+    border-top-color: #94a3b8 !important;
   }
   .top-bar {
-    background-color: rgba(248, 250, 252, 0.8) !important;
-    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: rgba(209, 213, 219, 0.95) !important;
+    border-bottom-color: #94a3b8 !important;
   }
 }
 

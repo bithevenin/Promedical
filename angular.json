@@ -38,6 +38,7 @@
               "src/global.scss"
             ],
             "scripts": [],
+            "allowedCommonJsDependencies": ["nspell"],
             "serviceWorker": true,
             "ngswConfigPath": "ngsw-config.json"
           },
