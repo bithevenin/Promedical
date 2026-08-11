@@ -283,17 +283,20 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   }
 
   formatText(command: string, value: string | undefined = undefined, editorField?: 'diagnostico' | 'receta') {
-    if (editorField) {
-      this.lastActiveEditor = editorField;
-      const editorEl = editorField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
-      if (editorEl?.nativeElement) {
-        editorEl.nativeElement.focus();
-      }
-    }
-    this.restoreSelection();
-    document.execCommand(command, false, value);
     const activeField = editorField || this.lastActiveEditor || 'diagnostico';
     const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
+    }
+    this.restoreSelection();
+
+    if (['foreColor', 'hiliteColor', 'backColor', 'fontName', 'fontSize'].includes(command)) {
+      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
+    }
+
+    document.execCommand(command, false, value);
+
     if (editorEl?.nativeElement) {
       if (activeField === 'diagnostico') {
         this.nuevaConsulta.diagnostico = editorEl.nativeElement.innerHTML;
@@ -301,6 +304,31 @@ export class ConsultaPage implements OnInit, AfterViewInit {
         this.nuevaConsulta.receta = editorEl.nativeElement.innerHTML;
       }
     }
+
+    this.onEditorInput(activeField, { target: editorEl?.nativeElement });
+  }
+
+  setTextColor(color: string, field: 'diagnostico' | 'receta') {
+    this.formatText('foreColor', color, field);
+    this.activeDropdown = null;
+  }
+
+  setHighlightColor(color: string, field: 'diagnostico' | 'receta') {
+    if (color === 'transparent') {
+      this.formatText('removeFormat', undefined, field);
+    } else {
+      const activeField = field || this.lastActiveEditor || 'diagnostico';
+      const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+      if (editorEl?.nativeElement) {
+        editorEl.nativeElement.focus();
+      }
+      this.restoreSelection();
+      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
+      document.execCommand('hiliteColor', false, color);
+      document.execCommand('backColor', false, color);
+      this.onEditorInput(activeField, { target: editorEl?.nativeElement });
+    }
+    this.activeDropdown = null;
   }
 
   // ─── Estado y Métodos del Ribbon de Word ──────────────────────────────────
@@ -437,20 +465,6 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     }
 
     document.execCommand('insertText', false, converted);
-    this.activeDropdown = null;
-  }
-
-  setTextColor(color: string, field: 'diagnostico' | 'receta') {
-    this.formatText('foreColor', color, field);
-    this.activeDropdown = null;
-  }
-
-  setHighlightColor(color: string, field: 'diagnostico' | 'receta') {
-    if (color === 'transparent') {
-      this.formatText('removeFormat', undefined, field);
-    } else {
-      this.formatText('hiliteColor', color, field);
-    }
     this.activeDropdown = null;
   }
 
