@@ -487,3 +487,46 @@ ion-alert {
 .swal2-container {
   z-index: 99999 !important;
 }
+
+/* ─── Corrección Ortográfica Real (Global para spans dinámicos) ─── */
+.spell-error {
+  text-decoration: underline wavy #ef4444 !important;
+  -webkit-text-decoration: underline wavy #ef4444 !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 3px !important;
+  cursor: pointer !important;
+  border-radius: 2px !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  display: inline !important;
+
+  &:hover {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+  }
+}
+
+.spell-ignored {
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
+/* ─── Toolbar Word: Botones con texto negro en Modo Claro ─── */
+body.light-theme {
+  .rich-toolbar {
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
+
+    button {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+
+      &:hover {
+        background-color: rgba(15, 23, 42, 0.15) !important;
+      }
+    }
+
+    button.text-rose-500, button.text-rose-400 {
+      color: #dc2626 !important;
+    }
+  }
+}
+

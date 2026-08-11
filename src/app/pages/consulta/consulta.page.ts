@@ -426,6 +426,12 @@ export class ConsultaPage implements OnInit, AfterViewInit {
         } else {
           const errSpan = document.createElement('span');
           errSpan.className = 'spell-error';
+          errSpan.style.textDecoration = 'underline wavy #ef4444';
+          errSpan.style.textDecorationThickness = '2px';
+          errSpan.style.textUnderlineOffset = '3px';
+          errSpan.style.cursor = 'pointer';
+          errSpan.style.borderRadius = '2px';
+          errSpan.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
           errSpan.setAttribute('data-word', part.text);
           errSpan.textContent = part.text;
           fragment.appendChild(errSpan);

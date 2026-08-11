@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 
-// webpack provee `require` como global en el bundle del browser
 declare const require: (module: string) => any;
 
 /**
@@ -26,25 +25,27 @@ export class SpellCheckService {
 
   private async _load(): Promise<void> {
     try {
-      // Cargar los archivos Hunspell del diccionario español desde assets
-      const [affRes, dicRes] = await Promise.all([
-        fetch('assets/dictionaries/es.aff'),
-        fetch('assets/dictionaries/es.dic')
-      ]);
+      // Intentar cargar desde ruta raíz /assets/ o relativa assets/
+      let affRes = await fetch('/assets/dictionaries/es.aff');
+      let dicRes = await fetch('/assets/dictionaries/es.dic');
 
       if (!affRes.ok || !dicRes.ok) {
-        throw new Error('No se pudo cargar el diccionario español');
+        affRes = await fetch('assets/dictionaries/es.aff');
+        dicRes = await fetch('assets/dictionaries/es.dic');
+      }
+
+      if (!affRes.ok || !dicRes.ok) {
+        throw new Error(`No se pudo cargar el diccionario (AFF status: ${affRes.status}, DIC status: ${dicRes.status})`);
       }
 
       const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
 
-      // require() está disponible en webpack (lo sustituye en el bundle)
       const nspellFn = require('nspell');
       this.spell = nspellFn(aff, dic);
       this._isReady = true;
-      console.log('[SpellCheck] ✅ Diccionario español cargado correctamente — %d palabras aprox.', dic.split('\n').length);
+      console.log('[SpellCheck] ✅ Diccionario español cargado correctamente (%d líneas)', dic.split('\n').length);
     } catch (err) {
-      console.error('[SpellCheck] ❌ Error al cargar corrector:', err);
+      console.error('[SpellCheck] ❌ Error al inicializar corrector:', err);
     }
   }
 
@@ -55,7 +56,6 @@ export class SpellCheckService {
 
   /**
    * Devuelve true si la palabra está bien escrita en español.
-   * Palabras menores a 2 letras o que sean puramente numéricas siempre se consideran correctas.
    */
   isCorrect(word: string): boolean {
     if (!this.spell) return true;
@@ -65,8 +65,7 @@ export class SpellCheckService {
   }
 
   /**
-   * Devuelve hasta 6 sugerencias de corrección para una palabra mal escrita.
-   * Si la palabra empieza con mayúscula, las sugerencias también lo harán.
+   * Devuelve sugerencias de corrección para una palabra mal escrita.
    */
   suggest(word: string): string[] {
     if (!this.spell) return [];
@@ -75,7 +74,6 @@ export class SpellCheckService {
 
     const raw: string[] = this.spell.suggest(clean);
 
-    // Capitalizar si la palabra original estaba en mayúscula inicial
     const firstIsUpper = word.length > 0
       && word[0] === word[0].toUpperCase()
       && word[0] !== word[0].toLowerCase();
