@@ -40,11 +40,11 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         const base: { icon: string; label: string; route: string; active?: boolean }[] = [
             { icon: 'home-outline', label: 'Inicio', route: '/main' },
             { icon: 'grid-outline', label: 'Panel', route: '/dashboard' },
-            { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
-            { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+            { icon: 'calendar-outline', label: 'Citas', route: '/citas' }
         ];
 
         if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+            base.push({ icon: 'people-outline', label: 'Pacientes', route: '/pacientes' });
             base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
             base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
             base.push({ icon: 'settings-outline', label: 'Ajustes', active: true, route: '/configuracion' });

@@ -88,7 +88,7 @@
       </article>
 
       <!-- Pacientes Card -->
-      <article class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/pacientes">
+      <article *ngIf="profile?.rol === 'doctor' || profile?.rol === 'admin'" class="group relative bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500 rounded-[2rem] p-5 lg:p-7 shadow-xl transition-all duration-300 cursor-pointer overflow-hidden" routerLink="/pacientes">
         <div class="relative z-10">
           <div class="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-2xl text-amber-500 mb-5 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
             <ion-icon name="people-outline"></ion-icon>

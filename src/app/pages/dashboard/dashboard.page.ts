@@ -37,11 +37,11 @@ export class DashboardPage implements OnInit {
     const base = [
       { icon: 'home-outline', label: 'Inicio', route: '/main' },
       { icon: 'grid-outline', label: 'Panel', active: true, route: '/dashboard' },
-      { icon: 'calendar-outline', label: 'Citas', route: '/citas' },
-      { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' }
+      { icon: 'calendar-outline', label: 'Citas', route: '/citas' }
     ];
 
     if (this.currentProfile()?.rol === 'doctor' || this.currentProfile()?.rol === 'admin') {
+      base.push({ icon: 'people-outline', label: 'Pacientes', route: '/pacientes' });
       base.push({ icon: 'medical-outline', label: 'Consulta', route: '/consulta' });
       base.push({ icon: 'wallet-outline', label: 'Contabilidad', route: '/contabilidad' });
       base.push({ icon: 'settings-outline', label: 'Ajustes', route: '/configuracion' });

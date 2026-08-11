@@ -38,7 +38,8 @@ const routes: Routes = [
   {
     path: 'pacientes',
     loadChildren: () => import('./pages/pacientes/pacientes.module').then(m => m.PacientesPageModule),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['doctor', 'admin'] }
   },
   {
     path: 'contabilidad',

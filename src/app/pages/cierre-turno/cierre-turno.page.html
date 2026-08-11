@@ -217,7 +217,7 @@
       <ion-icon name="calendar-outline" class="text-2xl"></ion-icon>
       <span class="text-[9px] font-bold uppercase mt-1">Citas</span>
     </div>
-    <div class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/pacientes">
+    <div *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="flex flex-col items-center justify-center p-2 text-text-muted hover:text-primary transition-colors cursor-pointer" routerLink="/pacientes">
       <ion-icon name="people-outline" class="text-2xl"></ion-icon>
       <span class="text-[9px] font-bold uppercase mt-1">Pacientes</span>
     </div>
