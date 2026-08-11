@@ -303,6 +303,132 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     }
   }
 
+  // ─── Estado y Métodos del Ribbon de Word ──────────────────────────────────
+  currentFontNames: { [key: string]: string } = { diagnostico: 'Calibri', receta: 'Calibri' };
+  currentFontSizes: { [key: string]: number } = { diagnostico: 11, receta: 11 };
+
+  fontList = [
+    { name: 'Calibri', font: 'Calibri, sans-serif' },
+    { name: 'Arial', font: 'Arial, sans-serif' },
+    { name: 'Times New Roman', font: 'Times New Roman, serif' },
+    { name: 'Georgia', font: 'Georgia, serif' },
+    { name: 'Inter', font: 'Inter, sans-serif' },
+    { name: 'Courier New', font: 'Courier New, monospace' },
+    { name: 'Verdana', font: 'Verdana, sans-serif' },
+    { name: 'Tahoma', font: 'Tahoma, sans-serif' }
+  ];
+
+  fontSizeList = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72];
+
+  colorPalette = [
+    { name: 'Negro', color: '#0f172a' },
+    { name: 'Rojo', color: '#dc2626' },
+    { name: 'Azul', color: '#2563eb' },
+    { name: 'Verde', color: '#16a34a' },
+    { name: 'Morado', color: '#7c3aed' },
+    { name: 'Naranja', color: '#ea580c' },
+    { name: 'Blanco', color: '#ffffff' }
+  ];
+
+  highlightPalette = [
+    { name: 'Amarillo', color: '#fef08a' },
+    { name: 'Verde', color: '#bbf7d0' },
+    { name: 'Cyan', color: '#a5f3fc' },
+    { name: 'Rosa', color: '#fbcfe8' },
+    { name: 'Naranja', color: '#fed7aa' },
+    { name: 'Sin resaltado', color: 'transparent' }
+  ];
+
+  selectFont(fontName: string, field: 'diagnostico' | 'receta') {
+    this.currentFontNames[field] = fontName;
+    this.formatText('fontName', fontName, field);
+    this.activeDropdown = null;
+  }
+
+  setFontSizePx(pxSize: number | string, field: 'diagnostico' | 'receta') {
+    const sizeNum = Number(pxSize);
+    this.currentFontSizes[field] = sizeNum;
+    const editorEl = field === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
+    }
+    this.restoreSelection();
+
+    document.execCommand('fontSize', false, '7');
+
+    if (editorEl?.nativeElement) {
+      const fonts = editorEl.nativeElement.querySelectorAll('font[size="7"]');
+      fonts.forEach((fontEl: HTMLElement) => {
+        const span = document.createElement('span');
+        span.style.fontSize = `${sizeNum}px`;
+        span.innerHTML = fontEl.innerHTML;
+        fontEl.parentNode?.replaceChild(span, fontEl);
+      });
+    }
+
+    this.onEditorInput(field, { target: editorEl?.nativeElement });
+    this.activeDropdown = null;
+  }
+
+  changeFontSizeStep(delta: number, field: 'diagnostico' | 'receta') {
+    const steps = this.fontSizeList;
+    const current = this.currentFontSizes[field] || 11;
+    let idx = steps.indexOf(current);
+    if (idx === -1) idx = 3; // 11
+    const newIdx = Math.max(0, Math.min(steps.length - 1, idx + delta));
+    const newSize = steps[newIdx];
+    this.setFontSizePx(newSize, field);
+  }
+
+  changeCase(mode: 'upper' | 'lower' | 'sentence' | 'title', field: 'diagnostico' | 'receta') {
+    const editorEl = field === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
+    }
+    this.restoreSelection();
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      this.activeDropdown = null;
+      return;
+    }
+
+    const text = sel.toString();
+    if (!text) return;
+
+    let converted = text;
+    if (mode === 'upper') {
+      converted = text.toUpperCase();
+    } else if (mode === 'lower') {
+      converted = text.toLowerCase();
+    } else if (mode === 'sentence') {
+      converted = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    } else if (mode === 'title') {
+      converted = text.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    }
+
+    document.execCommand('insertText', false, converted);
+    this.activeDropdown = null;
+  }
+
+  setTextColor(color: string, field: 'diagnostico' | 'receta') {
+    this.formatText('foreColor', color, field);
+    this.activeDropdown = null;
+  }
+
+  setHighlightColor(color: string, field: 'diagnostico' | 'receta') {
+    if (color === 'transparent') {
+      this.formatText('removeFormat', undefined, field);
+    } else {
+      this.formatText('hiliteColor', color, field);
+    }
+    this.activeDropdown = null;
+  }
+
+  indentText(command: 'indent' | 'outdent', field: 'diagnostico' | 'receta') {
+    this.formatText(command, undefined, field);
+  }
+
   changeFont(fontName: string) {
     this.formatText('fontName', fontName);
   }

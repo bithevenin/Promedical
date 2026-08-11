@@ -235,86 +235,179 @@
                       </div>
 
                       <!-- Word Toolbar for Diagnóstico -->
-                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none rich-toolbar">
+                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-glass-border rounded-t-xl border-b-0 select-none rich-toolbar">
                          <!-- Fuente -->
                          <div class="relative">
                             <button (click)="toggleDropdown('font-diag', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
-                               Fuente <span class="opacity-40 text-[7px]">▼</span>
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm">
+                               {{ currentFontNames['diagnostico'] || 'Calibri' }} <span class="opacity-50 text-[8px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'font-diag'" [class.block]="activeDropdown === 'font-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[120px]">
-                               <div (click)="formatText('fontName', 'Inter', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
-                               <div (click)="formatText('fontName', 'Arial', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
-                               <div (click)="formatText('fontName', 'Georgia', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
-                               <div (click)="formatText('fontName', 'Courier New', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
-                               <div (click)="formatText('fontName', 'Times New Roman', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
+                            <div [class.hidden]="activeDropdown !== 'font-diag'" [class.block]="activeDropdown === 'font-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[140px] max-h-[220px] overflow-y-auto custom-scrollbar">
+                               @for (f of fontList; track f.name) {
+                                 <div (click)="selectFont(f.name, 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer flex items-center justify-between" [style.font-family]="f.font">
+                                   {{ f.name }}
+                                   <span *ngIf="currentFontNames['diagnostico'] === f.name" class="text-xs text-emerald-400">✓</span>
+                                 </div>
+                               }
                             </div>
                          </div>
 
-                         <!-- Tamaño -->
+                         <!-- Tamaño Numérico Exacto (igual que Word) -->
                          <div class="relative">
                             <button (click)="toggleDropdown('size-diag', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
-                               Tamaño <span class="opacity-40 text-[7px]">▼</span>
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm min-w-[44px] justify-center">
+                               {{ currentFontSizes['diagnostico'] || 11 }} <span class="opacity-50 text-[8px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'size-diag'" [class.block]="activeDropdown === 'size-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[110px]">
-                               <div (click)="formatText('fontSize', '2', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
-                               <div (click)="formatText('fontSize', '3', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
-                               <div (click)="formatText('fontSize', '4', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
-                               <div (click)="formatText('fontSize', '5', 'diagnostico'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
+                            <div [class.hidden]="activeDropdown !== 'size-diag'" [class.block]="activeDropdown === 'size-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[70px] max-h-[200px] overflow-y-auto custom-scrollbar">
+                               @for (s of fontSizeList; track s) {
+                                 <div (click)="setFontSizePx(s, 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1 text-[11px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer text-center">
+                                   {{ s }}
+                                 </div>
+                               }
                             </div>
                          </div>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <!-- Aumentar / Disminuir Fuente (A^ / Av) -->
+                         <div class="flex items-center gap-0.5 border border-slate-300 dark:border-white/10 rounded-lg bg-white dark:bg-transparent p-0.5 shadow-sm">
+                            <button (click)="changeFontSizeStep(1, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                    class="w-6 h-6 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs" title="Aumentar tamaño de fuente">
+                               A<sup>▲</sup>
+                            </button>
+                            <button (click)="changeFontSizeStep(-1, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                    class="w-6 h-6 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs" title="Disminuir tamaño de fuente">
+                               A<sub class="text-[9px]">▼</sub>
+                            </button>
+                         </div>
 
+                         <!-- Cambiar Mayúsculas / Minúsculas (Aa) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('case-diag', $event)" (mousedown)="$event.preventDefault()"
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white px-2 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm" title="Cambiar mayúsculas/minúsculas">
+                               Aa <span class="opacity-50 text-[7px]">▼</span>
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'case-diag'" [class.block]="activeDropdown === 'case-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[160px]">
+                               <div (click)="changeCase('sentence', 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">Tipo oración</div>
+                               <div (click)="changeCase('lower', 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">minúsculas</div>
+                               <div (click)="changeCase('upper', 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">MAYÚSCULAS</div>
+                               <div (click)="changeCase('title', 'diagnostico')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">Capitalizar Palabras</div>
+                            </div>
+                         </div>
+
+                         <!-- Borrar Formato -->
+                         <button (click)="formatText('removeFormat', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-rose-100 dark:hover:bg-white/10 rounded text-rose-600 dark:text-rose-400 flex items-center justify-center font-black text-xs transition-all" title="Borrar todo el formato">
+                            🧹
+                         </button>
+
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Negrita, Cursiva, Subrayado, Tachado -->
                          <button (click)="formatText('bold', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
-                            B
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
+                            N
                          </button>
-
                          <button (click)="formatText('italic', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
-                            I
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
+                            K
                          </button>
-
                          <button (click)="formatText('underline', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
-                            U
-                         </button>
-
-                         <button (click)="formatText('strikeThrough', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             S
                          </button>
+                         <button (click)="formatText('strikeThrough', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                            ab
+                         </button>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <!-- Subíndice / Superíndice -->
+                         <button (click)="formatText('subscript', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Subíndice">
+                            x<sub>2</sub>
+                         </button>
+                         <button (click)="formatText('superscript', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Superíndice">
+                            x<sup>2</sup>
+                         </button>
 
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Color Resaltador (Marker) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('hilite-diag', $event)" (mousedown)="$event.preventDefault()"
+                                    class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-bold transition-all" title="Color de resaltado de texto">
+                               🎨
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'hilite-diag'" [class.block]="activeDropdown === 'hilite-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-2 shadow-2xl z-[100] min-w-[130px]">
+                               <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Resaltador:</div>
+                               <div class="grid grid-cols-3 gap-1.5">
+                                 @for (c of highlightPalette; track c.name) {
+                                   <div (click)="setHighlightColor(c.color, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                        class="w-7 h-7 rounded-lg cursor-pointer border border-slate-600 flex items-center justify-center hover:scale-110 transition-transform"
+                                        [style.background-color]="c.color"
+                                        [title]="c.name">
+                                      <span *ngIf="c.color === 'transparent'" class="text-[9px] text-slate-400">✕</span>
+                                   </div>
+                                 }
+                               </div>
+                            </div>
+                         </div>
+
+                         <!-- Color de Fuente (Color A) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('color-diag', $event)" (mousedown)="$event.preventDefault()"
+                                    class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-bold transition-all" title="Color de fuente">
+                               <span class="font-black text-rose-500 underline underline-offset-2">A</span>
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'color-diag'" [class.block]="activeDropdown === 'color-diag'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-2 shadow-2xl z-[100] min-w-[140px]">
+                               <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Color de letra:</div>
+                               <div class="grid grid-cols-4 gap-1.5">
+                                 @for (c of colorPalette; track c.name) {
+                                   <div (click)="setTextColor(c.color, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                        class="w-6 h-6 rounded-md cursor-pointer border border-slate-600 hover:scale-110 transition-transform"
+                                        [style.background-color]="c.color"
+                                        [title]="c.name"></div>
+                                 }
+                               </div>
+                            </div>
+                         </div>
+
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Párrafo: Viñetas, Numeración, Sangría, Alineaciones -->
                          <button (click)="formatText('insertUnorderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Viñetas">
                             •=
                          </button>
-
                          <button (click)="formatText('insertOrderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Numeración">
                             1.
                          </button>
+                         <button (click)="indentText('outdent', 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Disminuir sangría">
+                            ⇤
+                         </button>
+                         <button (click)="indentText('indent', 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Aumentar sangría">
+                            ⇥
+                         </button>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
-
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
-
-                         <button (click)="formatText('removeFormat', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
-                                 class="px-2 py-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded text-[9px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
-                            🧹 Limpiar
+                         <button (click)="formatText('justifyRight', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la derecha">
+                            ⇶
+                         </button>
+                         <button (click)="formatText('justifyFull', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Justificar">
+                            ≡≡
                          </button>
                       </div>
 
@@ -352,86 +445,179 @@
                       </div>
 
                       <!-- Word Toolbar for Receta -->
-                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-white/5 border border-glass-border rounded-t-xl border-b-0 backdrop-blur-md select-none rich-toolbar">
+                      <div class="relative z-30 flex flex-wrap items-center gap-1.5 p-2 bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-glass-border rounded-t-xl border-b-0 select-none rich-toolbar">
                          <!-- Fuente -->
                          <div class="relative">
                             <button (click)="toggleDropdown('font-rec', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
-                               Fuente <span class="opacity-40 text-[7px]">▼</span>
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm">
+                               {{ currentFontNames['receta'] || 'Calibri' }} <span class="opacity-50 text-[8px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'font-rec'" [class.block]="activeDropdown === 'font-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[120px]">
-                               <div (click)="formatText('fontName', 'Inter', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Inter</div>
-                               <div (click)="formatText('fontName', 'Arial', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-sans">Arial</div>
-                               <div (click)="formatText('fontName', 'Georgia', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Georgia</div>
-                               <div (click)="formatText('fontName', 'Courier New', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-mono">Courier</div>
-                               <div (click)="formatText('fontName', 'Times New Roman', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider font-serif">Times</div>
+                            <div [class.hidden]="activeDropdown !== 'font-rec'" [class.block]="activeDropdown === 'font-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[140px] max-h-[220px] overflow-y-auto custom-scrollbar">
+                               @for (f of fontList; track f.name) {
+                                 <div (click)="selectFont(f.name, 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer flex items-center justify-between" [style.font-family]="f.font">
+                                   {{ f.name }}
+                                   <span *ngIf="currentFontNames['receta'] === f.name" class="text-xs text-emerald-400">✓</span>
+                                 </div>
+                               }
                             </div>
                          </div>
 
-                         <!-- Tamaño -->
+                         <!-- Tamaño Numérico Exacto (igual que Word) -->
                          <div class="relative">
                             <button (click)="toggleDropdown('size-rec', $event)" (mousedown)="$event.preventDefault()"
-                                    class="bg-transparent border border-black/10 dark:border-white/10 rounded-lg text-[9px] font-black text-slate-800 dark:text-white uppercase tracking-widest px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1">
-                               Tamaño <span class="opacity-40 text-[7px]">▼</span>
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm min-w-[44px] justify-center">
+                               {{ currentFontSizes['receta'] || 11 }} <span class="opacity-50 text-[8px]">▼</span>
                             </button>
-                            <div [class.hidden]="activeDropdown !== 'size-rec'" [class.block]="activeDropdown === 'size-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[110px]">
-                               <div (click)="formatText('fontSize', '2', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Chico</div>
-                               <div (click)="formatText('fontSize', '3', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Normal</div>
-                               <div (click)="formatText('fontSize', '4', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Grande</div>
-                               <div (click)="formatText('fontSize', '5', 'receta'); activeDropdown = null" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[9px] font-black text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer uppercase tracking-wider">Muy G.</div>
+                            <div [class.hidden]="activeDropdown !== 'size-rec'" [class.block]="activeDropdown === 'size-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[70px] max-h-[200px] overflow-y-auto custom-scrollbar">
+                               @for (s of fontSizeList; track s) {
+                                 <div (click)="setFontSizePx(s, 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1 text-[11px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer text-center">
+                                   {{ s }}
+                                 </div>
+                               }
                             </div>
                          </div>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <!-- Aumentar / Disminuir Fuente (A^ / Av) -->
+                         <div class="flex items-center gap-0.5 border border-slate-300 dark:border-white/10 rounded-lg bg-white dark:bg-transparent p-0.5 shadow-sm">
+                            <button (click)="changeFontSizeStep(1, 'receta')" (mousedown)="$event.preventDefault()"
+                                    class="w-6 h-6 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs" title="Aumentar tamaño de fuente">
+                               A<sup>▲</sup>
+                            </button>
+                            <button (click)="changeFontSizeStep(-1, 'receta')" (mousedown)="$event.preventDefault()"
+                                    class="w-6 h-6 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs" title="Disminuir tamaño de fuente">
+                               A<sub class="text-[9px]">▼</sub>
+                            </button>
+                         </div>
 
+                         <!-- Cambiar Mayúsculas / Minúsculas (Aa) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('case-rec', $event)" (mousedown)="$event.preventDefault()"
+                                    class="bg-white dark:bg-transparent border border-slate-300 dark:border-white/10 rounded-lg text-[10px] font-black text-slate-900 dark:text-white px-2 py-1 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-1 shadow-sm" title="Cambiar mayúsculas/minúsculas">
+                               Aa <span class="opacity-50 text-[7px]">▼</span>
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'case-rec'" [class.block]="activeDropdown === 'case-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-1.5 shadow-2xl z-[100] min-w-[160px]">
+                               <div (click)="changeCase('sentence', 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">Tipo oración</div>
+                               <div (click)="changeCase('lower', 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">minúsculas</div>
+                               <div (click)="changeCase('upper', 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">MAYÚSCULAS</div>
+                               <div (click)="changeCase('title', 'receta')" (mousedown)="$event.preventDefault()" class="px-3 py-1.5 text-[10px] font-bold text-slate-100 hover:bg-primary hover:text-white rounded-lg cursor-pointer">Capitalizar Palabras</div>
+                            </div>
+                         </div>
+
+                         <!-- Borrar Formato -->
+                         <button (click)="formatText('removeFormat', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-rose-100 dark:hover:bg-white/10 rounded text-rose-600 dark:text-rose-400 flex items-center justify-center font-black text-xs transition-all" title="Borrar todo el formato">
+                            🧹
+                         </button>
+
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Negrita, Cursiva, Subrayado, Tachado -->
                          <button (click)="formatText('bold', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
-                            B
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
+                            N
                          </button>
-
                          <button (click)="formatText('italic', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
-                            I
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
+                            K
                          </button>
-
                          <button (click)="formatText('underline', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
-                            U
-                         </button>
-
-                         <button (click)="formatText('strikeThrough', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             S
                          </button>
+                         <button (click)="formatText('strikeThrough', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
+                            ab
+                         </button>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <!-- Subíndice / Superíndice -->
+                         <button (click)="formatText('subscript', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Subíndice">
+                            x<sub>2</sub>
+                         </button>
+                         <button (click)="formatText('superscript', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Superíndice">
+                            x<sup>2</sup>
+                         </button>
 
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Color Resaltador (Marker) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('hilite-rec', $event)" (mousedown)="$event.preventDefault()"
+                                    class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-bold transition-all" title="Color de resaltado de texto">
+                               🎨
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'hilite-rec'" [class.block]="activeDropdown === 'hilite-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-2 shadow-2xl z-[100] min-w-[130px]">
+                               <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Resaltador:</div>
+                               <div class="grid grid-cols-3 gap-1.5">
+                                 @for (c of highlightPalette; track c.name) {
+                                   <div (click)="setHighlightColor(c.color, 'receta')" (mousedown)="$event.preventDefault()"
+                                        class="w-7 h-7 rounded-lg cursor-pointer border border-slate-600 flex items-center justify-center hover:scale-110 transition-transform"
+                                        [style.background-color]="c.color"
+                                        [title]="c.name">
+                                      <span *ngIf="c.color === 'transparent'" class="text-[9px] text-slate-400">✕</span>
+                                   </div>
+                                 }
+                               </div>
+                            </div>
+                         </div>
+
+                         <!-- Color de Fuente (Color A) -->
+                         <div class="relative">
+                            <button (click)="toggleDropdown('color-rec', $event)" (mousedown)="$event.preventDefault()"
+                                    class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-bold transition-all" title="Color de fuente">
+                               <span class="font-black text-rose-500 underline underline-offset-2">A</span>
+                            </button>
+                            <div [class.hidden]="activeDropdown !== 'color-rec'" [class.block]="activeDropdown === 'color-rec'" class="absolute top-full left-0 mt-1 hidden bg-slate-900 border border-slate-700 rounded-xl p-2 shadow-2xl z-[100] min-w-[140px]">
+                               <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Color de letra:</div>
+                               <div class="grid grid-cols-4 gap-1.5">
+                                 @for (c of colorPalette; track c.name) {
+                                   <div (click)="setTextColor(c.color, 'receta')" (mousedown)="$event.preventDefault()"
+                                        class="w-6 h-6 rounded-md cursor-pointer border border-slate-600 hover:scale-110 transition-transform"
+                                        [style.background-color]="c.color"
+                                        [title]="c.name"></div>
+                                 }
+                               </div>
+                            </div>
+                         </div>
+
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
+
+                         <!-- Párrafo: Viñetas, Numeración, Sangría, Alineaciones -->
                          <button (click)="formatText('insertUnorderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista con viñetas">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Viñetas">
                             •=
                          </button>
-
                          <button (click)="formatText('insertOrderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Lista numerada">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Numeración">
                             1.
                          </button>
+                         <button (click)="indentText('outdent', 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Disminuir sangría">
+                            ⇤
+                         </button>
+                         <button (click)="indentText('indent', 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Aumentar sangría">
+                            ⇥
+                         </button>
 
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
+                         <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="w-7 h-7 hover:bg-black/5 dark:hover:bg-white/10 rounded text-slate-800 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
-
-                         <div class="w-[1px] h-3 bg-glass-border"></div>
-
-                         <button (click)="formatText('removeFormat', undefined, 'receta')" (mousedown)="$event.preventDefault()"
-                                 class="px-2 py-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded text-[9px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1 transition-all" title="Borrar formato">
-                            🧹 Limpiar
+                         <button (click)="formatText('justifyRight', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la derecha">
+                            ⇶
+                         </button>
+                         <button (click)="formatText('justifyFull', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Justificar">
+                            ≡≡
                          </button>
                       </div>
 
