@@ -267,17 +267,23 @@ export class ConsultaPage implements OnInit, AfterViewInit {
 
   saveSelection() {
     const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
       this.savedSelection = sel.getRangeAt(0).cloneRange();
     }
   }
 
   restoreSelection() {
+    const currentSel = window.getSelection();
+    if (currentSel && currentSel.rangeCount > 0 && !currentSel.isCollapsed) {
+      // Si el usuario ya tiene texto seleccionado activamente, no sobrescribirlo
+      return;
+    }
     if (this.savedSelection) {
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(this.savedSelection);
+      if (currentSel) {
+        try {
+          currentSel.removeAllRanges();
+          currentSel.addRange(this.savedSelection);
+        } catch (e) {}
       }
     }
   }
@@ -290,10 +296,6 @@ export class ConsultaPage implements OnInit, AfterViewInit {
       editorEl.nativeElement.focus();
     }
     this.restoreSelection();
-
-    if (['foreColor', 'hiliteColor', 'backColor', 'fontName', 'fontSize'].includes(command)) {
-      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
-    }
 
     document.execCommand(command, false, value);
 
@@ -309,25 +311,72 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   }
 
   setTextColor(color: string, field: 'diagnostico' | 'receta') {
-    this.formatText('foreColor', color, field);
+    const activeField = field || this.lastActiveEditor || 'diagnostico';
+    const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
+    }
+    this.restoreSelection();
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
+      document.execCommand('foreColor', false, color);
+
+      if (editorEl?.nativeElement) {
+        const fontEls = editorEl.nativeElement.querySelectorAll('font[color], span');
+        fontEls.forEach((el: HTMLElement) => {
+          if (el.getAttribute('color')) {
+            el.style.color = color;
+            el.removeAttribute('color');
+          }
+        });
+      }
+    }
+
+    if (editorEl?.nativeElement) {
+      if (activeField === 'diagnostico') {
+        this.nuevaConsulta.diagnostico = editorEl.nativeElement.innerHTML;
+      } else {
+        this.nuevaConsulta.receta = editorEl.nativeElement.innerHTML;
+      }
+    }
+
+    this.onEditorInput(activeField, { target: editorEl?.nativeElement });
     this.activeDropdown = null;
   }
 
   setHighlightColor(color: string, field: 'diagnostico' | 'receta') {
-    if (color === 'transparent') {
-      this.formatText('removeFormat', undefined, field);
-    } else {
-      const activeField = field || this.lastActiveEditor || 'diagnostico';
-      const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
-      if (editorEl?.nativeElement) {
-        editorEl.nativeElement.focus();
-      }
-      this.restoreSelection();
-      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
-      document.execCommand('hiliteColor', false, color);
-      document.execCommand('backColor', false, color);
-      this.onEditorInput(activeField, { target: editorEl?.nativeElement });
+    const activeField = field || this.lastActiveEditor || 'diagnostico';
+    const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
     }
+    this.restoreSelection();
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) {}
+      if (color === 'transparent') {
+        document.execCommand('hiliteColor', false, 'transparent');
+        document.execCommand('backColor', false, 'transparent');
+      } else {
+        document.execCommand('hiliteColor', false, color);
+        document.execCommand('backColor', false, color);
+      }
+    }
+
+    if (editorEl?.nativeElement) {
+      if (activeField === 'diagnostico') {
+        this.nuevaConsulta.diagnostico = editorEl.nativeElement.innerHTML;
+      } else {
+        this.nuevaConsulta.receta = editorEl.nativeElement.innerHTML;
+      }
+    }
+
+    this.onEditorInput(activeField, { target: editorEl?.nativeElement });
     this.activeDropdown = null;
   }
 
