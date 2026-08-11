@@ -303,28 +303,34 @@
 
                          <!-- Negrita, Cursiva, Subrayado, Tachado -->
                          <button (click)="formatText('bold', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['bold']" [class.text-primary]="activeFormats['bold']" [class.border]="activeFormats['bold']" [class.border-primary/50]="activeFormats['bold']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
                             N
                          </button>
                          <button (click)="formatText('italic', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['italic']" [class.text-primary]="activeFormats['italic']" [class.border]="activeFormats['italic']" [class.border-primary/50]="activeFormats['italic']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
                             K
                          </button>
                          <button (click)="formatText('underline', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['underline']" [class.text-primary]="activeFormats['underline']" [class.border]="activeFormats['underline']" [class.border-primary/50]="activeFormats['underline']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             S
                          </button>
                          <button (click)="formatText('strikeThrough', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['strikeThrough']" [class.text-primary]="activeFormats['strikeThrough']" [class.border]="activeFormats['strikeThrough']" [class.border-primary/50]="activeFormats['strikeThrough']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
                             ab
                          </button>
 
                          <!-- Subíndice / Superíndice -->
                          <button (click)="formatText('subscript', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['subscript']" [class.text-primary]="activeFormats['subscript']" [class.border]="activeFormats['subscript']" [class.border-primary/50]="activeFormats['subscript']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Subíndice">
                             x<sub>2</sub>
                          </button>
                          <button (click)="formatText('superscript', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['superscript']" [class.text-primary]="activeFormats['superscript']" [class.border]="activeFormats['superscript']" [class.border-primary/50]="activeFormats['superscript']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Superíndice">
                             x<sup>2</sup>
                          </button>
@@ -375,10 +381,12 @@
 
                          <!-- Párrafo: Viñetas, Numeración, Sangría, Alineaciones -->
                          <button (click)="formatText('insertUnorderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['insertUnorderedList']" [class.text-primary]="activeFormats['insertUnorderedList']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Viñetas">
                             •=
                          </button>
                          <button (click)="formatText('insertOrderedList', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['insertOrderedList']" [class.text-primary]="activeFormats['insertOrderedList']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Numeración">
                             1.
                          </button>
@@ -394,18 +402,22 @@
                          <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyLeft']" [class.text-primary]="activeFormats['justifyLeft']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyCenter']" [class.text-primary]="activeFormats['justifyCenter']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
                          <button (click)="formatText('justifyRight', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyRight']" [class.text-primary]="activeFormats['justifyRight']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la derecha">
                             ⇶
                          </button>
                          <button (click)="formatText('justifyFull', undefined, 'diagnostico')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyFull']" [class.text-primary]="activeFormats['justifyFull']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Justificar">
                             ≡≡
                          </button>
@@ -513,28 +525,34 @@
 
                          <!-- Negrita, Cursiva, Subrayado, Tachado -->
                          <button (click)="formatText('bold', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['bold']" [class.text-primary]="activeFormats['bold']" [class.border]="activeFormats['bold']" [class.border-primary/50]="activeFormats['bold']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center font-black text-xs transition-all" title="Negrita (Ctrl+B)">
                             N
                          </button>
                          <button (click)="formatText('italic', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['italic']" [class.text-primary]="activeFormats['italic']" [class.border]="activeFormats['italic']" [class.border-primary/50]="activeFormats['italic']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center italic font-serif text-xs transition-all" title="Cursiva (Ctrl+I)">
                             K
                          </button>
                          <button (click)="formatText('underline', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['underline']" [class.text-primary]="activeFormats['underline']" [class.border]="activeFormats['underline']" [class.border-primary/50]="activeFormats['underline']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center underline text-xs transition-all" title="Subrayado (Ctrl+U)">
                             S
                          </button>
                          <button (click)="formatText('strikeThrough', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['strikeThrough']" [class.text-primary]="activeFormats['strikeThrough']" [class.border]="activeFormats['strikeThrough']" [class.border-primary/50]="activeFormats['strikeThrough']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center line-through text-xs transition-all" title="Tachado">
                             ab
                          </button>
 
                          <!-- Subíndice / Superíndice -->
                          <button (click)="formatText('subscript', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['subscript']" [class.text-primary]="activeFormats['subscript']" [class.border]="activeFormats['subscript']" [class.border-primary/50]="activeFormats['subscript']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Subíndice">
                             x<sub>2</sub>
                          </button>
                          <button (click)="formatText('superscript', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['superscript']" [class.text-primary]="activeFormats['superscript']" [class.border]="activeFormats['superscript']" [class.border-primary/50]="activeFormats['superscript']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-[10px] font-bold transition-all" title="Superíndice">
                             x<sup>2</sup>
                          </button>
@@ -585,10 +603,12 @@
 
                          <!-- Párrafo: Viñetas, Numeración, Sangría, Alineaciones -->
                          <button (click)="formatText('insertUnorderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['insertUnorderedList']" [class.text-primary]="activeFormats['insertUnorderedList']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Viñetas">
                             •=
                          </button>
                          <button (click)="formatText('insertOrderedList', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['insertOrderedList']" [class.text-primary]="activeFormats['insertOrderedList']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs font-mono transition-all" title="Numeración">
                             1.
                          </button>
@@ -604,18 +624,22 @@
                          <div class="w-[1px] h-4 bg-slate-300 dark:bg-glass-border mx-0.5"></div>
 
                          <button (click)="formatText('justifyLeft', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyLeft']" [class.text-primary]="activeFormats['justifyLeft']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la izquierda">
                             <ion-icon name="text-outline" class="text-xs"></ion-icon>
                          </button>
                          <button (click)="formatText('justifyCenter', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyCenter']" [class.text-primary]="activeFormats['justifyCenter']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Centrar">
                             ≡
                          </button>
                          <button (click)="formatText('justifyRight', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyRight']" [class.text-primary]="activeFormats['justifyRight']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Alinear a la derecha">
                             ⇶
                          </button>
                          <button (click)="formatText('justifyFull', undefined, 'receta')" (mousedown)="$event.preventDefault()"
+                                 [class.bg-primary/25]="activeFormats['justifyFull']" [class.text-primary]="activeFormats['justifyFull']"
                                  class="w-7 h-7 hover:bg-slate-300 dark:hover:bg-white/10 rounded text-slate-900 dark:text-white flex items-center justify-center text-xs transition-all" title="Justificar">
                             ≡≡
                          </button>

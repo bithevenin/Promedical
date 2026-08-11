@@ -288,6 +288,31 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     }
   }
 
+  activeFormats: { [key: string]: boolean } = {};
+
+  @HostListener('document:selectionchange')
+  onSelectionChange() {
+    this.updateActiveFormats();
+  }
+
+  updateActiveFormats() {
+    const commands = [
+      'bold', 'italic', 'underline', 'strikeThrough',
+      'subscript', 'superscript',
+      'insertUnorderedList', 'insertOrderedList',
+      'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'
+    ];
+    const state: { [key: string]: boolean } = {};
+    for (const cmd of commands) {
+      try {
+        state[cmd] = document.queryCommandState(cmd);
+      } catch (e) {
+        state[cmd] = false;
+      }
+    }
+    this.activeFormats = state;
+  }
+
   formatText(command: string, value: string | undefined = undefined, editorField?: 'diagnostico' | 'receta') {
     const activeField = editorField || this.lastActiveEditor || 'diagnostico';
     const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
@@ -307,6 +332,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
       }
     }
 
+    this.updateActiveFormats();
     this.onEditorInput(activeField, { target: editorEl?.nativeElement });
   }
 
