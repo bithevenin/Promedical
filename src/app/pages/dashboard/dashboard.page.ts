@@ -192,6 +192,11 @@ export class DashboardPage implements OnInit {
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
+  ionViewWillEnter() {
+    this.appointmentService.refreshAppointments();
+    this.patientService.refreshPatients();
+  }
+
   navigateTo(route: string) {
     this.router.navigate([route]);
   }

@@ -422,6 +422,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
       this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
 
       // 1. Guardar/Actualizar en el registro de pacientes
+      const existingPatient = this.patientService.findPatientByCedula(this.cedulaOriginal || this.nuevoPaciente.cedula);
       const datosPaciente: Paciente = {
         cedula: this.nuevoPaciente.cedula,
         nombre: this.nuevoPaciente.nombre,
@@ -435,8 +436,12 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         telefono: this.nuevoPaciente.telefono,
         carnetSeguro: this.carnetSeguroTemp,
         tipo_sangre: this.nuevoPaciente.tipo_sangre,
-        fotoUrl: this.nuevoPaciente.fotoUrl,
-        direccion: this.nuevoPaciente.direccion
+        fotoUrl: this.nuevoPaciente.fotoUrl || existingPatient?.fotoUrl,
+        direccion: this.nuevoPaciente.direccion,
+        antecedentesPersonales: existingPatient?.antecedentesPersonales || (existingPatient as any)?.antecedentes_personales || '',
+        antecedentesFamiliares: existingPatient?.antecedentesFamiliares || (existingPatient as any)?.antecedentes_familiares || '',
+        alergias: existingPatient?.alergias || '',
+        email: existingPatient?.email || ''
       };
       await this.patientService.savePatient(datosPaciente, this.cedulaOriginal);
 
@@ -472,6 +477,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
   ionViewWillEnter() {
     this.patientService.refreshPatients();
+    this.appointmentService.refreshAppointments();
   }
 
   filtrarPacientes(event: any) {
@@ -488,41 +494,42 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
     let matches: Paciente[] = [];
 
-    if (this.activeSearchField === 'cedula') {
-      matches = this.listaPacientes.filter(p => {
-        if (!p.cedula) return false;
-        const cleanCedula = p.cedula.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
-        return cleanCedula.includes(normQuery) || (cleanDigits !== '' && cleanCedula.includes(cleanDigits));
-      });
-    } else {
-      // Búsqueda por Nombre Completo
-      matches = this.listaPacientes.filter(p => {
-        if (!p.nombre) return false;
+    matches = this.listaPacientes.filter(p => {
+      let matchCedula = false;
+      if (p.cedula) {
+        const pCleanCedula = p.cedula.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+        matchCedula = pCleanCedula.includes(normQuery) || (cleanDigits !== '' && pCleanCedula.includes(cleanDigits));
+      }
+      
+      let matchNombre = false;
+      if (p.nombre) {
         const normNombre = p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return queryWords.length > 0 && queryWords.every((word: string) => normNombre.includes(word));
-      });
+        matchNombre = queryWords.length > 0 && queryWords.every((word: string) => normNombre.includes(word));
+      }
+      
+      return matchCedula || matchNombre;
+    });
 
-      // Ordenar por relevancia:
-      // 1. Nombres que comiencen exactamente con el texto ingresado (Ej: "A" -> "Abad", "Abreu", "Antonio")
-      // 2. Nombres con alguna palabra que comience con el texto ingresado
-      // 3. Orden alfabético
-      matches.sort((a, b) => {
-        const nameA = (a.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        const nameB = (b.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    // Ordenar por relevancia:
+    // 1. Nombres que comiencen exactamente con el texto ingresado
+    // 2. Nombres con alguna palabra que comience con el texto ingresado
+    // 3. Orden alfabético
+    matches.sort((a, b) => {
+      const nameA = (a.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const nameB = (b.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-        const aStartsWith = nameA.startsWith(normQuery);
-        const bStartsWith = nameB.startsWith(normQuery);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
+      const aStartsWith = nameA.startsWith(normQuery);
+      const bStartsWith = nameB.startsWith(normQuery);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
 
-        const aWordStarts = nameA.split(/\s+/).some(w => w.startsWith(normQuery));
-        const bWordStarts = nameB.split(/\s+/).some(w => w.startsWith(normQuery));
-        if (aWordStarts && !bWordStarts) return -1;
-        if (!aWordStarts && bWordStarts) return 1;
+      const aWordStarts = nameA.split(/\s+/).some(w => w.startsWith(normQuery));
+      const bWordStarts = nameB.split(/\s+/).some(w => w.startsWith(normQuery));
+      if (aWordStarts && !bWordStarts) return -1;
+      if (!aWordStarts && bWordStarts) return 1;
 
-        return nameA.localeCompare(nameB);
-      });
-    }
+      return nameA.localeCompare(nameB);
+    });
 
     this.pacientesFiltrados = matches.slice(0, 15);
     this.mostrarDropdownPacientes = this.pacientesFiltrados.length > 0;
@@ -532,7 +539,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     this.cedulaOriginal = paciente.cedula;
     this.nuevoPaciente = {
       nombre: paciente.nombre,
-      cedula: paciente.cedula,
+      cedula: paciente.cedula && paciente.cedula.startsWith('IMP-') ? '' : paciente.cedula,
       edad: paciente.edad,
       fecha_nacimiento: paciente.fecha_nacimiento || '',
       altura: paciente.altura || '',
@@ -548,6 +555,15 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     this.carnetSeguroTemp = paciente.carnetSeguro || '';
     this.pacientesFiltrados = [];
     this.mostrarDropdownPacientes = false;
+
+    if (!paciente.fotoUrl && paciente.cedula) {
+      this.patientService.fetchPhotoIfMissing(paciente.cedula).then(() => {
+        const updated = this.patientService.findPatientByCedula(paciente.cedula);
+        if (updated && updated.fotoUrl) {
+          this.nuevoPaciente.fotoUrl = updated.fotoUrl;
+        }
+      });
+    }
   }
 
   limpiarFormulario() {

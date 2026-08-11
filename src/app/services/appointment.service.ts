@@ -43,6 +43,28 @@ export class AppointmentService {
   ) {
     this.refreshAppointments();
     this.setupRealtimeSubscription();
+    this.setupAutoSync();
+  }
+
+  private setupAutoSync() {
+    // Poll every 10 seconds to ensure multi-user sync even if WebSocket misses events
+    setInterval(() => {
+      if (navigator.onLine) {
+        this.refreshAppointments();
+      }
+    }, 10000);
+
+    // Sync on tab focus or visibility change
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        if (navigator.onLine) this.refreshAppointments();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          this.refreshAppointments();
+        }
+      });
+    }
   }
 
   private setupRealtimeSubscription() {

@@ -27,6 +27,26 @@ export class ConsultationService {
   ) {
     this.refreshConsultas();
     this.setupRealtimeSubscription();
+    this.setupAutoSync();
+  }
+
+  private setupAutoSync() {
+    setInterval(() => {
+      if (navigator.onLine) {
+        this.refreshConsultas();
+      }
+    }, 15000);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        if (navigator.onLine) this.refreshConsultas();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          this.refreshConsultas();
+        }
+      });
+    }
   }
 
   private setupRealtimeSubscription() {

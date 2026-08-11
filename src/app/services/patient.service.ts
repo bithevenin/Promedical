@@ -51,6 +51,26 @@ export class PatientService {
     private offlineService: OfflineService
   ) {
     this.refreshPatients();
+    this.setupAutoSync();
+  }
+
+  private setupAutoSync() {
+    setInterval(() => {
+      if (navigator.onLine) {
+        this.refreshPatients();
+      }
+    }, 15000);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        if (navigator.onLine) this.refreshPatients();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          this.refreshPatients();
+        }
+      });
+    }
   }
 
   async refreshPatients() {
@@ -148,26 +168,28 @@ export class PatientService {
       };
       await this.offlineService.saveLocalData('pacientes', fullPatient);
 
+      const existing = this.findPatientByCedula(paciente.cedula) || (oldCedula ? this.findPatientByCedula(oldCedula) : undefined);
+
       // 2. Prepare payload for Supabase
       const dbData = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
         edad: fullPatient.edad,
-        fecha_nacimiento: paciente.fecha_nacimiento || null,
-        profesion: paciente.profesion || null,
-        seguro: paciente.seguro || null,
-        sexo: paciente.sexo || null,
-        telefono: paciente.telefono || null,
-        email: paciente.email || null,
-        altura: (paciente.altura === '' || paciente.altura === undefined) ? null : paciente.altura,
-        peso: (paciente.peso === '' || paciente.peso === undefined) ? null : paciente.peso,
-        carnet_seguro: paciente.carnetSeguro || null,
-        antecedentes_personales: paciente.antecedentesPersonales || null,
-        antecedentes_familiares: paciente.antecedentesFamiliares || null,
-        alergias: paciente.alergias || null,
-        tipo_sangre: paciente.tipo_sangre || null,
-        foto_url: paciente.fotoUrl || null,
-        direccion: paciente.direccion || null
+        fecha_nacimiento: paciente.fecha_nacimiento || existing?.fecha_nacimiento || null,
+        profesion: paciente.profesion || existing?.profesion || null,
+        seguro: paciente.seguro || existing?.seguro || null,
+        sexo: paciente.sexo || existing?.sexo || null,
+        telefono: paciente.telefono || existing?.telefono || null,
+        email: paciente.email || existing?.email || null,
+        altura: (paciente.altura === '' || paciente.altura === undefined) ? (existing?.altura || null) : paciente.altura,
+        peso: (paciente.peso === '' || paciente.peso === undefined) ? (existing?.peso || null) : paciente.peso,
+        carnet_seguro: paciente.carnetSeguro || existing?.carnetSeguro || null,
+        antecedentes_personales: paciente.antecedentesPersonales || (existing as any)?.antecedentes_personales || existing?.antecedentesPersonales || null,
+        antecedentes_familiares: paciente.antecedentesFamiliares || (existing as any)?.antecedentes_familiares || existing?.antecedentesFamiliares || null,
+        alergias: paciente.alergias || existing?.alergias || null,
+        tipo_sangre: paciente.tipo_sangre || existing?.tipo_sangre || null,
+        foto_url: paciente.fotoUrl || existing?.fotoUrl || null,
+        direccion: paciente.direccion || existing?.direccion || null
       };
 
       if (navigator.onLine) {
@@ -274,13 +296,38 @@ export class PatientService {
     return age;
   }
 
+  private pendingPhotoFetches = new Set<string>();
+
+  async fetchPhotoIfMissing(cedula: string) {
+    if (!cedula) return;
+    const cleanDigits = cedula.replace(/[^0-9]/g, '');
+    if (cleanDigits.length !== 11) return;
+    if (this.pendingPhotoFetches.has(cleanDigits)) return;
+
+    const patient = this.findPatientByCedula(cedula);
+    if (patient && !patient.fotoUrl) {
+      this.pendingPhotoFetches.add(cleanDigits);
+      try {
+        const result = await this.consultarJCE(cleanDigits) as any;
+        if (result && result.fotoUrl) {
+          patient.fotoUrl = result.fotoUrl;
+          await this.savePatient({ ...patient });
+        }
+      } catch {
+        // Ignore error if JCE lookup fails
+      } finally {
+        this.pendingPhotoFetches.delete(cleanDigits);
+      }
+    }
+  }
+
   findPatientByCedula(cedula: string): Paciente | undefined {
     if (!cedula) return undefined;
     const target = cedula.trim().toLowerCase();
     const cleanTarget = target.replace(/[^0-9a-z]/g, '');
     const digitsOnly = target.replace(/[^0-9]/g, '');
 
-    return this.getPatients().find(p => {
+    const patient = this.getPatients().find(p => {
       if (!p.cedula) return false;
       const pCedula = p.cedula.trim().toLowerCase();
       if (pCedula === target) return true;
@@ -295,6 +342,12 @@ export class PatientService {
 
       return false;
     });
+
+    if (patient && !patient.fotoUrl && digitsOnly && digitsOnly.length === 11) {
+      this.fetchPhotoIfMissing(patient.cedula);
+    }
+
+    return patient;
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
