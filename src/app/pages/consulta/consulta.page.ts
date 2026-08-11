@@ -341,32 +341,61 @@ export class ConsultaPage implements OnInit, AfterViewInit {
 
   selectFont(fontName: string, field: 'diagnostico' | 'receta') {
     this.currentFontNames[field] = fontName;
-    this.formatText('fontName', fontName, field);
+    const activeField = field || this.lastActiveEditor || 'diagnostico';
+    const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+
+    if (editorEl?.nativeElement) {
+      editorEl.nativeElement.focus();
+    }
+    this.restoreSelection();
+
+    try { document.execCommand('styleWithCSS', false, 'false'); } catch (e) {}
+    document.execCommand('fontName', false, fontName);
+
+    if (editorEl?.nativeElement) {
+      const fontEls = editorEl.nativeElement.querySelectorAll('font[face], span[style*="font-family"]');
+      fontEls.forEach((el: HTMLElement) => {
+        el.style.fontFamily = fontName;
+        if (el.hasAttribute('face')) el.removeAttribute('face');
+      });
+    }
+
+    this.onEditorInput(activeField, { target: editorEl?.nativeElement });
     this.activeDropdown = null;
   }
 
   setFontSizePx(pxSize: number | string, field: 'diagnostico' | 'receta') {
     const sizeNum = Number(pxSize);
     this.currentFontSizes[field] = sizeNum;
-    const editorEl = field === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+    const activeField = field || this.lastActiveEditor || 'diagnostico';
+    const editorEl = activeField === 'diagnostico' ? this.diagnosticoEditor : this.recetaEditor;
+
     if (editorEl?.nativeElement) {
       editorEl.nativeElement.focus();
     }
     this.restoreSelection();
 
-    document.execCommand('fontSize', false, '7');
+    let htmlSize = '3';
+    if (sizeNum <= 9) htmlSize = '1';
+    else if (sizeNum <= 11) htmlSize = '2';
+    else if (sizeNum <= 13) htmlSize = '3';
+    else if (sizeNum <= 16) htmlSize = '4';
+    else if (sizeNum <= 22) htmlSize = '5';
+    else if (sizeNum <= 32) htmlSize = '6';
+    else htmlSize = '7';
+
+    try { document.execCommand('styleWithCSS', false, 'false'); } catch (e) {}
+    document.execCommand('fontSize', false, htmlSize);
 
     if (editorEl?.nativeElement) {
-      const fonts = editorEl.nativeElement.querySelectorAll('font[size="7"]');
-      fonts.forEach((fontEl: HTMLElement) => {
-        const span = document.createElement('span');
-        span.style.fontSize = `${sizeNum}px`;
-        span.innerHTML = fontEl.innerHTML;
-        fontEl.parentNode?.replaceChild(span, fontEl);
+      const fontEls = editorEl.nativeElement.querySelectorAll('font, span[style*="font-size"]');
+      fontEls.forEach((el: HTMLElement) => {
+        el.style.fontSize = `${sizeNum}px`;
+        if (el.hasAttribute('size')) el.removeAttribute('size');
       });
     }
 
-    this.onEditorInput(field, { target: editorEl?.nativeElement });
+    this.onEditorInput(activeField, { target: editorEl?.nativeElement });
     this.activeDropdown = null;
   }
 
