@@ -182,7 +182,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     });
   }
 
-  cargarPacienteDirecto(cedula: string) {
+  async cargarPacienteDirecto(cedula: string) {
     const paciente = this.patientService.findPatientByCedula(cedula);
     if (paciente) {
       // Crear una cita temporal para este paciente (consulta directa)
@@ -203,7 +203,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
 
       this.esConsultaDirecta = true;
       this.pacienteSeleccionado = citaTemporal;
-      this.historialPasado = this.consultationService.getPatientHistory(cedula);
+      this.historialPasado = await this.consultationService.cargarHistorialPaciente(cedula);
       this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
       this.updateEditorContents();
     }
@@ -211,7 +211,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
 
   async seleccionarPaciente(paciente: Cita) {
     this.pacienteSeleccionado = paciente;
-    this.historialPasado = this.consultationService.getPatientHistory(paciente.cedula);
+    this.historialPasado = []; // Limpiamos mientras carga
     this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
     this.updateEditorContents();
 
@@ -219,9 +219,19 @@ export class ConsultaPage implements OnInit, AfterViewInit {
       await this.appointmentService.updateAppointmentStatus(paciente.turno, 'consulta');
     }
 
+    this.historialPasado = await this.consultationService.cargarHistorialPaciente(paciente.cedula);
+
     let fullPatient = this.patientService.findPatientByCedula(paciente.cedula);
     if (!fullPatient && paciente.nombre) {
       fullPatient = this.patientService.getPatients().find(p => p.nombre.toLowerCase().trim() === paciente.nombre.toLowerCase().trim());
+    }
+    
+    // Si no está en caché local, buscar en el servidor
+    if (!fullPatient && navigator.onLine) {
+      const results = await this.patientService.buscarPacientesRemoto(paciente.cedula || paciente.nombre);
+      if (results && results.length > 0) {
+        fullPatient = results[0];
+      }
     }
 
     if (fullPatient) {
@@ -239,7 +249,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   }
 
   async finalizarConsulta() {
-    if (this.pacienteSeleccionado && this.nuevaConsulta.diagnostico) {
+    if (this.pacienteSeleccionado) {
       const consulta: Consulta = {
         cedula: this.pacienteSeleccionado.cedula,
         fecha: getLocalDateString(),

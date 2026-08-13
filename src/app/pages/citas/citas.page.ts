@@ -78,6 +78,7 @@ export class CitasPage implements OnInit {
   pacientesFiltrados: Paciente[] = [];
   mostrarDropdownPacientes = false;
   activeSearchField: 'cedula' | 'nombre' | null = null;
+  private searchTimeout: any;
 
   setActiveSearchField(field: 'cedula' | 'nombre') {
     this.activeSearchField = field;
@@ -482,57 +483,46 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
   filtrarPacientes(event: any) {
     const rawVal = (event.target.value || '').trim();
-    if (!rawVal) {
+    if (!rawVal || rawVal.length < 2) {
       this.pacientesFiltrados = [];
       this.mostrarDropdownPacientes = false;
       return;
     }
 
-    const normQuery = rawVal.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const queryWords: string[] = normQuery.split(/\s+/).filter(Boolean);
-    const cleanDigits = rawVal.replace(/[^0-9]/g, '');
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
 
-    let matches: Paciente[] = [];
+    this.searchTimeout = setTimeout(async () => {
+      if (navigator.onLine) {
+        this.pacientesFiltrados = await this.patientService.buscarPacientesRemoto(rawVal);
+      } else {
+        // Búsqueda local offline (solo en los recientes guardados en caché)
+        const normQuery = rawVal.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const queryWords: string[] = normQuery.split(/\s+/).filter(Boolean);
+        const cleanDigits = rawVal.replace(/[^0-9]/g, '');
 
-    matches = this.listaPacientes.filter(p => {
-      let matchCedula = false;
-      if (p.cedula) {
-        const pCleanCedula = p.cedula.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
-        matchCedula = pCleanCedula.includes(normQuery) || (cleanDigits !== '' && pCleanCedula.includes(cleanDigits));
+        let matches = this.listaPacientes.filter(p => {
+          let matchCedula = false;
+          if (p.cedula) {
+            const pCleanCedula = p.cedula.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+            matchCedula = pCleanCedula.includes(normQuery) || (cleanDigits !== '' && pCleanCedula.includes(cleanDigits));
+          }
+          
+          let matchNombre = false;
+          if (p.nombre) {
+            const normNombre = p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            matchNombre = queryWords.length > 0 && queryWords.every((word: string) => normNombre.includes(word));
+          }
+          
+          return matchCedula || matchNombre;
+        });
+
+        this.pacientesFiltrados = matches.slice(0, 15);
       }
       
-      let matchNombre = false;
-      if (p.nombre) {
-        const normNombre = p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        matchNombre = queryWords.length > 0 && queryWords.every((word: string) => normNombre.includes(word));
-      }
-      
-      return matchCedula || matchNombre;
-    });
-
-    // Ordenar por relevancia:
-    // 1. Nombres que comiencen exactamente con el texto ingresado
-    // 2. Nombres con alguna palabra que comience con el texto ingresado
-    // 3. Orden alfabético
-    matches.sort((a, b) => {
-      const nameA = (a.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const nameB = (b.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-      const aStartsWith = nameA.startsWith(normQuery);
-      const bStartsWith = nameB.startsWith(normQuery);
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
-
-      const aWordStarts = nameA.split(/\s+/).some(w => w.startsWith(normQuery));
-      const bWordStarts = nameB.split(/\s+/).some(w => w.startsWith(normQuery));
-      if (aWordStarts && !bWordStarts) return -1;
-      if (!aWordStarts && bWordStarts) return 1;
-
-      return nameA.localeCompare(nameB);
-    });
-
-    this.pacientesFiltrados = matches.slice(0, 15);
-    this.mostrarDropdownPacientes = this.pacientesFiltrados.length > 0;
+      this.mostrarDropdownPacientes = this.pacientesFiltrados.length > 0;
+    }, 300);
   }
 
   seleccionarPacienteDeLista(paciente: Paciente) {

@@ -19,8 +19,8 @@ export class SupabaseService {
                     detectSessionInUrl: true,
                     flowType: 'pkce',
                     storageKey: 'promedical-auth-token',
-                    // Bypass locks to prevent NavigatorLockAcquireTimeoutError during rapid HMR reloads in local dev
-                    ...(!environment.production ? {
+                    // Bypass locks to prevent NavigatorLockAcquireTimeoutError in dev mode or when navigator.locks is unsupported (insecure origins)
+                    ...(!environment.production || typeof navigator === 'undefined' || !navigator.locks ? {
                         lock: async (name: string, acquireTimeout: number, fn: () => Promise<any>) => {
                             return await fn();
                         }

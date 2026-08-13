@@ -519,16 +519,15 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
                     return;
                 }
 
-                this.progresoImportacion = 0;
-                let errores = 0;
-                for (let i = 0; i < pacientes.length; i++) {
-                    const error = await this.patientService.savePatient(pacientes[i]);
-                    // Assuming savePatient doesn't return error but throws, we should catch, but in patient.service it seems to catch and queue. 
-                    // Actually, if it's offline it queues, if online it might throw. Wait, patientService.savePatient doesn't return anything. It throws on error.
-                    this.progresoImportacion = Math.round(((i + 1) / pacientes.length) * 100);
-                }
+                this.progresoImportacion = 20;
+                const error = await this.patientService.importPatients(pacientes);
+                this.progresoImportacion = 100;
 
-                this.notificationService.showSuccess('Migración Exitosa', `¡Se han importado ${pacientes.length} pacientes del sistema antiguo correctamente!`);
+                if (error) {
+                    this.notificationService.showError('Error de Importación', ((error as any).message || JSON.stringify(error)));
+                } else {
+                    this.notificationService.showSuccess('Migración Exitosa', `¡Se han importado ${pacientes.length} pacientes del sistema antiguo correctamente!`);
+                }
                 setTimeout(() => {
                     this.progresoImportacion = 0;
                 }, 1500);

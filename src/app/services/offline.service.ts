@@ -110,6 +110,21 @@ export class OfflineService {
     });
   }
 
+  async saveLocalDataBulk<T = Record<string, unknown>>(storeName: string, dataArray: T[]): Promise<void> {
+    if (!this.db) await this.initDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+
+      for (const item of dataArray) {
+        store.put(item);
+      }
+    });
+  }
+
   async deleteLocalData(storeName: string, key: string | number): Promise<void> {
     if (!this.db) await this.initDatabase();
     return new Promise((resolve, reject) => {

@@ -89,11 +89,15 @@ export class ConsultationService {
   async refreshConsultas() {
     try {
       if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('consultas').select('*');
+        // Limitamos a 50 para evitar descargas masivas y bloqueos en IndexedDB
+        const { data, error } = await this.supabase
+          .from('consultas')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .limit(50);
         if (error) throw error;
         
         if (data) {
-          await this.offlineService.clearStore('consultas');
           const consultas: Consulta[] = data.map((c: DbConsulta) => ({
             id: c.id,
             cedula: c.paciente_cedula,
@@ -119,6 +123,47 @@ export class ConsultationService {
 
   getPatientHistory(cedula: string): Consulta[] {
     return this.consultationsSubject.value.filter(h => h.cedula === cedula);
+  }
+
+  async cargarHistorialPaciente(cedula: string): Promise<Consulta[]> {
+    if (!cedula) return [];
+    try {
+      if (navigator.onLine) {
+        const { data, error } = await this.supabase
+          .from('consultas')
+          .select('*')
+          .eq('paciente_cedula', cedula)
+          .order('fecha', { ascending: false });
+        if (error) throw error;
+
+        if (data) {
+          const consultas: Consulta[] = data.map((c: DbConsulta) => ({
+            id: c.id,
+            cedula: c.paciente_cedula,
+            fecha: c.fecha,
+            diagnostico: c.diagnostico || '',
+            receta: c.receta || ''
+          }));
+
+          // Guardar localmente
+          for (const c of consultas) {
+            await this.offlineService.saveLocalData('consultas', c);
+          }
+
+          // Combinar con las existentes en memoria sin duplicar
+          const current = this.consultationsSubject.value.filter(h => h.cedula !== cedula);
+          this.consultationsSubject.next([...consultas, ...current]);
+
+          return consultas;
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando historial remoto:', error);
+    }
+
+    // Fallback local
+    const local = await this.offlineService.getLocalData<Consulta>('consultas');
+    return local.filter(h => h.cedula === cedula);
   }
 
   async saveConsultation(consulta: Consulta) {
@@ -174,12 +219,62 @@ export class ConsultationService {
 
   async importConsultations(consultas: Consulta[]) {
     try {
-      for (const c of consultas) {
-        await this.saveConsultation(c);
+      const generateId = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+
+      const fullConsultas = consultas.map(c => ({
+        ...c,
+        id: c.id || generateId()
+      }));
+
+      // 1. Guardado masivo local en IndexedDB (una sola transacción)
+      await this.offlineService.saveLocalDataBulk('consultas', fullConsultas);
+
+      // 2. Preparar payload de base de datos
+      const dbPayloads = fullConsultas.map(c => ({
+        id: c.id,
+        paciente_cedula: c.cedula,
+        fecha: c.fecha,
+        diagnostico: c.diagnostico,
+        receta: c.receta
+      }));
+
+      // 3. Insertar por lotes a Supabase
+      if (navigator.onLine) {
+        const BATCH_SIZE = 500;
+        for (let i = 0; i < dbPayloads.length; i += BATCH_SIZE) {
+          const batch = dbPayloads.slice(i, i + BATCH_SIZE);
+          const { error } = await this.supabase.from('consultas').upsert(batch);
+          if (error) throw error;
+        }
+      } else {
+        for (const payload of dbPayloads) {
+          await this.offlineService.addToQueue('consultas', 'insert', payload);
+        }
       }
+
+      // 4. Actualizar BehaviorSubject en memoria una sola vez
+      const current = this.consultationsSubject.getValue();
+      const consultationsMap = new Map<string, Consulta>();
+      for (const c of current) {
+        if (c.id) consultationsMap.set(c.id, c);
+      }
+      for (const c of fullConsultas) {
+        if (c.id) consultationsMap.set(c.id, c);
+      }
+      this.consultationsSubject.next(Array.from(consultationsMap.values()));
+
       return null;
     } catch (error) {
-      console.error('Error importing consultations:', error);
+      console.error('Error importing consultations in bulk:', error);
       return error;
     }
   }
