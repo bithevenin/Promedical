@@ -31,11 +31,12 @@ export class ConsultationService {
   }
 
   private setupAutoSync() {
-    setInterval(() => {
+    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
+    /* setInterval(() => {
       if (navigator.onLine) {
         this.refreshConsultas();
       }
-    }, 15000);
+    }, 15000); */
 
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
@@ -55,9 +56,30 @@ export class ConsultationService {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'consultas' },
-        (payload: unknown) => {
+        (payload: any) => {
           this.ngZone.run(async () => {
-            await this.refreshConsultas();
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const c = payload.new;
+              const consulta: Consulta = {
+                id: c.id,
+                cedula: c.paciente_cedula,
+                fecha: c.fecha,
+                diagnostico: c.diagnostico || '',
+                receta: c.receta || ''
+              };
+              const currentList = this.consultationsSubject.value;
+              const index = currentList.findIndex(item => item.id === consulta.id);
+              let updated = [...currentList];
+              if (index >= 0) updated[index] = consulta;
+              else updated.push(consulta);
+              this.consultationsSubject.next(updated);
+              await this.offlineService.saveLocalData('consultas', consulta);
+            } else if (payload.eventType === 'DELETE') {
+              const currentList = this.consultationsSubject.value;
+              const updated = currentList.filter(item => item.id !== payload.old.id);
+              this.consultationsSubject.next(updated);
+              await this.offlineService.deleteLocalData('consultas', payload.old.id);
+            }
           });
         }
       )
