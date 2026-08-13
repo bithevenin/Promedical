@@ -83,66 +83,8 @@ export class PatientService {
       }
 
       if (navigator.onLine) {
-        let allData: DbPaciente[] = [];
-        let from = 0;
-        const step = 1000;
-        
-        while (true) {
-          const { data, error } = await this.supabase
-            .from('pacientes')
-            .select('*, signos_vitales(*)')
-            .range(from, from + step - 1);
-            
-          if (error) throw error;
-          if (data && data.length > 0) {
-            allData = allData.concat(data);
-          }
-          if (!data || data.length < step) {
-            break;
-          }
-          from += step;
-        }
-
-        if (allData.length >= 0) {
-          const data = allData;
-          await this.offlineService.clearStore('pacientes');
-          const patients: Paciente[] = data.map((p: DbPaciente) => ({
-            cedula: p.cedula,
-            nombre: p.nombre,
-            edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
-            fecha_nacimiento: p.fecha_nacimiento,
-            profesion: p.profesion || '',
-            seguro: p.seguro || 'Particular',
-            sexo: p.sexo,
-            telefono: p.telefono || '',
-            email: p.email || '',
-            altura: p.altura || '',
-            peso: p.peso || '',
-            carnetSeguro: p.carnet_seguro || '',
-            antecedentesPersonales: p.antecedentes_personales || (p as any).antecedentesPersonales || '',
-            antecedentesFamiliares: p.antecedentes_familiares || (p as any).antecedentesFamiliares || '',
-            alergias: p.alergias || '',
-            tipo_sangre: p.tipo_sangre || '',
-            fotoUrl: p.foto_url || '',
-            direccion: p.direccion || '',
-            signosVitales: (p.signos_vitales || []).map((sv: DbSignoVital) => ({
-              fecha: sv.fecha,
-              presionArterial: sv.presion_arterial,
-              frecuenciaCardiaca: sv.frecuencia_cardiaca,
-              temperatura: sv.temperatura,
-              peso: sv.peso,
-              talla: sv.talla,
-              imc: sv.imc,
-              saturacionOxigeno: sv.saturacion_oxigeno
-            }))
-          }));
-
-          for (const patient of patients) {
-            await this.offlineService.saveLocalData('pacientes', patient);
-          }
-          this.patientsSubject.next(patients);
-          return;
-        }
+        // En lugar de descargar 21,000 registros de golpe, confiaremos en la búsqueda remota 
+        // bajo demanda (Server-Side Search). Solo cargamos los locales.
       }
     } catch (error) {
       // Network issue or offline
@@ -266,11 +208,64 @@ export class PatientService {
 
   async importPatients(pacientes: Paciente[]) {
     try {
-      for (const p of pacientes) {
-        await this.savePatient(p);
+      const fullPacientes = pacientes.map(p => ({
+        ...p,
+        edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad
+      }));
+
+      // 1. Guardado masivo local en IndexedDB (una sola transacción)
+      await this.offlineService.saveLocalDataBulk('pacientes', fullPacientes);
+
+      // 2. Preparar payload de base de datos
+      const dbPayloads = fullPacientes.map(p => ({
+        cedula: p.cedula,
+        nombre: p.nombre,
+        edad: p.edad,
+        fecha_nacimiento: p.fecha_nacimiento || null,
+        profesion: p.profesion || null,
+        seguro: p.seguro || null,
+        sexo: p.sexo || null,
+        telefono: p.telefono || null,
+        email: p.email || null,
+        altura: (p.altura === '' || p.altura === undefined) ? null : p.altura,
+        peso: (p.peso === '' || p.peso === undefined) ? null : p.peso,
+        carnet_seguro: p.carnetSeguro || null,
+        antecedentes_personales: p.antecedentesPersonales || null,
+        antecedentes_familiares: p.antecedentesFamiliares || null,
+        alergias: p.alergias || null,
+        tipo_sangre: p.tipo_sangre || null,
+        foto_url: p.fotoUrl || null,
+        direccion: p.direccion || null
+      }));
+
+      // 3. Insertar por lotes a Supabase
+      if (navigator.onLine) {
+        const BATCH_SIZE = 500;
+        for (let i = 0; i < dbPayloads.length; i += BATCH_SIZE) {
+          const batch = dbPayloads.slice(i, i + BATCH_SIZE);
+          const { error } = await this.supabase.from('pacientes').upsert(batch);
+          if (error) throw error;
+        }
+      } else {
+        for (const payload of dbPayloads) {
+          await this.offlineService.addToQueue('pacientes', 'upsert', payload);
+        }
       }
+
+      // 4. Actualizar BehaviorSubject en memoria una sola vez
+      const current = this.patientsSubject.getValue();
+      const patientMap = new Map<string, Paciente>();
+      for (const p of current) {
+        patientMap.set(p.cedula, p);
+      }
+      for (const p of fullPacientes) {
+        patientMap.set(p.cedula, p);
+      }
+      this.patientsSubject.next(Array.from(patientMap.values()));
+
       return null;
     } catch (error) {
+      console.error('Error importing patients in bulk:', error);
       return error;
     }
   }
@@ -328,7 +323,7 @@ export class PatientService {
     const cleanTarget = target.replace(/[^0-9a-z]/g, '');
     const digitsOnly = target.replace(/[^0-9]/g, '');
 
-    const patient = this.getPatients().find(p => {
+    return this.getPatients().find(p => {
       if (!p.cedula) return false;
       const pCedula = p.cedula.trim().toLowerCase();
       if (pCedula === target) return true;
@@ -343,12 +338,6 @@ export class PatientService {
 
       return false;
     });
-
-    if (patient && !patient.fotoUrl && digitsOnly && digitsOnly.length === 11) {
-      this.fetchPhotoIfMissing(patient.cedula);
-    }
-
-    return patient;
   }
 
   async addSignosVitales(cedula: string, signos: SignoVital) {
@@ -479,5 +468,68 @@ export class PatientService {
     } else {
       throw new Error(resData.message || 'No se encontró información para la cédula ingresada.');
     }
+  }
+  async buscarPacientesRemoto(query: string): Promise<Paciente[]> {
+    if (!navigator.onLine || !query || query.trim().length < 2) return [];
+
+    const normQuery = query.trim().toLowerCase();
+    const cleanDigits = normQuery.replace(/[^0-9]/g, '');
+
+    try {
+      let req = this.supabase.from('pacientes').select('*, signos_vitales(*)').limit(20);
+      
+      // Si son números, buscamos por cédula, sino por nombre
+      if (cleanDigits.length > 2) {
+        req = req.ilike('cedula', `%${cleanDigits}%`);
+      } else {
+        req = req.ilike('nombre', `%${normQuery}%`);
+      }
+
+      const { data, error } = await req;
+      if (error) throw error;
+
+      if (data) {
+        const patients: Paciente[] = data.map((p: DbPaciente) => ({
+          cedula: p.cedula,
+          nombre: p.nombre,
+          edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
+          fecha_nacimiento: p.fecha_nacimiento,
+          profesion: p.profesion || '',
+          seguro: p.seguro || 'Particular',
+          sexo: p.sexo,
+          telefono: p.telefono || '',
+          email: p.email || '',
+          altura: p.altura || '',
+          peso: p.peso || '',
+          carnetSeguro: p.carnet_seguro || '',
+          antecedentesPersonales: p.antecedentes_personales || (p as any).antecedentesPersonales || '',
+          antecedentesFamiliares: p.antecedentes_familiares || (p as any).antecedentesFamiliares || '',
+          alergias: p.alergias || '',
+          tipo_sangre: p.tipo_sangre || '',
+          fotoUrl: p.foto_url || '',
+          direccion: p.direccion || '',
+          signosVitales: (p.signos_vitales || []).map((sv: DbSignoVital) => ({
+            fecha: sv.fecha,
+            presionArterial: sv.presion_arterial,
+            frecuenciaCardiaca: sv.frecuencia_cardiaca,
+            temperatura: sv.temperatura,
+            peso: sv.peso,
+            talla: sv.talla,
+            imc: sv.imc,
+            saturacionOxigeno: sv.saturacion_oxigeno
+          }))
+        }));
+
+        // Guardar los resultados en la caché local offline
+        for (const patient of patients) {
+          await this.offlineService.saveLocalData('pacientes', patient);
+        }
+
+        return patients;
+      }
+    } catch (err) {
+      console.error('Error buscando pacientes remotos:', err);
+    }
+    return [];
   }
 }

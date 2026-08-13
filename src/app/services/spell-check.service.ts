@@ -25,25 +25,9 @@ export class SpellCheckService {
 
   private async _load(): Promise<void> {
     try {
-      // Intentar cargar desde ruta raíz /assets/ o relativa assets/
-      let affRes = await fetch('/assets/dictionaries/es.aff');
-      let dicRes = await fetch('/assets/dictionaries/es.dic');
-
-      if (!affRes.ok || !dicRes.ok) {
-        affRes = await fetch('assets/dictionaries/es.aff');
-        dicRes = await fetch('assets/dictionaries/es.dic');
-      }
-
-      if (!affRes.ok || !dicRes.ok) {
-        throw new Error(`No se pudo cargar el diccionario (AFF status: ${affRes.status}, DIC status: ${dicRes.status})`);
-      }
-
-      const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
-
-      const nspellFn = require('nspell');
-      this.spell = nspellFn(aff, dic);
-      this._isReady = true;
-      console.log('[SpellCheck] ✅ Diccionario español cargado correctamente (%d líneas)', dic.split('\n').length);
+      // El corrector ortográfico basado en nspell causa congelamientos (bloquea el hilo principal)
+      // y no compila correctamente en producción. Lo desactivamos temporalmente.
+      this._isReady = false;
     } catch (err) {
       console.error('[SpellCheck] ❌ Error al inicializar corrector:', err);
     }

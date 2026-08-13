@@ -165,8 +165,14 @@ export class PacientesPage implements OnInit {
     if (this.cargandoFotos) return;
     this.cargandoFotos = true;
 
-    const sinFoto = this.pacientes.filter((p: Paciente) => !p.fotoUrl && p.cedula);
-    for (const paciente of sinFoto) {
+    // Solo cargar fotos para los pacientes que se están mostrando actualmente en pantalla
+    const visibles = this.pacientesFiltrados;
+    const sinFoto = visibles.filter((p: Paciente) => !p.fotoUrl && p.cedula);
+    
+    // Cargar en lotes pequeños de hasta 10 por tanda
+    const lote = sinFoto.slice(0, 10);
+
+    for (const paciente of lote) {
       try {
         const result = await this.patientService.consultarJCE(paciente.cedula) as JceResult;
         if (result && result.fotoUrl) {
@@ -180,7 +186,7 @@ export class PacientesPage implements OnInit {
         // Silently ignore errors for individual patients
       }
       // Small throttle to avoid overwhelming the backend
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     this.cargandoFotos = false;
@@ -188,12 +194,34 @@ export class PacientesPage implements OnInit {
 
   pacientesFiltradosTodos: Paciente[] = [];
 
+  private searchTimeout: any;
+
   actualizarFiltro() {
-    const term = this.filtroNombre.toLowerCase();
-    this.pacientesFiltradosTodos = this.pacientes.filter(p =>
-      p.nombre.toLowerCase().includes(term) ||
-      p.cedula.includes(this.filtroNombre)
-    );
+    const term = (this.filtroNombre || '').trim().toLowerCase();
+    
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+
+    if (!term) {
+      this.pacientesFiltradosTodos = [...this.pacientes];
+      // Cargar fotos para la lista inicial visible
+      this.cargarFotosEnSegundoPlano();
+      return;
+    }
+
+    this.searchTimeout = setTimeout(async () => {
+      if (navigator.onLine && term.length >= 2) {
+        this.pacientesFiltradosTodos = await this.patientService.buscarPacientesRemoto(term);
+      } else {
+        this.pacientesFiltradosTodos = this.pacientes.filter(p =>
+          p.nombre.toLowerCase().includes(term) ||
+          (p.cedula && p.cedula.includes(this.filtroNombre))
+        );
+      }
+      // Cargar fotos para los resultados visibles de la búsqueda
+      this.cargarFotosEnSegundoPlano();
+    }, 300);
   }
 
   get pacientesFiltrados() {
@@ -205,14 +233,17 @@ export class PacientesPage implements OnInit {
     if (element.scrollHeight - element.scrollTop <= element.clientHeight + 100) {
       if (this.displayLimit < this.pacientesFiltradosTodos.length) {
         this.displayLimit += 50;
+        // Cargar fotos para el nuevo lote cargado visible
+        this.cargarFotosEnSegundoPlano();
       }
     }
   }
 
-  verHistorial(paciente: Paciente) {
+  async verHistorial(paciente: Paciente) {
     this.pacienteSeleccionado = paciente;
-    this.historialPaciente = this.consultationService.getPatientHistory(paciente.cedula);
+    this.historialPaciente = []; // Limpiamos mientras carga
     this.showHistoryModal = true;
+    this.historialPaciente = await this.consultationService.cargarHistorialPaciente(paciente.cedula);
   }
 
   editarPaciente(paciente: Paciente) {
