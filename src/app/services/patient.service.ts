@@ -55,11 +55,12 @@ export class PatientService {
   }
 
   private setupAutoSync() {
-    setInterval(() => {
+    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
+    /* setInterval(() => {
       if (navigator.onLine) {
         this.refreshPatients();
       }
-    }, 15000);
+    }, 15000); */
 
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {

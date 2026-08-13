@@ -47,12 +47,12 @@ export class AppointmentService {
   }
 
   private setupAutoSync() {
-    // Poll every 10 seconds to ensure multi-user sync even if WebSocket misses events
-    setInterval(() => {
+    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
+    /* setInterval(() => {
       if (navigator.onLine) {
         this.refreshAppointments();
       }
-    }, 10000);
+    }, 10000); */
 
     // Sync on tab focus or visibility change
     if (typeof window !== 'undefined') {
@@ -73,9 +73,43 @@ export class AppointmentService {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'citas' },
-        async () => {
+        async (payload: any) => {
           this.ngZone.run(async () => {
-            await this.refreshAppointments();
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const c = payload.new;
+              const newCita: Cita = {
+                id: c.id,
+                turno: Number(c.turno),
+                nombre: c.nombre,
+                cedula: c.cedula,
+                edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
+                fecha_nacimiento: c.fecha_nacimiento,
+                seguro: c.seguro || 'Particular',
+                sexo: c.sexo,
+                fecha: c.fecha,
+                estado: c.estado,
+                hora: c.hora,
+                altura: c.altura || '',
+                peso: c.peso || '',
+                profesion: c.profesion || '',
+                instruccionCobro: c.instruccion_cobro || 'cobrar',
+                montoCobrado: c.monto_cobrado || 0,
+                carnetSeguro: c.carnet_seguro || '',
+                telefono: c.telefono || ''
+              };
+              const currentList = this.appointmentsSubject.value;
+              const index = currentList.findIndex(item => item.id === newCita.id || (item.turno === newCita.turno && item.fecha === newCita.fecha));
+              let updated = [...currentList];
+              if (index >= 0) updated[index] = newCita;
+              else updated.push(newCita);
+              this.appointmentsSubject.next(updated);
+              await this.offlineService.saveLocalData('citas', newCita);
+            } else if (payload.eventType === 'DELETE') {
+              const currentList = this.appointmentsSubject.value;
+              const updated = currentList.filter(item => item.id !== payload.old.id);
+              this.appointmentsSubject.next(updated);
+              await this.offlineService.deleteLocalData('citas', payload.old.id);
+            }
           });
         }
       )
