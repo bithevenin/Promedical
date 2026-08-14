@@ -74,24 +74,97 @@ export class PatientService {
     }
   }
 
+  private syncingRemote = false;
+
   async refreshPatients() {
     try {
-      // 1. Cargar rápido desde almacenamiento local para que la UI no espere
+      // 1. Cargar rápido desde almacenamiento local para respuesta inmediata
       const localPatients = await this.offlineService.getLocalData<Paciente>('pacientes');
       if (localPatients && localPatients.length > 0) {
         this.patientsSubject.next(localPatients);
       }
 
-      if (navigator.onLine) {
-        // En lugar de descargar 21,000 registros de golpe, confiaremos en la búsqueda remota 
-        // bajo demanda (Server-Side Search). Solo cargamos los locales.
+      // 2. Si hay conexión a internet, sincronizar los 21,147 pacientes desde Supabase
+      if (navigator.onLine && !this.syncingRemote) {
+        this.syncAllRemotePatients();
       }
     } catch (error) {
-      // Network issue or offline
+      console.error('Error refreshing patients:', error);
     }
+  }
 
-    const local = await this.offlineService.getLocalData<Paciente>('pacientes');
-    this.patientsSubject.next(local);
+  async syncAllRemotePatients() {
+    if (this.syncingRemote || !navigator.onLine) return;
+    this.syncingRemote = true;
+
+    try {
+      let offset = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      const allPatients: Paciente[] = [];
+
+      while (hasMore) {
+        const { data, error } = await this.supabase
+          .from('pacientes')
+          .select('*, signos_vitales(*)')
+          .range(offset, offset + batchSize - 1);
+
+        if (error || !data || data.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        const mapped: Paciente[] = data.map((p: DbPaciente) => ({
+          cedula: p.cedula,
+          nombre: p.nombre,
+          edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : p.edad,
+          fecha_nacimiento: p.fecha_nacimiento,
+          profesion: p.profesion || '',
+          seguro: p.seguro || 'Particular',
+          sexo: p.sexo,
+          telefono: p.telefono || '',
+          email: p.email || '',
+          altura: p.altura || '',
+          peso: p.peso || '',
+          carnetSeguro: p.carnet_seguro || '',
+          antecedentesPersonales: p.antecedentes_personales || (p as any).antecedentesPersonales || '',
+          antecedentesFamiliares: p.antecedentes_familiares || (p as any).antecedentesFamiliares || '',
+          alergias: p.alergias || '',
+          tipo_sangre: p.tipo_sangre || '',
+          fotoUrl: p.foto_url || '',
+          direccion: p.direccion || '',
+          signosVitales: (p.signos_vitales || []).map((sv: DbSignoVital) => ({
+            fecha: sv.fecha,
+            presionArterial: sv.presion_arterial,
+            frecuenciaCardiaca: sv.frecuencia_cardiaca,
+            temperatura: sv.temperatura,
+            peso: sv.peso,
+            talla: sv.talla,
+            imc: sv.imc,
+            saturacionOxigeno: sv.saturacion_oxigeno
+          }))
+        }));
+
+        allPatients.push(...mapped);
+        offset += batchSize;
+
+        // Emitir el progreso para que el contador de la interfaz aumente dinámicamente
+        this.patientsSubject.next([...allPatients]);
+
+        if (data.length < batchSize) {
+          hasMore = false;
+        }
+      }
+
+      if (allPatients.length > 0) {
+        await this.offlineService.saveLocalDataBulk('pacientes', allPatients);
+        this.patientsSubject.next(allPatients);
+      }
+    } catch (err) {
+      console.error('Error syncing remote patients:', err);
+    } finally {
+      this.syncingRemote = false;
+    }
   }
 
   getPatients(): Paciente[] {
