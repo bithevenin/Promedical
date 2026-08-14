@@ -61,13 +61,48 @@ export class AuthService {
 
   async loadProfile(uid: string) {
     try {
-      const { data, error } = await this.supabase
+      // 1. Intentar buscar por ID directo
+      let { data, error } = await this.supabase
         .from('usuarios')
         .select('*')
         .eq('id', uid)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      const session = this.userSession.value;
+      const userEmail = session?.user?.email;
+
+      // 2. Si no coincide por ID (por migración de Auth), buscar por correo y sincronizar el ID
+      if ((!data || error) && userEmail) {
+        const { data: dataByEmail } = await this.supabase
+          .from('usuarios')
+          .select('*')
+          .ilike('correo', userEmail)
+          .maybeSingle();
+
+        if (dataByEmail) {
+          data = { ...dataByEmail, id: uid };
+          await this.supabase
+            .from('usuarios')
+            .update({ id: uid })
+            .ilike('correo', userEmail);
+        }
+      }
+
+      // 3. Respaldo: Si el usuario existe en Auth pero no en la tabla usuarios, crear perfil por defecto
+      if (!data && session?.user) {
+        const meta = session.user.user_metadata || {};
+        const newProfile: UserProfile = {
+          id: uid,
+          nombre: meta['nombre'] || userEmail?.split('@')[0] || 'Usuario',
+          correo: userEmail || '',
+          foto_url: meta['foto_url'] || '',
+          rol: meta['rol'] || 'doctor',
+          especialidad: meta['especialidad'] || ''
+        };
+
+        await this.supabase.from('usuarios').upsert(newProfile);
+        data = newProfile;
+      }
 
       if (data) {
         this.userProfile.next(data);
