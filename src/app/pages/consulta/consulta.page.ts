@@ -771,6 +771,33 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     this.spellPopup.visible = false;
   }
 
+  /** Añade la palabra al diccionario personalizado del médico */
+  addWordToDictionary() {
+    if (this.spellPopup.word) {
+      const word = this.spellPopup.word;
+      this.spellCheckService.addCustomWord(word);
+      this.presentToast(`"${word}" agregada al diccionario médico`, 'success');
+
+      // Limpiar los subrayados de esta palabra en ambos editores
+      const cleanTarget = word.toLowerCase();
+      [this.diagnosticoEditor, this.recetaEditor].forEach(editorRef => {
+        if (editorRef?.nativeElement) {
+          editorRef.nativeElement.querySelectorAll('.spell-error').forEach((span: Element) => {
+            const w = (span.getAttribute('data-word') || span.textContent || '').toLowerCase();
+            if (w === cleanTarget) {
+              const parent = span.parentNode;
+              if (parent) {
+                while (span.firstChild) parent.insertBefore(span.firstChild, span);
+                parent.removeChild(span);
+              }
+            }
+          });
+        }
+      });
+    }
+    this.spellPopup.visible = false;
+  }
+
   /** Devuelve el HTML del editor sin marcadores de corrección ortográfica */
   private getCleanHTML(el: HTMLElement): string {
     const clone = el.cloneNode(true) as HTMLElement;
