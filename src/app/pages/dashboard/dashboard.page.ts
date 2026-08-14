@@ -176,6 +176,56 @@ export class DashboardPage implements OnInit {
       }));
   });
 
+  monthlyGoalProgress = computed(() => {
+    const meta = 50000;
+    const mesActual = new Date().getMonth();
+    const añoActual = new Date().getFullYear();
+    
+    const ingresosMes = this.allTransactions()
+      .filter(t => {
+        let dateObj: Date;
+        if (t.fecha.includes('-')) {
+          const [y, m, d] = t.fecha.split('-');
+          dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+        } else if (t.fecha.includes('/')) {
+          const parts = t.fecha.split('/');
+          if (parts[0].length === 4) {
+            dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          } else {
+            const p0 = Number(parts[0]);
+            const p1 = Number(parts[1]);
+            const p2 = Number(parts[2]);
+            if (p0 > 12) {
+              dateObj = new Date(p2, p1 - 1, p0);
+            } else if (p1 > 12) {
+              dateObj = new Date(p2, p0 - 1, p1);
+            } else {
+              dateObj = new Date(p2, p1 - 1, p0);
+            }
+          }
+        } else {
+          dateObj = new Date(t.fecha);
+        }
+        return t.categoria === 'Ingreso' && 
+               !isNaN(dateObj.getTime()) && 
+               dateObj.getMonth() === mesActual && 
+               dateObj.getFullYear() === añoActual;
+      })
+      .reduce((sum, t) => sum + t.monto, 0);
+
+    return Math.min(Math.round((ingresosMes / meta) * 100), 100);
+  });
+
+  nextAppointment = computed(() => {
+    const today = getLocalDateString();
+    const citas = this.allCitas().filter(c => c.fecha === today && (c.estado === 'espera' || c.estado === 'consulta'));
+    if (citas.length > 0) {
+      const sorted = citas.sort((a, b) => a.hora.localeCompare(b.hora));
+      return sorted[0];
+    }
+    return null;
+  });
+
   constructor(
     private router: Router,
     private appointmentService: AppointmentService,
