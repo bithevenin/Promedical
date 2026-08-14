@@ -180,19 +180,29 @@
               <div>
                 <div class="flex justify-between items-end mb-2 text-white">
                   <span class="text-[10px] font-black opacity-80 uppercase tracking-widest text-white">Metas Mensuales</span>
-                  <span class="text-xl font-black text-white">85%</span>
+                  <span class="text-xl font-black text-white">{{ monthlyGoalProgress() }}%</span>
                 </div>
                 <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: 85%"></div>
+                  <div class="h-full bg-white rounded-full transition-all duration-1000" [style.width.%]="monthlyGoalProgress()"></div>
                 </div>
               </div>
 
               <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl">
                 <p class="text-[9px] font-black opacity-60 uppercase tracking-widest mb-1 text-white">Próxima Consulta</p>
+                @if (nextAppointment()) {
                 <div class="flex items-center gap-2">
                   <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                  <p class="text-xs font-black text-white">Dr. Carlos V. <span class="opacity-80 ml-1 font-medium text-white">(14:30)</span></p>
+                  <p class="text-xs font-black text-white truncate" [title]="nextAppointment()?.nombre">
+                    {{ nextAppointment()?.nombre }} 
+                    <span class="opacity-80 ml-1 font-medium text-white">({{ nextAppointment()?.hora }})</span>
+                  </p>
                 </div>
+                } @else {
+                <div class="flex items-center gap-2">
+                  <div class="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                  <p class="text-xs font-black text-white opacity-80">No hay citas pendientes</p>
+                </div>
+                }
               </div>
             </div>
 
