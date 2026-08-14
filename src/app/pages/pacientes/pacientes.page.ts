@@ -140,12 +140,15 @@ export class PacientesPage implements OnInit {
     public themeService: ThemeService
   ) { }
 
+  private fotosCargadasEnSesion = false;
+
   ngOnInit() {
     this.patientService.patients$.subscribe(patients => {
       this.pacientes = patients;
       this.actualizarFiltro();
-      // Auto-load photos for patients without one, once the list is ready
-      if (!this.cargandoFotos && patients.length > 0) {
+      // Iniciar la carga suave de fotos solo una vez por sesión para evitar bucles de actualización
+      if (!this.fotosCargadasEnSesion && !this.cargandoFotos && patients.length > 0) {
+        this.fotosCargadasEnSesion = true;
         this.cargarFotosEnSegundoPlano();
       }
     });

@@ -75,6 +75,7 @@ export class PatientService {
   }
 
   private syncingRemote = false;
+  private hasSyncedThisSession = false;
 
   async refreshPatients() {
     try {
@@ -84,8 +85,14 @@ export class PatientService {
         this.patientsSubject.next(localPatients);
       }
 
-      // 2. Si hay conexión a internet, sincronizar los 21,147 pacientes desde Supabase
-      if (navigator.onLine && !this.syncingRemote) {
+      // 2. Si el almacenamiento local ya tiene los pacientes (20,000+), no volver a descargar por red
+      if (localPatients && localPatients.length >= 20000) {
+        return;
+      }
+
+      // 3. Sincronizar remotamente una sola vez por sesión si faltan datos locales
+      if (navigator.onLine && !this.syncingRemote && !this.hasSyncedThisSession) {
+        this.hasSyncedThisSession = true;
         this.syncAllRemotePatients();
       }
     } catch (error) {
