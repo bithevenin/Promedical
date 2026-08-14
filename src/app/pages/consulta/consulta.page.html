@@ -1045,8 +1045,12 @@
     </div>
 
     <!-- Acciones -->
-    <div class="spell-popup-footer">
-      <button class="spell-ignore-btn" (click)="ignoreSpellError()">
+    <div class="spell-popup-footer flex items-center justify-between gap-2 p-2 border-t border-white/10">
+      <button class="spell-add-btn text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-all" (click)="addWordToDictionary()">
+        <ion-icon name="add-circle-outline" class="text-xs"></ion-icon>
+        Agregar al Diccionario
+      </button>
+      <button class="spell-ignore-btn text-[10px] font-bold text-slate-400 hover:text-white flex items-center gap-1 bg-white/5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-all" (click)="ignoreSpellError()">
         <ion-icon name="eye-off-outline" class="text-xs"></ion-icon>
         Ignorar
       </button>
