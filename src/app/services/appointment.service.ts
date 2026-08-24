@@ -232,10 +232,10 @@ export class AppointmentService {
         telefono: cita.telefono
       };
       await this.offlineService.addToQueue('citas', 'insert', dbData);
-    } finally {
-      // Full refresh to get real ID from Supabase and sync all data
-      await this.refreshAppointments();
     }
+    // No se llama refreshAppointments() aquí para evitar la race condition:
+    // la cita ya fue emitida optimistamente al BehaviorSubject y el canal
+    // Realtime de Supabase actualiza el ID real sin necesidad de clearStore+reload.
   }
 
   async updateAppointmentStatus(turno: number, estado: Cita['estado'], extraData?: Partial<Cita>) {

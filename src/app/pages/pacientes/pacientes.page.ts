@@ -208,13 +208,17 @@ export class PacientesPage implements OnInit {
 
     if (!term) {
       this.pacientesFiltradosTodos = [...this.pacientes];
-      // Cargar fotos para la lista inicial visible
-      this.cargarFotosEnSegundoPlano();
+      // Bug #9 fix: NO llamar cargarFotosEnSegundoPlano() aquí — se dispararía
+      // 21 veces durante la carga inicial de 21k pacientes (1 por cada batch de 1000).
+      // La carga de fotos ya está protegida por fotosCargadasEnSesion en ngOnInit.
       return;
     }
 
     this.searchTimeout = setTimeout(async () => {
-      if (navigator.onLine && term.length >= 2) {
+      // Bug #10 fix: solo ir a Supabase si NO hay datos locales en RAM.
+      // Con 21k pacientes en memoria, la búsqueda local es instantánea y no
+      // gasta cuota de egress de Supabase.
+      if (navigator.onLine && term.length >= 2 && this.pacientes.length === 0) {
         this.pacientesFiltradosTodos = await this.patientService.buscarPacientesRemoto(term);
       } else {
         this.pacientesFiltradosTodos = this.pacientes.filter(p =>
@@ -222,8 +226,6 @@ export class PacientesPage implements OnInit {
           (p.cedula && p.cedula.includes(this.filtroNombre))
         );
       }
-      // Cargar fotos para los resultados visibles de la búsqueda
-      this.cargarFotosEnSegundoPlano();
     }, 300);
   }
 

@@ -164,8 +164,15 @@ export class PatientService {
       }
 
       if (allPatients.length > 0) {
-        await this.offlineService.saveLocalDataBulk('pacientes', allPatients);
-        this.patientsSubject.next(allPatients);
+        // Merge inteligente: preservar pacientes locales que aún no confirmó Supabase
+        // (recién creados por la secretaria que aún no llegaron al servidor)
+        const localSnapshot = await this.offlineService.getLocalData<Paciente>('pacientes');
+        const remoteMap = new Map<string, Paciente>(allPatients.map(p => [p.cedula, p]));
+        const onlyLocal = localSnapshot.filter(p => !remoteMap.has(p.cedula));
+        const merged = [...allPatients, ...onlyLocal];
+
+        await this.offlineService.saveLocalDataBulk('pacientes', merged);
+        this.patientsSubject.next(merged);
       }
     } catch (err) {
       console.error('Error syncing remote patients:', err);
@@ -278,11 +285,12 @@ export class PatientService {
         const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
         if (error) throw error;
       } else {
-        await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
+        // queryKey y queryValue van como parámetros posicionales (4to y 5to argumento)
+        await this.offlineService.addToQueue('pacientes', 'delete', null, 'cedula', cedula);
       }
     } catch (error) {
       console.error('Error deleting patient:', error);
-      await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
+      await this.offlineService.addToQueue('pacientes', 'delete', null, 'cedula', cedula);
     }
   }
 
@@ -525,9 +533,11 @@ export class PatientService {
 
     const baseUrl = environment.jceApiUrl || 'https://unrude-unpopular-gerri.ngrok-free.dev';
     const targetUrl = `${baseUrl}/api/v1/cedula-queries/query`;
-    // Usamos corsproxy.io para eludir el bloqueo de CORS directamente desde el frontend en desarrollo
+    // En localhost usamos el proxy de Angular Dev Server (/api/v1/...) para evitar CORS.
+    // El proxy reenvía la petición desde Node.js, sin restricciones de CORS del browser.
+    // En producción llamamos directo al servidor.
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocalhost ? `https://corsproxy.io/?${encodeURIComponent(targetUrl)}` : targetUrl;
+    const apiUrl = isLocalhost ? '/api/v1/cedula-queries/query' : targetUrl;
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -539,6 +549,12 @@ export class PatientService {
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('El servidor de consulta JCE no está disponible. Verifique que el servidor ngrok esté activo.');
+      }
+      if (response.status === 502 || response.status === 503) {
+        throw new Error('El servidor JCE está caído o la URL ngrok cambió. Contacte al administrador del sistema.');
+      }
       throw new Error(`Error en el servidor JCE: Código ${response.status}`);
     }
 

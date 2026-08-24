@@ -73,9 +73,8 @@ export class FinancialService {
         if (error) throw error;
         if (data) {
           await this.offlineService.clearStore('transacciones');
-          for (const t of data) {
-            await this.offlineService.saveLocalData('transacciones', t);
-          }
+          // Bug #8 fix: una sola transacción IDB en lugar de N individuales
+          await this.offlineService.saveLocalDataBulk('transacciones', data);
           this.transactionsSubject.next(data);
           return;
         }
@@ -108,9 +107,8 @@ export class FinancialService {
           }));
 
           await this.offlineService.clearStore('facturas_seguro');
-          for (const f of facturas) {
-            await this.offlineService.saveLocalData('facturas_seguro', f);
-          }
+          // Bug #8 fix: una sola transacción IDB
+          await this.offlineService.saveLocalDataBulk('facturas_seguro', facturas);
           this.facturasSeguroSubject.next(facturas);
           return;
         }
@@ -142,9 +140,8 @@ export class FinancialService {
           }));
 
           await this.offlineService.clearStore('reportes_pagos_seguro');
-          for (const r of reportes) {
-            await this.offlineService.saveLocalData('reportes_pagos_seguro', r);
-          }
+          // Bug #8 fix: una sola transacción IDB
+          await this.offlineService.saveLocalDataBulk('reportes_pagos_seguro', reportes);
           this.reportesPagosSeguroSubject.next(reportes);
           return;
         }
@@ -165,9 +162,13 @@ export class FinancialService {
     };
 
     try {
-      // 1. Save locally
+      // 1. Save locally + optimistic update (sin refreshTransactions para evitar race condition)
       await this.offlineService.saveLocalData('transacciones', localTrans);
-      await this.refreshTransactions();
+      const currentTrans = this.transactionsSubject.getValue();
+      const idxTrans = currentTrans.findIndex(t => t.id === localTrans.id);
+      if (idxTrans >= 0) currentTrans[idxTrans] = localTrans;
+      else currentTrans.unshift(localTrans);
+      this.transactionsSubject.next([...currentTrans]);
 
       // 2. Prepare payload
       const dbData = {
@@ -265,9 +266,13 @@ export class FinancialService {
     };
 
     try {
-      // 1. Save locally
+      // 1. Save locally + optimistic update (sin refreshFacturasSeguro para evitar race condition)
       await this.offlineService.saveLocalData('facturas_seguro', localFact);
-      await this.refreshFacturasSeguro();
+      const currentFacts = this.facturasSeguroSubject.getValue();
+      const idxFact = currentFacts.findIndex(f => f.id === localFact.id);
+      if (idxFact >= 0) currentFacts[idxFact] = localFact;
+      else currentFacts.unshift(localFact);
+      this.facturasSeguroSubject.next([...currentFacts]);
 
       // 2. Sync payload
       const dbData = {
@@ -307,14 +312,16 @@ export class FinancialService {
     try {
       const today = getLocalDateString();
 
-      // 1. Update locally
+      // 1. Update locally + optimistic update (sin refreshFacturasSeguro para evitar race condition)
       const local = await this.offlineService.getLocalData<FacturaSeguro>('facturas_seguro');
       const target = local.find(f => f.id === id);
       if (target) {
         target.estado = 'pagado';
         target.fechaPago = today;
         await this.offlineService.saveLocalData('facturas_seguro', target);
-        await this.refreshFacturasSeguro();
+        const currentFacts = this.facturasSeguroSubject.getValue();
+        const idx = currentFacts.findIndex(f => f.id === id);
+        if (idx >= 0) { currentFacts[idx] = { ...target }; this.facturasSeguroSubject.next([...currentFacts]); }
       }
 
       // 2. Sync
@@ -351,9 +358,13 @@ export class FinancialService {
     } as ReportePagoSeguro;
 
     try {
-      // 1. Save locally
+      // 1. Save locally + optimistic update (sin refreshReportesPagosSeguro para evitar race condition)
       await this.offlineService.saveLocalData('reportes_pagos_seguro', localReport);
-      await this.refreshReportesPagosSeguro();
+      const currentReps = this.reportesPagosSeguroSubject.getValue();
+      const idxRep = currentReps.findIndex(r => r.id === localReport.id);
+      if (idxRep >= 0) currentReps[idxRep] = localReport;
+      else currentReps.unshift(localReport);
+      this.reportesPagosSeguroSubject.next([...currentReps]);
 
       // 2. Sync
       const dbData = {
@@ -387,7 +398,7 @@ export class FinancialService {
 
   async registrarPagoRecibido(reporte: ReportePagoSeguro, montoRecibido: number, fechaPago: string) {
     try {
-      // 1. Update locally
+      // 1. Update locally + optimistic update (sin refreshReportesPagosSeguro para evitar race condition)
       const local = await this.offlineService.getLocalData<ReportePagoSeguro>('reportes_pagos_seguro');
       const target = local.find(r => r.id === reporte.id);
       if (target) {
@@ -395,7 +406,9 @@ export class FinancialService {
         target.fechaPago = fechaPago;
         target.estado = 'completado';
         await this.offlineService.saveLocalData('reportes_pagos_seguro', target);
-        await this.refreshReportesPagosSeguro();
+        const currentReps = this.reportesPagosSeguroSubject.getValue();
+        const idx = currentReps.findIndex(r => r.id === reporte.id);
+        if (idx >= 0) { currentReps[idx] = { ...target }; this.reportesPagosSeguroSubject.next([...currentReps]); }
       }
 
       // Add major ledger entry locally
