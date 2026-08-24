@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
+import { environment } from '../../environments/environment';
 
 interface QueueItem {
   id: number;
@@ -22,6 +24,14 @@ export class OfflineService {
   private supabase: SupabaseClient;
   private isSyncing = false;
 
+  /** true = Supabase es alcanzable, false = conexión cortada o bloqueada */
+  private supabaseReachableSubject = new BehaviorSubject<boolean>(true);
+  supabaseReachable$ = this.supabaseReachableSubject.asObservable();
+
+  /** Emite el nombre de la entidad que se guardó en modo offline (para disparar el modal) */
+  private offlineSaveSubject = new Subject<string>();
+  offlineSave$ = this.offlineSaveSubject.asObservable();
+
   constructor(private supabaseService: SupabaseService) {
     this.supabase = this.supabaseService.client;
     this.initDatabase().then(() => {
@@ -29,8 +39,15 @@ export class OfflineService {
     });
 
     window.addEventListener('online', () => {
+      this.updateReachability();
       this.checkAndSync();
     });
+    window.addEventListener('offline', () => {
+      this.supabaseReachableSubject.next(false);
+    });
+
+    // Sondear cada 15s para detectar cables bloqueados (falsos positivos de navigator.onLine)
+    setInterval(() => this.updateReachability(), 15000);
   }
 
   private initDatabase(): Promise<IDBDatabase> {
@@ -165,15 +182,59 @@ export class OfflineService {
   }
 
   /**
-   * Verifica si hay conexión de red disponible.
-   * navigator.onLine es suficiente para una app en LAN cableada.
+   * Verifica si hay conexión de red disponible a nivel de hardware.
    */
   isOnline(): boolean {
     return navigator.onLine;
   }
 
+  /**
+   * Verifica conectividad REAL con Supabase (previene falsos positivos del cable).
+   * Hace un GET a la tabla pacientes para obtener status 200 (sin errores en consola).
+   */
+  async isOnlineAndReachable(): Promise<boolean> {
+    if (!navigator.onLine) {
+      this.supabaseReachableSubject.next(false);
+      return false;
+    }
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+      const url = `${environment.supabaseUrl}/rest/v1/pacientes?select=cedula&limit=1`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': environment.supabaseKey,
+          'Authorization': `Bearer ${environment.supabaseKey}`
+        },
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      clearTimeout(timeout);
+      const reachable = response.ok;
+      this.supabaseReachableSubject.next(reachable);
+      return reachable;
+    } catch {
+      this.supabaseReachableSubject.next(false);
+      return false;
+    }
+  }
+
+  /** Llama a isOnlineAndReachable y actualiza el indicador de estado (sin retornar nada). */
+  async updateReachability(): Promise<void> {
+    await this.isOnlineAndReachable();
+  }
+
+  /**
+   * Notifica a la UI que un dato se guardó en modo offline.
+   * @param entityName Nombre de la entidad guardada (ej: 'paciente', 'cita')
+   */
+  notifyOfflineSave(entityName: string): void {
+    this.offlineSaveSubject.next(entityName);
+  }
+
   async checkAndSync(): Promise<void> {
-    if (!this.isOnline() || this.isSyncing) return;
+    if (!(await this.isOnlineAndReachable()) || this.isSyncing) return;
     this.isSyncing = true;
 
     try {
