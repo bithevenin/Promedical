@@ -185,9 +185,13 @@ export class ConsultationService {
     };
 
     try {
-      // 1. Save locally
+      // 1. Save locally + optimistic update (sin refreshConsultas para evitar race condition)
       await this.offlineService.saveLocalData('consultas', localConsulta);
-      await this.refreshConsultas();
+      const currentConsultas = this.consultationsSubject.getValue();
+      const idxC = currentConsultas.findIndex(c => c.id === localConsulta.id);
+      if (idxC >= 0) currentConsultas[idxC] = localConsulta;
+      else currentConsultas.unshift(localConsulta);
+      this.consultationsSubject.next([...currentConsultas]);
 
       // 2. Prepare payload
       const dbData = {

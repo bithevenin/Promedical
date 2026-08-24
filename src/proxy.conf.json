@@ -1,8 +1,11 @@
 {
   "/api": {
-    "target": "https://edging-rarity-routing.ngrok-free.dev",
+    "target": "https://unrude-unpopular-gerri.ngrok-free.dev",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "headers": {
+      "ngrok-skip-browser-warning": "true"
+    }
   }
 }

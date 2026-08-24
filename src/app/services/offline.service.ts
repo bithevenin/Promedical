@@ -164,6 +164,10 @@ export class OfflineService {
     this.checkAndSync();
   }
 
+  /**
+   * Verifica si hay conexión de red disponible.
+   * navigator.onLine es suficiente para una app en LAN cableada.
+   */
   isOnline(): boolean {
     return navigator.onLine;
   }
