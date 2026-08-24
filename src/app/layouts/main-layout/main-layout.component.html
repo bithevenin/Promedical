@@ -46,9 +46,17 @@
     <header class="header">
       <h2>Dashboard</h2>
 
-      <div class="user">
-        <img src="https://i.pravatar.cc/40?img=12">
-        <span>{{ userName }}</span>
+      <div class="header-right">
+        <!-- INDICADOR DE CONEXIÓN PERSISTENTE -->
+        <div class="conn-badge" [class.offline]="!supabaseOnline" [title]="supabaseOnline ? 'Conectado al servidor' : 'Sin conexión con el servidor'">
+          <span class="conn-dot"></span>
+          <span class="conn-label">{{ supabaseOnline ? 'En línea' : 'Sin conexión' }}</span>
+        </div>
+
+        <div class="user">
+          <img src="https://i.pravatar.cc/40?img=12">
+          <span>{{ userName }}</span>
+        </div>
       </div>
     </header>
 
@@ -59,4 +67,30 @@
 
   </main>
 
+</div>
+
+<!-- =====================================================================
+     MODAL DE ADVERTENCIA OFFLINE
+     Se muestra cuando un dato se guardó en la cola (sin llegar a Supabase)
+     ===================================================================== -->
+<div class="offline-modal-overlay" *ngIf="showOfflineModal" (click)="$event.stopPropagation()">
+  <div class="offline-modal">
+    <div class="offline-modal-icon">
+      <ion-icon name="warning-outline"></ion-icon>
+    </div>
+    <h3>⚠️ Guardado sin conexión</h3>
+    <p>
+      El <strong>{{ offlineEntityName }}</strong> fue guardado en <strong>esta PC solamente</strong>.
+    </p>
+    <p class="offline-modal-detail">
+      Hay un problema de conexión con el servidor. El doctor <strong>NO verá este registro</strong>
+      hasta que se restablezca el internet y la app se sincronice automáticamente.
+    </p>
+    <p class="offline-modal-action-hint">
+      Verifique el cable de red o la conexión Wi-Fi antes de continuar.
+    </p>
+    <button class="offline-modal-btn" (click)="cerrarModalOffline()">
+      Entendido
+    </button>
+  </div>
 </div>

@@ -227,6 +227,7 @@ export class PatientService {
         if (error) throw error;
       } else {
         await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
+        this.offlineService.notifyOfflineSave('paciente');
       }
     } catch (error) {
       console.error('Error saving patient to Supabase, queuing for offline sync:', error);
@@ -251,6 +252,7 @@ export class PatientService {
         direccion: paciente.direccion || null
       };
       await this.offlineService.addToQueue('pacientes', 'upsert', dbDataOffline);
+      this.offlineService.notifyOfflineSave('paciente');
     } finally {
       // Actualizar memoria RAM directamente sin recargar 21,000 registros
       const current = this.patientsSubject.getValue();
