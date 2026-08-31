@@ -58,6 +58,21 @@ export class SupabaseService {
             localStorage.setItem('promedical_lan_server_host', host);
             localStorage.setItem('promedical_lan_server_port', String(port));
         }
+        if (this.localClient) {
+            this.localClient.reconnect();
+        }
+    }
+
+    reconnectLan() {
+        if (this.localClient) {
+            this.localClient.reconnect();
+        }
+    }
+
+    async broadcastReload() {
+        if (this.localClient) {
+            await this.localClient.broadcastReload();
+        }
     }
 
     getLanServer(): { host: string; port: string } {

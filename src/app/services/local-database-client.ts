@@ -7,6 +7,7 @@ export class LocalQueryBuilder<T = any> {
   private filters: Record<string, any> = {};
   private orderConfig: { column: string; ascending: boolean } | null = null;
   private limitCount: number | null = null;
+  private offsetCount: number | null = null;
   private isSingle = false;
   private isMaybeSingle = false;
   private operation: 'select' | 'insert' | 'update' | 'delete' | 'upsert' = 'select';
@@ -87,6 +88,17 @@ export class LocalQueryBuilder<T = any> {
     return this;
   }
 
+  offset(count: number): this {
+    this.offsetCount = count;
+    return this;
+  }
+
+  range(from: number, to: number): this {
+    this.offsetCount = from;
+    this.limitCount = (to - from) + 1;
+    return this;
+  }
+
   single(): Promise<LocalResponse<T>> {
     this.isSingle = true;
     return this.execute();
@@ -118,6 +130,9 @@ export class LocalQueryBuilder<T = any> {
       }
       if (this.limitCount !== null) {
         url.searchParams.append('limit', String(this.limitCount));
+      }
+      if (this.offsetCount !== null && this.offsetCount > 0) {
+        url.searchParams.append('offset', String(this.offsetCount));
       }
 
       let response: Response;
@@ -189,13 +204,36 @@ export class LocalChannel {
   ) {}
 
   on(eventType: string, filter: any, callback: (payload: any) => void): this {
+    const targetTable = filter?.table || (typeof filter === 'string' ? filter : undefined);
     this.callbacks.push({ event: eventType, callback });
-    this.wsManager.registerListener(this.channelName, filter?.table, (msg) => {
-      callback({
-        eventType: msg.event,
-        new: msg.record || {},
-        old: msg.oldRecord || {}
-      });
+    this.wsManager.registerListener(this.channelName, targetTable, (msg) => {
+      if (msg.event === 'RELOAD_ALL') {
+        callback({
+          eventType: 'RELOAD_ALL',
+          new: {},
+          old: {}
+        });
+        return;
+      }
+
+      const records = Array.isArray(msg.record) ? msg.record : (msg.record ? [msg.record] : []);
+      const mappedEvent = msg.event === 'UPSERT' ? 'UPDATE' : (msg.event || 'UPDATE');
+
+      if (records.length === 0) {
+        callback({
+          eventType: mappedEvent,
+          new: msg.record || {},
+          old: msg.oldRecord || msg.filters || {}
+        });
+      } else {
+        for (const item of records) {
+          callback({
+            eventType: mappedEvent,
+            new: item,
+            old: msg.oldRecord || {}
+          });
+        }
+      }
     });
     return this;
   }
@@ -214,16 +252,47 @@ export class LocalWebSocketManager {
   private ws: WebSocket | null = null;
   private listeners: Map<string, Array<{ table?: string; callback: (data: any) => void }>> = new Map();
   private reconnectTimeout: any = null;
+  private pingInterval: any = null;
 
   constructor(private getWsUrl: () => string) {
     this.connect();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.reconnect());
+      window.addEventListener('focus', () => {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+          this.reconnect();
+        }
+      });
+    }
   }
 
   connect() {
     if (typeof window === 'undefined') return;
     try {
       const url = this.getWsUrl();
+      if (this.ws) {
+        try {
+          this.ws.onclose = null;
+          this.ws.onerror = null;
+          this.ws.onmessage = null;
+          this.ws.close();
+        } catch {}
+      }
+
       this.ws = new WebSocket(url);
+
+      this.ws.onopen = () => {
+        console.log('[LocalWS] Connected to LAN server:', url);
+        clearInterval(this.pingInterval);
+        this.pingInterval = setInterval(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            try {
+              this.ws.send(JSON.stringify({ type: 'ping' }));
+            } catch {}
+          }
+        }, 15000);
+      };
 
       this.ws.onmessage = (event) => {
         try {
@@ -231,7 +300,7 @@ export class LocalWebSocketManager {
           if (data.type === 'broadcast') {
             for (const [, list] of this.listeners) {
               for (const listener of list) {
-                if (!listener.table || listener.table === data.table) {
+                if (!listener.table || listener.table === '*' || listener.table === data.table) {
                   listener.callback(data);
                 }
               }
@@ -243,16 +312,26 @@ export class LocalWebSocketManager {
       };
 
       this.ws.onclose = () => {
+        clearInterval(this.pingInterval);
         clearTimeout(this.reconnectTimeout);
-        this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
+        this.reconnectTimeout = setTimeout(() => this.connect(), 2500);
       };
 
       this.ws.onerror = () => {
-        if (this.ws) this.ws.close();
+        if (this.ws) {
+          try { this.ws.close(); } catch {}
+        }
       };
     } catch (e) {
       console.warn('[LocalWS] Could not connect to WebSocket:', e);
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
     }
+  }
+
+  reconnect() {
+    clearTimeout(this.reconnectTimeout);
+    this.connect();
   }
 
   registerListener(channelName: string, table: string | undefined, callback: (data: any) => void) {
@@ -333,7 +412,6 @@ export class LocalAuthClient {
 
   async getSession(): Promise<{ data: { session: any }; error: null }> {
     if (!this.currentSession) {
-      // Default session for seamless offline use if not explicitly signed in
       const defaultUser = {
         id: 'local-doc-1',
         email: 'doctor@promedical.local',
@@ -359,7 +437,6 @@ export class LocalAuthClient {
 
   onAuthStateChange(callback: (event: string, session: any) => void): { data: { subscription: { unsubscribe: () => void } } } {
     this.authStateListeners.push(callback);
-    // Initial emit
     setTimeout(async () => {
       const sess = (await this.getSession()).data.session;
       callback('INITIAL_SESSION', sess);
@@ -408,6 +485,22 @@ export class LocalDatabaseClient {
       return `ws://${savedHost}:${savedPort}`;
     }
     return 'ws://localhost:3000';
+  }
+
+  reconnect(): void {
+    this.wsManager.reconnect();
+  }
+
+  async broadcastReload(): Promise<void> {
+    try {
+      const baseUrl = this.getServerUrl();
+      await fetch(`${baseUrl}/api/sync/broadcast-reload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.warn('[LocalDatabaseClient] Could not broadcast reload signal:', e);
+    }
   }
 
   from<T = any>(table: string): LocalQueryBuilder<T> {

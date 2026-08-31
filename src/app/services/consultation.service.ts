@@ -31,24 +31,12 @@ export class ConsultationService {
   }
 
   private setupAutoSync() {
-    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
-    /* setInterval(() => {
-      if (navigator.onLine) {
-        this.refreshConsultas();
-      }
-    }, 15000); */
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('focus', () => {
-        if (navigator.onLine) this.refreshConsultas();
-      });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && navigator.onLine) {
-          this.refreshConsultas();
-        }
-      });
-    }
+    // Los listeners de focus/visibilitychange se eliminaron porque disparan
+    // refreshConsultas() completo con petición HTTP cada vez que el usuario
+    // cambia de ventana — esto causaba lentitud innecesaria.
+    // La sincronización ahora ocurre solo vía WebSocket realtime.
   }
+
 
   private setupRealtimeSubscription() {
     this.supabase
@@ -58,8 +46,18 @@ export class ConsultationService {
         { event: '*', schema: 'public', table: 'consultas' },
         (payload: any) => {
           this.ngZone.run(async () => {
-            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            if (payload.eventType === 'RELOAD_ALL') {
+              await this.refreshConsultas();
+              return;
+            }
+
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
               const c = payload.new;
+              if (!c || !c.id) {
+                await this.refreshConsultas();
+                return;
+              }
+
               const consulta: Consulta = {
                 id: c.id,
                 cedula: c.paciente_cedula,
@@ -70,15 +68,18 @@ export class ConsultationService {
               const currentList = this.consultationsSubject.value;
               const index = currentList.findIndex(item => item.id === consulta.id);
               let updated = [...currentList];
-              if (index >= 0) updated[index] = consulta;
+              if (index >= 0) updated[index] = { ...updated[index], ...consulta };
               else updated.push(consulta);
               this.consultationsSubject.next(updated);
               await this.offlineService.saveLocalData('consultas', consulta);
             } else if (payload.eventType === 'DELETE') {
               const currentList = this.consultationsSubject.value;
-              const updated = currentList.filter(item => item.id !== payload.old.id);
+              const targetId = payload.old?.id || payload.old?.filters?.id;
+              const updated = currentList.filter(item => item.id !== targetId);
               this.consultationsSubject.next(updated);
-              await this.offlineService.deleteLocalData('consultas', payload.old.id);
+              if (targetId) {
+                await this.offlineService.deleteLocalData('consultas', targetId);
+              }
             }
           });
         }
@@ -89,14 +90,13 @@ export class ConsultationService {
   async refreshConsultas() {
     try {
       if (navigator.onLine) {
-        // Limitamos a 50 para evitar descargas masivas y bloqueos en IndexedDB
         const { data, error } = await this.supabase
           .from('consultas')
           .select('*')
           .order('fecha', { ascending: false })
-          .limit(50);
+          .limit(200);
         if (error) throw error;
-        
+
         if (data) {
           const consultas: Consulta[] = data.map((c: DbConsulta) => ({
             id: c.id,
@@ -106,10 +106,8 @@ export class ConsultationService {
             receta: c.receta || ''
           }));
 
-          for (const c of consultas) {
-            await this.offlineService.saveLocalData('consultas', c);
-          }
           this.consultationsSubject.next(consultas);
+          this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
           return;
         }
       }
@@ -127,6 +125,14 @@ export class ConsultationService {
 
   async cargarHistorialPaciente(cedula: string): Promise<Consulta[]> {
     if (!cedula) return [];
+
+    // 1. Instantáneo desde memoria RAM (0ms)
+    const inMemory = this.getPatientHistory(cedula);
+    if (inMemory.length > 0) {
+      return inMemory;
+    }
+
+    // 2. Consulta rápida local / online
     try {
       if (navigator.onLine) {
         const { data, error } = await this.supabase
@@ -136,7 +142,7 @@ export class ConsultationService {
           .order('fecha', { ascending: false });
         if (error) throw error;
 
-        if (data) {
+        if (data && data.length > 0) {
           const consultas: Consulta[] = data.map((c: DbConsulta) => ({
             id: c.id,
             cedula: c.paciente_cedula,
@@ -145,14 +151,10 @@ export class ConsultationService {
             receta: c.receta || ''
           }));
 
-          // Guardar localmente
-          for (const c of consultas) {
-            await this.offlineService.saveLocalData('consultas', c);
-          }
-
           // Combinar con las existentes en memoria sin duplicar
           const current = this.consultationsSubject.value.filter(h => h.cedula !== cedula);
           this.consultationsSubject.next([...consultas, ...current]);
+          this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
 
           return consultas;
         }

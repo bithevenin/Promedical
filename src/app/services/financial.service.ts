@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { ConfigService } from './config.service';
@@ -53,17 +53,107 @@ export class FinancialService {
     private configService: ConfigService,
     private appointmentService: AppointmentService,
     private patientService: PatientService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private ngZone: NgZone
   ) {
     this.refreshAll();
+    this.setupRealtimeSubscription();
   }
 
-  private async refreshAll() {
+  public async refreshAll() {
     await Promise.all([
       this.refreshTransactions(),
       this.refreshFacturasSeguro(),
       this.refreshReportesPagosSeguro()
     ]);
+  }
+
+  private setupRealtimeSubscription() {
+    try {
+      // Canal separado para cada tabla — evita que un evento dispare 3 callbacks
+      this.supabase
+        .channel('transacciones-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'transacciones' }, (payload: any) => {
+          this.ngZone.run(() => this.handleTransaccionRealtime(payload));
+        })
+        .subscribe();
+
+      this.supabase
+        .channel('facturas-seguro-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'facturas_seguro' }, (payload: any) => {
+          this.ngZone.run(() => this.handleFacturaRealtime(payload));
+        })
+        .subscribe();
+
+      this.supabase
+        .channel('reportes-pagos-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reportes_pagos_seguro' }, (payload: any) => {
+          this.ngZone.run(() => this.handleReportePagoRealtime(payload));
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('[FinancialService] Could not setup realtime:', e);
+    }
+  }
+
+  private handleTransaccionRealtime(payload: any) {
+    if (payload.eventType === 'RELOAD_ALL') { this.refreshTransactions(); return; }
+    const item = payload.new;
+    if (!item) return;
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
+      const current = [...this.transactionsSubject.value];
+      const idx = current.findIndex(t => t.id === item.id);
+      if (idx >= 0) current[idx] = { ...current[idx], ...item };
+      else current.unshift(item);
+      this.transactionsSubject.next(current);
+    } else if (payload.eventType === 'DELETE') {
+      const id = item?.id || payload.old?.id;
+      this.transactionsSubject.next(this.transactionsSubject.value.filter(t => t.id !== id));
+    }
+  }
+
+  private handleFacturaRealtime(payload: any) {
+    if (payload.eventType === 'RELOAD_ALL') { this.refreshFacturasSeguro(); return; }
+    const f = payload.new;
+    if (!f) return;
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
+      const factura: FacturaSeguro = {
+        id: f.id,
+        cedula: f.cedula,
+        nombrePaciente: f.nombre_paciente,
+        edad: f.edad,
+        carnetSeguro: f.carnet_seguro,
+        seguro: f.seguro,
+        fecha: f.fecha,
+        monto: f.monto,
+        estado: f.estado,
+        fechaPago: f.fecha_pago
+      };
+      const current = [...this.facturasSeguroSubject.value];
+      const idx = current.findIndex(item => item.id === factura.id);
+      if (idx >= 0) current[idx] = { ...current[idx], ...factura };
+      else current.unshift(factura);
+      this.facturasSeguroSubject.next(current);
+    } else if (payload.eventType === 'DELETE') {
+      const id = f?.id || payload.old?.id;
+      this.facturasSeguroSubject.next(this.facturasSeguroSubject.value.filter(item => item.id !== id));
+    }
+  }
+
+  private handleReportePagoRealtime(payload: any) {
+    if (payload.eventType === 'RELOAD_ALL') { this.refreshReportesPagosSeguro(); return; }
+    const r = payload.new;
+    if (!r) return;
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
+      const current = [...this.reportesPagosSeguroSubject.value];
+      const idx = current.findIndex(item => item.id === r.id);
+      if (idx >= 0) current[idx] = { ...current[idx], ...r };
+      else current.unshift(r);
+      this.reportesPagosSeguroSubject.next(current);
+    } else if (payload.eventType === 'DELETE') {
+      const id = r?.id || payload.old?.id;
+      this.reportesPagosSeguroSubject.next(this.reportesPagosSeguroSubject.value.filter(item => item.id !== id));
+    }
   }
 
   async refreshTransactions() {
