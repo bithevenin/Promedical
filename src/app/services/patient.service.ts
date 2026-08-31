@@ -51,23 +51,33 @@ export class PatientService {
     private offlineService: OfflineService
   ) {
     this.refreshPatients();
+    this.setupRealtime();
     this.setupAutoSync();
   }
 
-  private setupAutoSync() {
-    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
-    /* setInterval(() => {
-      if (navigator.onLine) {
-        this.refreshPatients();
-      }
-    }, 15000); */
+  private setupRealtime() {
+    try {
+      this.supabase
+        .channel('pacientes-realtime')
+        .on('broadcast', { table: 'pacientes' }, () => {
+          this.refreshPatients();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
+          this.refreshPatients();
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('[PatientService] Could not setup realtime:', e);
+    }
+  }
 
+  private setupAutoSync() {
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
-        if (navigator.onLine) this.refreshPatients();
+        this.refreshPatients();
       });
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && navigator.onLine) {
+        if (document.visibilityState === 'visible') {
           this.refreshPatients();
         }
       });
@@ -79,18 +89,48 @@ export class PatientService {
 
   async refreshPatients() {
     try {
-      // 1. Cargar rápido desde almacenamiento local para respuesta inmediata
+      // 1. Cargar rápido desde almacenamiento local (IndexedDB) para respuesta instantánea
       const localPatients = await this.offlineService.getLocalData<Paciente>('pacientes');
       if (localPatients && localPatients.length > 0) {
         this.patientsSubject.next(localPatients);
       }
 
-      // 2. Si el almacenamiento local ya tiene los pacientes (20,000+), no volver a descargar por red
+      // 2. Si estamos en modo LAN local (SQLite embebido o servidor remoto en red), consultar directamente
+      if (this.supabaseService.isLocal) {
+        const { data, error } = await this.supabase.from('pacientes').select('*');
+        if (!error && data && data.length > 0) {
+          const mapped: Paciente[] = data.map((p: any) => ({
+            cedula: p.cedula,
+            nombre: p.nombre,
+            edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : (p.edad || 0),
+            fecha_nacimiento: p.fecha_nacimiento,
+            profesion: p.profesion || '',
+            seguro: p.seguro || 'Particular',
+            sexo: p.sexo || 'M',
+            telefono: p.telefono || '',
+            email: p.email || '',
+            altura: p.altura || '',
+            peso: p.peso || '',
+            carnetSeguro: p.carnet_seguro || '',
+            antecedentesPersonales: p.antecedentes_personales || p.antecedentesPersonales || '',
+            antecedentesFamiliares: p.antecedentes_familiares || p.antecedentesFamiliares || '',
+            alergias: p.alergias || '',
+            tipo_sangre: p.tipo_sangre || '',
+            fotoUrl: p.foto_url || '',
+            direccion: p.direccion || '',
+            signosVitales: Array.isArray(p.signos_vitales) ? p.signos_vitales : []
+          }));
+          this.patientsSubject.next(mapped);
+          await this.offlineService.saveLocalDataBulk('pacientes', mapped);
+        }
+        return;
+      }
+
+      // 3. Modo Nube Supabase
       if (localPatients && localPatients.length >= 20000) {
         return;
       }
 
-      // 3. Sincronizar remotamente una sola vez por sesión si faltan datos locales
       if (navigator.onLine && !this.syncingRemote && !this.hasSyncedThisSession) {
         this.hasSyncedThisSession = true;
         this.syncAllRemotePatients();
@@ -164,15 +204,8 @@ export class PatientService {
       }
 
       if (allPatients.length > 0) {
-        // Merge inteligente: preservar pacientes locales que aún no confirmó Supabase
-        // (recién creados por la secretaria que aún no llegaron al servidor)
-        const localSnapshot = await this.offlineService.getLocalData<Paciente>('pacientes');
-        const remoteMap = new Map<string, Paciente>(allPatients.map(p => [p.cedula, p]));
-        const onlyLocal = localSnapshot.filter(p => !remoteMap.has(p.cedula));
-        const merged = [...allPatients, ...onlyLocal];
-
-        await this.offlineService.saveLocalDataBulk('pacientes', merged);
-        this.patientsSubject.next(merged);
+        await this.offlineService.saveLocalDataBulk('pacientes', allPatients);
+        this.patientsSubject.next(allPatients);
       }
     } catch (err) {
       console.error('Error syncing remote patients:', err);
@@ -227,7 +260,6 @@ export class PatientService {
         if (error) throw error;
       } else {
         await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
-        this.offlineService.notifyOfflineSave('paciente');
       }
     } catch (error) {
       console.error('Error saving patient to Supabase, queuing for offline sync:', error);
@@ -252,7 +284,6 @@ export class PatientService {
         direccion: paciente.direccion || null
       };
       await this.offlineService.addToQueue('pacientes', 'upsert', dbDataOffline);
-      this.offlineService.notifyOfflineSave('paciente');
     } finally {
       // Actualizar memoria RAM directamente sin recargar 21,000 registros
       const current = this.patientsSubject.getValue();
@@ -287,12 +318,11 @@ export class PatientService {
         const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
         if (error) throw error;
       } else {
-        // queryKey y queryValue van como parámetros posicionales (4to y 5to argumento)
-        await this.offlineService.addToQueue('pacientes', 'delete', null, 'cedula', cedula);
+        await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
       }
     } catch (error) {
       console.error('Error deleting patient:', error);
-      await this.offlineService.addToQueue('pacientes', 'delete', null, 'cedula', cedula);
+      await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
     }
   }
 
@@ -533,40 +563,78 @@ export class PatientService {
       throw new Error('La cédula debe contener exactamente 11 dígitos.');
     }
 
-    const baseUrl = environment.jceApiUrl || 'https://unrude-unpopular-gerri.ngrok-free.dev';
-    const targetUrl = `${baseUrl}/api/v1/cedula-queries/query`;
-    // En localhost usamos el proxy de Angular Dev Server (/api/v1/...) para evitar CORS.
-    // El proxy reenvía la petición desde Node.js, sin restricciones de CORS del browser.
-    // En producción llamamos directo al servidor.
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocalhost ? '/api/v1/cedula-queries/query' : targetUrl;
+    const candidateUrls: string[] = [
+      'http://192.168.1.15:8000/api/v1/cedula-queries/query',
+      'http://192.168.1.15:8082/api/v1/cedula-queries/query',
+      environment.jceApiUrl ? `${environment.jceApiUrl}/api/v1/cedula-queries/query` : 'https://unrude-unpopular-gerri.ngrok-free.dev/api/v1/cedula-queries/query'
+    ];
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
-      },
-      body: JSON.stringify({ cedula: cleanCedula })
-    });
+    const uniqueUrls = Array.from(new Set(candidateUrls));
+    let lastError = '';
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('El servidor de consulta JCE no está disponible. Verifique que el servidor ngrok esté activo.');
+    for (const url of uniqueUrls) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ cedula: cleanCedula }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData.success && resData.data && resData.data.result) {
+            const raw = resData.data.result;
+            const bloodType = this.normalizarTipoSangre(
+              raw.tipo_sangre || raw.tipoSangre || raw.grupo_sanguineo || raw.grupoSanguineo || raw.sangre || raw.COD_TIPO_SANGRE || raw.DESC_TIPO_SANGRE || ''
+            );
+            return {
+              ...raw,
+              tipo_sangre: bloodType
+            };
+          } else {
+            throw new Error(resData.message || 'No se encontró información para la cédula ingresada en el padrón.');
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          lastError = 'El servidor JCE no respondió en 6 segundos (Servidor fuera de línea o apagado). Puedes completar los datos manualmente.';
+        } else if (err.message && (err.message.includes('No se encontró') || err.message.includes('padrón'))) {
+          throw err;
+        } else {
+          lastError = 'No se pudo conectar con el servidor JCE (Servidor fuera de línea o apagado). Puedes ingresar los datos manualmente.';
+        }
       }
-      if (response.status === 502 || response.status === 503) {
-        throw new Error('El servidor JCE está caído o la URL ngrok cambió. Contacte al administrador del sistema.');
-      }
-      throw new Error(`Error en el servidor JCE: Código ${response.status}`);
     }
 
-    const resData = await response.json();
-    if (resData.success && resData.data && resData.data.result) {
-      return resData.data.result;
-    } else {
-      throw new Error(resData.message || 'No se encontró información para la cédula ingresada.');
-    }
+    throw new Error(lastError || 'No se pudo conectar con el servidor JCE (Servidor fuera de línea o apagado).');
   }
+
+  normalizarTipoSangre(val: any): string {
+    if (!val || typeof val !== 'string') return '';
+    const cleaned = val.trim().toUpperCase().replace(/\s+/g, '');
+    if (['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].includes(cleaned)) {
+      return cleaned;
+    }
+    if (cleaned.includes('AB') && (cleaned.includes('+') || cleaned.includes('POS'))) return 'AB+';
+    if (cleaned.includes('AB') && (cleaned.includes('-') || cleaned.includes('NEG'))) return 'AB-';
+    if (cleaned.includes('A') && (cleaned.includes('+') || cleaned.includes('POS'))) return 'A+';
+    if (cleaned.includes('A') && (cleaned.includes('-') || cleaned.includes('NEG'))) return 'A-';
+    if (cleaned.includes('B') && (cleaned.includes('+') || cleaned.includes('POS'))) return 'B+';
+    if (cleaned.includes('B') && (cleaned.includes('-') || cleaned.includes('NEG'))) return 'B-';
+    if (cleaned.includes('O') && (cleaned.includes('+') || cleaned.includes('POS'))) return 'O+';
+    if (cleaned.includes('O') && (cleaned.includes('-') || cleaned.includes('NEG'))) return 'O-';
+    return '';
+  }
+
   async buscarPacientesRemoto(query: string): Promise<Paciente[]> {
     if (!navigator.onLine || !query || query.trim().length < 2) return [];
 

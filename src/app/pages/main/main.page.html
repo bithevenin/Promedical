@@ -22,6 +22,18 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- LAN Mode Indicator Badge -->
+        <div routerLink="/configuracion" class="flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-emerald-900/60 transition-all shadow-sm" title="Sistema operando en Red Local">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-[9px] font-black uppercase tracking-wider text-emerald-400 hidden sm:inline">LAN Local</span>
+          <ion-icon name="wifi-outline" class="text-emerald-400 text-sm"></ion-icon>
+        </div>
+
+        <!-- Sync Cloud Button -->
+        <button (click)="syncService.syncWithCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center justify-center text-lg text-sky-400 hover:text-sky-300 transition-all shadow-md disabled:opacity-50" title="Sincronizar Datos con Supabase">
+          <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing"></ion-icon>
+        </button>
+
         <!-- Theme Toggle Button -->
         <button (click)="themeService.toggleTheme()" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center justify-center text-lg text-yellow-400 hover:text-yellow-300 transition-all shadow-md" title="Cambiar Tema">
           <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>

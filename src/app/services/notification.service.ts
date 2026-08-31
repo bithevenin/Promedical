@@ -5,24 +5,30 @@ import { Injectable } from '@angular/core';
 })
 export class NotificationService {
 
-  private show(type: 'success' | 'error', title: string, message: string = ''): Promise<void> {
+  private show(type: 'success' | 'error' | 'info', title: string, message: string = ''): Promise<void> {
     return new Promise((resolve) => {
       // Remove any existing notification
       const existing = document.getElementById('pm-notification-overlay');
       if (existing) existing.remove();
 
       const isSuccess = type === 'success';
-      const accentColor = isSuccess ? '#10b981' : '#ef4444';
-      const accentBg = isSuccess ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+      const isInfo = type === 'info';
+      const accentColor = isSuccess ? '#10b981' : (isInfo ? '#6366f1' : '#ef4444');
+      const accentBg = isSuccess ? 'rgba(16,185,129,0.12)' : (isInfo ? 'rgba(99,102,241,0.12)' : 'rgba(239,68,68,0.12)');
       const iconSvg = isSuccess
         ? `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px">
              <circle cx="12" cy="12" r="11" stroke="${accentColor}" stroke-width="1.5" opacity="0.3"/>
              <path d="M7.5 12.5l3 3 6-6" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
            </svg>`
-        : `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px">
-             <circle cx="12" cy="12" r="11" stroke="${accentColor}" stroke-width="1.5" opacity="0.3"/>
-             <path d="M9 9l6 6M15 9l-6 6" stroke="${accentColor}" stroke-width="2" stroke-linecap="round"/>
-           </svg>`;
+        : (isInfo
+          ? `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px">
+               <circle cx="12" cy="12" r="11" stroke="${accentColor}" stroke-width="1.5" opacity="0.3"/>
+               <path d="M12 8v.01M12 12v4" stroke="${accentColor}" stroke-width="2" stroke-linecap="round"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px">
+               <circle cx="12" cy="12" r="11" stroke="${accentColor}" stroke-width="1.5" opacity="0.3"/>
+               <path d="M9 9l6 6M15 9l-6 6" stroke="${accentColor}" stroke-width="2" stroke-linecap="round"/>
+             </svg>`);
 
       const overlay = document.createElement('div');
       overlay.id = 'pm-notification-overlay';
@@ -74,7 +80,7 @@ export class NotificationService {
       `;
 
       const btn = document.createElement('button');
-      btn.textContent = isSuccess ? 'ENTENDIDO' : 'CERRAR';
+      btn.textContent = (isSuccess || isInfo) ? 'ENTENDIDO' : 'CERRAR';
       btn.style.cssText = `
         background: ${accentColor}; color: white;
         border: none; border-radius: 14px;
@@ -126,5 +132,9 @@ export class NotificationService {
 
   async showError(title: string, message: string = ''): Promise<void> {
     return this.show('error', title, message);
+  }
+
+  async showInfo(title: string, message: string = ''): Promise<void> {
+    return this.show('info', title, message);
   }
 }

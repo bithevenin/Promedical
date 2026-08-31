@@ -6,6 +6,7 @@ import { ConfigService } from '../../services/config.service';
 import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { NotificationService } from '../../services/notification.service';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
@@ -23,6 +24,11 @@ interface JceResult {
   direccion?: string;
   dirección?: string;
   lugarNacimiento?: string;
+  tipo_sangre?: string;
+  tipoSangre?: string;
+  grupoSanguineo?: string;
+  grupo_sanguineo?: string;
+  sangre?: string;
 }
 
 @Component({
@@ -116,6 +122,7 @@ export class CitasPage implements OnInit {
     private configService: ConfigService,
     private financialService: FinancialService,
     private authService: AuthService,
+    private notificationService: NotificationService,
     public router: Router,
     public themeService: ThemeService
   ) {
@@ -405,13 +412,20 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
             [result.lugarNacimiento].filter(Boolean).join(', ') || '';
         }
 
+        // Tipo de Sangre
+        if (result.tipo_sangre) {
+          this.nuevoPaciente.tipo_sangre = result.tipo_sangre;
+        }
+
         // Foto
         this.fotoTemporal = result.fotoUrl || '';
         this.nuevoPaciente.fotoUrl = result.fotoUrl || this.nuevoPaciente.fotoUrl || '';
       }
     } catch (error: any) {
       console.error('Error JCE lookup in Citas:', error);
-      this.errorBusqueda = 'Error al consultar JCE: ' + (error.message || error);
+      const errMsg = error.message || error || 'No se pudo conectar con el servidor JCE';
+      this.errorBusqueda = errMsg;
+      this.notificationService.showError('Consulta Cédula JCE', errMsg);
     } finally {
       this.isLoadingJce = false;
     }

@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { ConfigService } from '../../services/config.service';
 import { ConfiguracionDoctor, UserProfile } from '../../models';
 import { AuthService } from '../../services/auth.service';
+import { SyncService } from '../../services/sync.service';
 import { ThemeService } from '../../services/theme.service';
 
 @Component({
@@ -23,6 +24,7 @@ export class MainPage implements OnInit {
   constructor(
       private configService: ConfigService,
       private authService: AuthService,
+      public syncService: SyncService,
       public themeService: ThemeService
   ) { }
 

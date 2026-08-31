@@ -1,36 +1,72 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
+import { LocalDatabaseClient } from './local-database-client';
 
 @Injectable({
     providedIn: 'root'
 })
 export class SupabaseService {
-    private supabase: SupabaseClient;
+    private supabaseCloud: SupabaseClient | null = null;
+    private localClient: LocalDatabaseClient;
+    private useLocalMode = true; // Forzado a true para operar 100% en local y no tocar la nube
 
     constructor() {
-        this.supabase = createClient(
-            environment.supabaseUrl,
-            environment.supabaseKey,
-            {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: true,
-                    flowType: 'pkce',
-                    storageKey: 'promedical-auth-token',
-                    // Bypass locks to prevent NavigatorLockAcquireTimeoutError in dev mode or when navigator.locks is unsupported (insecure origins)
-                    ...(!environment.production || typeof navigator === 'undefined' || !navigator.locks ? {
-                        lock: async (name: string, acquireTimeout: number, fn: () => Promise<any>) => {
-                            return await fn();
-                        }
-                    } : {})
+        this.localClient = new LocalDatabaseClient();
+
+        // Modo configurable desde localStorage si en el futuro se desea cambiar
+        const savedMode = typeof localStorage !== 'undefined' ? localStorage.getItem('promedical_db_mode') : 'local';
+        this.useLocalMode = savedMode !== 'cloud';
+
+        if (!this.useLocalMode) {
+            this.supabaseCloud = createClient(
+                environment.supabaseUrl,
+                environment.supabaseKey,
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true,
+                        flowType: 'pkce',
+                        storageKey: 'promedical-auth-token'
+                    }
                 }
-            }
-        );
+            );
+        }
     }
 
-    get client() {
-        return this.supabase;
+    get client(): any {
+        if (this.useLocalMode) {
+            return this.localClient;
+        }
+        return this.supabaseCloud;
+    }
+
+    get isLocal(): boolean {
+        return this.useLocalMode;
+    }
+
+    setMode(mode: 'local' | 'cloud') {
+        this.useLocalMode = (mode === 'local');
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('promedical_db_mode', mode);
+        }
+    }
+
+    setLanServer(host: string, port: number = 3000) {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('promedical_lan_server_host', host);
+            localStorage.setItem('promedical_lan_server_port', String(port));
+        }
+    }
+
+    getLanServer(): { host: string; port: string } {
+        if (typeof localStorage !== 'undefined') {
+            return {
+                host: localStorage.getItem('promedical_lan_server_host') || 'localhost',
+                port: localStorage.getItem('promedical_lan_server_port') || '3000'
+            };
+        }
+        return { host: 'localhost', port: '3000' };
     }
 }

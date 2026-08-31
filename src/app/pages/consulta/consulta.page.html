@@ -1,93 +1,74 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
-  <!-- Mobile Header -->
-  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
-    <div class="logo flex items-center gap-3" routerLink="/main">
-      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
-      </div>
-      <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
-    </div>
-    <div class="header-actions">
-      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
-    </div>
-  </div>
-
-  <!-- Sidebar (Desktop) -->
-  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
-    <!-- Header -->
-    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
-      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+  <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
+  <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2 max-w-full overflow-hidden">
+    <!-- Logo & Brand -->
+    <div class="flex items-center gap-2.5 cursor-pointer shrink-0" routerLink="/main">
+      <div class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-primary/30 hover:scale-105 transition-transform">
         <ion-icon name="pulse-outline"></ion-icon>
       </div>
-      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+      <div class="hidden sm:block">
+        <span class="logo-text text-sm font-black tracking-tight text-white block leading-none">ProMedical</span>
+        <span class="text-[7.5px] font-black uppercase text-primary tracking-widest mt-0.5 block">Clinical System</span>
+      </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+    <!-- Center Navigation Menu (Barra de Menú Horizontal) -->
+    <nav class="hidden md:flex items-center gap-1 bg-white/5 border border-glass-border p-1 rounded-2xl shadow-inner overflow-x-auto no-scrollbar shrink min-w-0 max-w-[55vw] xl:max-w-none">
       @for (item of navigationItems(); track item.label) {
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
-           [class.bg-primary/10]="item.active" 
-           [class.text-primary]="item.active"
-           [class.text-text-secondary]="!item.active"
-           [routerLink]="item.route">
-        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
-      </div>
+        <a [routerLink]="item.route"
+           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 whitespace-nowrap shrink-0"
+           [class.bg-primary]="item.active"
+           [class.text-white]="item.active"
+           [class.shadow-md]="item.active"
+           [class.shadow-primary\/20]="item.active"
+           [class.text-text-muted]="!item.active"
+           [class.hover:text-white]="!item.active"
+           [class.hover:bg-white\/5]="!item.active">
+          <ion-icon [name]="item.icon" class="text-sm"></ion-icon>
+          <span>{{ item.label }}</span>
+        </a>
       }
     </nav>
 
-    <!-- Footer Profile/Logout -->
-    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
-        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+    <!-- Right Controls (LAN Badge, Theme, Profile, Logout) -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <!-- LAN Mode Indicator Badge -->
+      <div routerLink="/configuracion" class="hidden xl:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-emerald-900/60 transition-all shadow-sm" title="Sistema operando en Red Local">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-[8.5px] font-black uppercase tracking-wider text-emerald-400">LAN Local</span>
       </div>
 
-      <div class="profile-box flex items-center gap-3 px-2">
-        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+      <!-- Theme Toggle Button -->
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner shrink-0" title="Cambiar Tema">
+        <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+      </button>
+
+      <!-- User Profile Box -->
+      <div class="flex items-center gap-2 bg-white/5 border border-glass-border p-1 pr-2.5 rounded-xl shrink-0">
+        <div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 shrink-0">
           <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
         </div>
-        <div class="user-details overflow-hidden">
-          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
-          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
-            {{ currentProfile()?.rol || 'Doctor' }}
-            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
-          </span>
+        <div class="hidden 2xl:block text-left">
+          <span class="block text-xs font-bold text-white leading-none truncate max-w-[100px]">{{ currentProfile()?.nombre || 'Dr. Martínez' }}</span>
+          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.especialidad || 'Médico' }}</span>
         </div>
       </div>
+
+      <!-- Logout Button -->
+      <button (click)="logout()" class="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg flex items-center justify-center transition-colors shrink-0" title="Cerrar Sesión">
+        <ion-icon name="log-out-outline" class="text-base"></ion-icon>
+      </button>
     </div>
-  </aside>
+  </header>
 
-  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0">
-    <!-- Top Bar -->
-    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl">
-          <ion-icon name="medical-outline"></ion-icon>
-        </div>
-        <div>
-          <h4 class="text-base font-black text-white uppercase tracking-tight">Atención Médica</h4>
-          <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Consulta y diagnóstico</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <!-- Theme Toggle Button -->
-        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
-          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
-        </button>
-        <div class="user-info text-right">
-          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Dr. Martínez' }}</span>
-          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.especialidad || 'Médico' }}</span>
-        </div>
-      </div>
-    </header>
+  <main class="main-content flex-grow relative w-full pb-24 lg:pb-8">
 
-    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 max-w-full mx-auto animate-fade-in">
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6">
+    <div class="content-body px-3 sm:px-6 lg:px-8 py-5 max-w-full w-full mx-auto animate-fade-in">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
 
         <!-- Lista de Pacientes en Espera -->
-        <div class="xl:col-span-3">
-          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-4 lg:p-5 shadow-xl h-auto xl:h-[calc(100vh-10rem)] flex flex-col sticky top-24">
+        <div class="lg:col-span-4 xl:col-span-3">
+          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-4 lg:p-5 shadow-xl h-auto lg:h-[calc(100vh-10rem)] flex flex-col sticky top-24">
             <div class="flex items-center justify-between mb-5 flex-shrink-0">
                <div class="flex items-center gap-2">
                  <div class="w-1 h-5 bg-primary rounded-full"></div>
@@ -100,40 +81,38 @@
 
             <div class="flex-grow overflow-y-auto pr-1 space-y-2 custom-scrollbar">
               @for (paciente of pacientesEspera; track paciente.turno) {
-              <div class="p-3.5 rounded-xl cursor-pointer transition-all duration-300 border"
+              <div class="p-3.5 rounded-xl cursor-pointer transition-all duration-300 border flex items-center justify-between gap-3"
                    [class.bg-primary]="pacienteSeleccionado?.turno === paciente.turno"
                    [class.border-transparent]="pacienteSeleccionado?.turno === paciente.turno"
                    [class.bg-white/[0.02]]="pacienteSeleccionado?.turno !== paciente.turno"
                    [class.border-glass-border]="pacienteSeleccionado?.turno !== paciente.turno"
                    [class.hover:border-primary/50]="pacienteSeleccionado?.turno !== paciente.turno"
                    (click)="seleccionarPaciente(paciente)">
-                <div class="flex items-center gap-3 justify-between">
-                   <div class="flex-grow min-w-0">
-                      <div class="flex justify-between items-start mb-1">
-                        <span class="text-[8px] font-black tracking-widest uppercase opacity-60">Turno #{{ paciente.turno }}</span>
-                        <span class="text-[8px] font-black opacity-40 mr-1">{{ paciente.hora }}</span>
-                      </div>
-                      <div class="text-[13px] font-black truncate mb-1.5" [class.text-white]="pacienteSeleccionado?.turno !== paciente.turno">
-                        {{ paciente.nombre }}
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <span class="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border"
-                              [ngClass]="pacienteSeleccionado?.turno === paciente.turno ? 'bg-white/20 border-white/20 text-white' : 'bg-primary/10 border-primary/20 text-primary'">
-                          {{ paciente.seguro }}
-                        </span>
-                      </div>
-                   </div>
+                <div class="flex-grow min-w-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[8px] font-black tracking-widest uppercase opacity-60">Turno #{{ paciente.turno }}</span>
+                    <span class="text-[8px] font-black opacity-40 mr-1">{{ paciente.hora }}</span>
+                  </div>
+                  <div class="text-xs font-black truncate mb-1.5" [class.text-white]="pacienteSeleccionado?.turno !== paciente.turno">
+                    {{ paciente.nombre }}
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border"
+                          [ngClass]="pacienteSeleccionado?.turno === paciente.turno ? 'bg-white/20 border-white/20 text-white' : 'bg-primary/10 border-primary/20 text-primary'">
+                      {{ paciente.seguro || 'Particular' }}
+                    </span>
+                  </div>
+                </div>
 
-                   <!-- Patient Photo -->
-                   <div class="w-10 h-10 shrink-0 overflow-hidden rounded-xl border border-glass-border">
-                      @if (getPatientPhoto(paciente.cedula)) {
-                         <img [src]="getPatientPhoto(paciente.cedula)" class="w-full h-full object-cover">
-                      } @else {
-                         <div class="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm uppercase">
-                            {{ paciente.nombre.charAt(0) }}
-                         </div>
-                      }
-                   </div>
+                <!-- Patient Photo -->
+                <div class="w-9 h-9 shrink-0 overflow-hidden rounded-xl border border-glass-border">
+                  @if (getPatientPhoto(paciente.cedula)) {
+                    <img [src]="getPatientPhoto(paciente.cedula)" class="w-full h-full object-cover">
+                  } @else {
+                    <div class="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase">
+                      {{ paciente.nombre.charAt(0) }}
+                    </div>
+                  }
                 </div>
               </div>
               } @empty {
@@ -147,7 +126,7 @@
         </div>
 
         <!-- Panel de Consulta -->
-        <div class="xl:col-span-9 flex flex-col">
+        <div class="lg:col-span-8 xl:col-span-9 flex flex-col">
           <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-7 shadow-xl relative min-h-[calc(100vh-10rem)]">
             @if (pacienteSeleccionado) {
             <!-- Header Paciente -->
