@@ -21,6 +21,7 @@
     "appId": "com.promedical.clinic",
     "productName": "ProMedical",
     "npmRebuild": false,
+    "icon": "src/assets/icon/favicon.png",
     "directories": {
       "output": "dist-electron"
     },
@@ -114,6 +115,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "nspell": "^2.1.5",
+    "png-to-ico": "^3.0.2",
     "postcss": "^8.5.9",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.26.25",
