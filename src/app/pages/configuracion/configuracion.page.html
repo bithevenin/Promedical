@@ -1,119 +1,118 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white pb-24 lg:pb-0">
-  <!-- Mobile Header -->
-  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary text-xl shadow-lg ring-1 ring-primary/20">
-        <ion-icon name="settings-outline"></ion-icon>
-      </div>
-      <span class="text-lg font-black tracking-tight uppercase">Ajustes</span>
-    </div>
-    <button class="p-2 text-text-secondary hover:text-white transition-colors" routerLink="/main">
-      <ion-icon name="home-outline" class="text-2xl"></ion-icon>
-    </button>
-  </div>
-
-  <!-- Sidebar (Desktop) -->
-  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
-    <!-- Header -->
-    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
-      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+  <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
+  <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2">
+    <!-- Logo & Brand -->
+    <div class="flex items-center gap-2.5 cursor-pointer shrink-0" routerLink="/main">
+      <div class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-primary/30 hover:scale-105 transition-transform">
         <ion-icon name="pulse-outline"></ion-icon>
       </div>
-      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+      <div class="hidden sm:block">
+        <span class="logo-text text-sm font-black tracking-tight text-white block leading-none">ProMedical</span>
+        <span class="text-[7.5px] font-black uppercase text-primary tracking-widest mt-0.5 block">Clinical System</span>
+      </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+    <!-- Center Navigation Menu (Barra de Menú Horizontal) -->
+    <nav class="hidden md:flex items-center gap-1 bg-white/5 border border-glass-border p-1 rounded-2xl shadow-inner overflow-x-auto no-scrollbar shrink min-w-0 max-w-[55vw] xl:max-w-none">
       @for (item of navigationItems(); track item.label) {
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
-           [class.bg-primary/10]="item.active" 
-           [class.text-primary]="item.active"
-           [class.text-text-secondary]="!item.active"
-           [routerLink]="item.route">
-        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
-      </div>
+        <a [routerLink]="item.route"
+           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 whitespace-nowrap shrink-0"
+           [class.bg-primary]="item.active"
+           [class.text-white]="item.active"
+           [class.shadow-md]="item.active"
+           [class.shadow-primary\/20]="item.active"
+           [class.text-text-muted]="!item.active"
+           [class.hover:text-white]="!item.active"
+           [class.hover:bg-white\/5]="!item.active">
+          <ion-icon [name]="item.icon" class="text-sm"></ion-icon>
+          <span>{{ item.label }}</span>
+        </a>
       }
     </nav>
 
-    <!-- Footer Profile/Logout -->
-    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
-        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+    <!-- Right Controls (LAN Badge, Theme, Profile, Logout) -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <!-- LAN Mode Indicator Badge -->
+      <div routerLink="/configuracion" class="hidden sm:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-emerald-900/60 transition-all shadow-sm" title="Sistema operando en Red Local">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-[8.5px] font-black uppercase tracking-wider text-emerald-400">LAN Local</span>
       </div>
 
-      <div class="profile-box flex items-center gap-3 px-2">
-        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+      <!-- Theme Toggle Button -->
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner shrink-0" title="Cambiar Tema">
+        <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+      </button>
+
+      <!-- User Profile Box -->
+      <div class="flex items-center gap-2 bg-white/5 border border-glass-border p-1 pr-2.5 rounded-xl shrink-0">
+        <div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 shrink-0">
           <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
         </div>
-        <div class="user-details overflow-hidden">
-          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
-          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
-            {{ currentProfile()?.rol || 'Doctor' }}
-            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
-          </span>
+        <div class="hidden lg:block text-left">
+          <span class="block text-xs font-bold text-white leading-none truncate max-w-[100px]">{{ currentProfile()?.nombre || 'Administración' }}</span>
+          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">Control Maestro</span>
         </div>
       </div>
+
+      <!-- Logout Button -->
+      <button (click)="logout()" class="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg flex items-center justify-center transition-colors shrink-0" title="Cerrar Sesión">
+        <ion-icon name="log-out-outline" class="text-base"></ion-icon>
+      </button>
     </div>
-  </aside>
+  </header>
 
-  <main class="main-content lg:ml-64 flex-grow relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0" *ngIf="config">
-    <!-- Top Bar -->
-    <header class="top-bar hidden lg:flex items-center justify-between h-20 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl">
-          <ion-icon name="settings-outline"></ion-icon>
-        </div>
-        <div>
-          <h4 class="text-base font-black text-white uppercase tracking-tight">Panel de Control</h4>
-          <p class="text-[9px] font-black uppercase text-text-muted tracking-widest mt-0.5">Configuración y Usuarios</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <!-- Theme Toggle Button -->
-        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
-          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
-        </button>
-        <div class="user-info text-right">
-          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Administración' }}</span>
-          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">Control Maestro</span>
-        </div>
-      </div>
-    </header>
+  <main class="main-content flex-grow relative w-full pb-24 lg:pb-0 max-w-full overflow-x-hidden" *ngIf="config">
 
-    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 max-w-full mx-auto animate-fade-in">
-      <!-- Segment Selector -->
-      <div class="flex flex-col lg:flex-row items-center justify-between gap-5 mb-8">
-        <div class="flex bg-glass-light border border-glass-border p-1 rounded-2xl w-full lg:w-auto shadow-xl">
-           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+    <div class="content-body px-3 sm:px-4 lg:px-6 py-4 max-w-full w-full animate-fade-in">
+      <!-- Segment Selector Bar -->
+      <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 mb-6 w-full">
+        <div class="flex items-center gap-1.5 bg-glass-light border border-glass-border p-1.5 rounded-2xl w-full xl:w-auto shadow-xl overflow-x-auto no-scrollbar">
+           <button id="seg-consultorio" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
                    [class.bg-primary]="selectedSegment === 'consultorio'" [class.text-white]="selectedSegment === 'consultorio'" 
-                   [class.text-text-muted]="selectedSegment !== 'consultorio'" (click)="selectedSegment = 'consultorio'">
+                   [class.text-text-muted]="selectedSegment !== 'consultorio'" (click)="cambiarSegmento('consultorio')">
              <ion-icon name="business" class="text-sm"></ion-icon>
-             Consultorio
+             <span>Consultorio</span>
            </button>
-           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+           <button id="seg-usuarios" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
                    [class.bg-primary]="selectedSegment === 'usuarios'" [class.text-white]="selectedSegment === 'usuarios'" 
-                   [class.text-text-muted]="selectedSegment !== 'usuarios'" (click)="selectedSegment = 'usuarios'">
+                   [class.text-text-muted]="selectedSegment !== 'usuarios'" (click)="cambiarSegmento('usuarios')">
              <ion-icon name="people" class="text-sm"></ion-icon>
-             Usuarios
+             <span>Usuarios</span>
            </button>
-           <button class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300" 
+           <button id="seg-datos" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
                    [class.bg-primary]="selectedSegment === 'datos'" [class.text-white]="selectedSegment === 'datos'" 
-                   [class.text-text-muted]="selectedSegment !== 'datos'" (click)="selectedSegment = 'datos'">
+                   [class.text-text-muted]="selectedSegment !== 'datos'" (click)="cambiarSegmento('datos')">
              <ion-icon name="cloud-download" class="text-sm"></ion-icon>
-             Datos
+             <span>Datos</span>
+           </button>
+           <button id="seg-red_lan" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
+                   [class.bg-emerald-600]="selectedSegment === 'red_lan'" [class.text-white]="selectedSegment === 'red_lan'" 
+                   [class.text-text-muted]="selectedSegment !== 'red_lan'" (click)="cambiarSegmento('red_lan')">
+             <ion-icon name="wifi-outline" class="text-sm"></ion-icon>
+             <span>Red LAN</span>
+           </button>
+           <button id="seg-facturacion" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
+                   [class.bg-purple-600]="selectedSegment === 'facturacion'" [class.text-white]="selectedSegment === 'facturacion'" 
+                   [class.text-text-muted]="selectedSegment !== 'facturacion'" (click)="cambiarSegmento('facturacion')">
+             <ion-icon name="receipt-outline" class="text-sm"></ion-icon>
+             <span>e-CF DGII</span>
+           </button>
+           <button id="seg-certificado" class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer" 
+                   [class.bg-amber-600]="selectedSegment === 'certificado'" [class.text-white]="selectedSegment === 'certificado'" 
+                   [class.text-text-muted]="selectedSegment !== 'certificado'" (click)="cambiarSegmento('certificado')">
+             <ion-icon name="shield-checkmark-outline" class="text-sm"></ion-icon>
+             <span>Certificado Digital</span>
            </button>
         </div>
 
-        <button class="hidden lg:flex items-center gap-2 px-6 py-3 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-deep transition-all active:scale-95 disabled:opacity-50" (click)="guardarConfiguracion()" [disabled]="guardando">
+        <button class="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-deep transition-all duration-150 active:scale-[0.97] disabled:opacity-50 shrink-0 cursor-pointer" (click)="guardarConfiguracion()" [disabled]="guardando">
            <ion-icon [name]="guardando ? 'sync' : 'save'" [class.animate-spin]="guardando" class="text-base"></ion-icon>
-           {{ guardando ? 'Guardando...' : 'Aplicar Cambios' }}
+           <span>{{ guardando ? 'Guardando...' : 'Aplicar Cambios' }}</span>
         </button>
       </div>
 
       <!-- SECCIÓN CONSULTORIO -->
-      <div *ngIf="selectedSegment === 'consultorio'" class="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in-up">
+      <div *ngIf="selectedSegment === 'consultorio'" class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6 animate-fade-in-up">
         <div class="xl:col-span-4 space-y-6">
            <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl">
               <div class="flex items-center gap-3 mb-6">
@@ -160,7 +159,7 @@
            </div>
         </div>
 
-        <div class="xl:col-span-8">
+        <div class="lg:col-span-8">
            <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl shadow-xl flex flex-col h-full">
               <div class="p-6 lg:p-7 border-b border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                  <div class="flex items-center gap-3">
@@ -366,6 +365,754 @@
           </div>
           
         </div>
+      </div>
+
+      <!-- SECCIÓN RED LOCAL (LAN) Y BASE DE DATOS LOCAL -->
+      <div *ngIf="selectedSegment === 'red_lan'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 animate-fade-in-up">
+        
+        <!-- Tarjeta de Estado y Modo -->
+        <div class="space-y-6">
+          <div class="bg-glass-light border border-glass-border rounded-2xl p-5 sm:p-6 lg:p-7 shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-1 h-5 bg-emerald-500 rounded-full"></div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">Modo de Operación Local (LAN)</h5>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                100% Desconectado de Nube
+              </span>
+            </div>
+
+            <p class="text-[10px] text-text-muted font-medium mb-6">
+              Configura este equipo como Servidor Principal (donde reside la base de datos) o como Terminal Cliente conectada por red WiFi / Cable Ethernet.
+            </p>
+
+            <!-- Selector de Rol / Modo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <!-- Botón Servidor -->
+              <button type="button" (click)="seleccionarModo('server')"
+                      class="p-5 rounded-2xl border text-left transition-all relative overflow-hidden group cursor-pointer"
+                      [ngClass]="lanMode === 'server' ? 'border-2 border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/30' : 'border-glass-border bg-white/5 opacity-70 hover:opacity-100 hover:border-white/20'">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl shadow-inner">
+                    <ion-icon name="server"></ion-icon>
+                  </div>
+                  <span *ngIf="lanMode === 'server'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-emerald-400 text-slate-950 shadow-md animate-fade-in">
+                    <ion-icon name="checkmark-circle"></ion-icon> SELECCIONADO
+                  </span>
+                </div>
+                <h6 class="text-xs font-black uppercase tracking-tight text-white mb-1">Servidor Principal (Host)</h6>
+                <p class="text-[9px] text-text-muted leading-relaxed">Esta PC guarda la base de datos central y la comparte por red local con las demás computadoras.</p>
+              </button>
+
+              <!-- Botón Cliente -->
+              <button type="button" (click)="seleccionarModo('client')"
+                      class="p-5 rounded-2xl border text-left transition-all relative overflow-hidden group cursor-pointer"
+                      [ngClass]="lanMode === 'client' ? 'border-2 border-sky-400 bg-sky-500/20 shadow-lg shadow-sky-500/20 ring-2 ring-sky-500/30' : 'border-glass-border bg-white/5 opacity-70 hover:opacity-100 hover:border-white/20'">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 text-xl shadow-inner">
+                    <ion-icon name="desktop"></ion-icon>
+                  </div>
+                  <span *ngIf="lanMode === 'client'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-sky-400 text-slate-950 shadow-md animate-fade-in">
+                    <ion-icon name="checkmark-circle"></ion-icon> SELECCIONADO
+                  </span>
+                </div>
+                <h6 class="text-xs font-black uppercase tracking-tight text-white mb-1">Cliente / Terminal</h6>
+                <p class="text-[9px] text-text-muted leading-relaxed">Recepción, Consultorio 2 o Caja. Se conecta por red a la PC Servidor Principal.</p>
+              </button>
+            </div>
+
+            <!-- Banner Explicativo Dinámico -->
+            <div *ngIf="lanMode === 'server'" class="p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-[10px] text-emerald-300 flex items-start gap-2.5 mb-5 animate-fade-in">
+              <ion-icon name="information-circle" class="text-base text-emerald-400 flex-shrink-0 mt-0.5"></ion-icon>
+              <span><strong>Modo Servidor Activo:</strong> Esta máquina es la dueña de los datos. En el campo de abajo se usa <code>localhost</code>. Las otras PCs deben poner la IP que ves a la derecha (ej: <code>{{ lanIps[0] || '192.168.1.10' }}</code>).</span>
+            </div>
+
+            <div *ngIf="lanMode === 'client'" class="p-3.5 bg-sky-950/40 border border-sky-500/30 rounded-xl text-[10px] text-sky-300 flex items-start gap-2.5 mb-5 animate-fade-in">
+              <ion-icon name="information-circle" class="text-base text-sky-400 flex-shrink-0 mt-0.5"></ion-icon>
+              <span><strong>Modo Terminal Activo:</strong> Escribe abajo la dirección IP de la <strong>PC Servidor Principal</strong> para leer y guardar pacientes en su base de datos.</span>
+            </div>
+
+            <div class="space-y-4">
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">
+                    {{ lanMode === 'server' ? 'Conexión Local (Servidor)' : 'IP de la PC Servidor Principal' }}
+                  </label>
+                  <span class="text-[8px] font-bold text-sky-400 cursor-pointer hover:underline" *ngIf="lanMode === 'client'" (click)="lanHost = lanIps[0] || ''">
+                    Usar IP Detectada ({{ lanIps[0] || '192.168.1.10' }})
+                  </span>
+                </div>
+                <div class="relative flex items-center">
+                  <input type="text" [(ngModel)]="lanHost" [placeholder]="lanMode === 'server' ? 'localhost' : 'Ejemplo: 192.168.1.10'" 
+                         class="w-full bg-slate-900/90 border-2 border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-bold text-white placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                  <button type="button" *ngIf="lanHost && lanHost !== 'localhost'" (click)="lanHost = ''" class="absolute right-3 text-slate-400 hover:text-white p-1 text-xs">
+                    <ion-icon name="close-circle"></ion-icon>
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Puerto de Red LAN</label>
+                <input type="number" [(ngModel)]="lanPort" placeholder="3000" 
+                       class="w-full bg-slate-900/90 border-2 border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-bold text-white placeholder-slate-500 focus:border-primary outline-none transition-all">
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button type="button" (click)="probarConexionLan()" [disabled]="lanTesting"
+                        class="flex-1 py-3 bg-white/10 hover:bg-white/15 border border-glass-border text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <ion-icon [name]="lanTesting ? 'sync' : 'pulse-outline'" [class.animate-spin]="lanTesting" class="text-base text-emerald-400"></ion-icon>
+                  {{ lanTesting ? 'Verificando...' : 'Probar Conexión' }}
+                </button>
+                <button type="button" (click)="guardarConfiguracionLan()" [disabled]="guardando"
+                        class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <ion-icon name="save-outline" class="text-base"></ion-icon>
+                  Guardar y Conectar
+                </button>
+              </div>
+
+              <div *ngIf="lanStatus" class="mt-4 p-4 rounded-xl border text-xs"
+                   [class.bg-emerald-500\/10]="lanStatus.online"
+                   [class.border-emerald-500\/30]="lanStatus.online"
+                   [class.text-emerald-300]="lanStatus.online"
+                   [class.bg-rose-500\/10]="!lanStatus.online"
+                   [class.border-rose-500\/30]="!lanStatus.online"
+                   [class.text-rose-300]="!lanStatus.online">
+                <div class="flex items-center gap-2 font-bold mb-1">
+                  <ion-icon [name]="lanStatus.online ? 'checkmark-circle' : 'alert-circle'"></ion-icon>
+                  <span>{{ lanStatus.message }}</span>
+                </div>
+                <p *ngIf="lanStatus.dbPath" class="text-[9px] opacity-80 break-all mt-1">
+                  BD: {{ lanStatus.dbPath }}
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- IPs Detectadas y Respaldo Local -->
+        <div class="space-y-6">
+          <div class="bg-glass-light border border-glass-border rounded-2xl p-5 sm:p-6 lg:p-7 shadow-xl">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-1 h-5 bg-sky-400 rounded-full"></div>
+              <div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">IPs de esta Computadora en el WiFi/Red</h5>
+                <p class="text-[8px] font-black uppercase text-sky-400 tracking-widest mt-0.5">Identificador de este equipo</p>
+              </div>
+            </div>
+
+            <p class="text-[9px] text-text-muted mb-4 leading-relaxed">
+              Esta es la dirección IP que el router le asignó a <strong>esta máquina</strong>. Si vas a usar otra PC como terminal cliente, escribe este número en la otra PC:
+            </p>
+
+            <div class="space-y-2.5 mb-6">
+              <div *ngFor="let ip of lanIps" class="flex items-center justify-between p-3.5 bg-slate-900/80 border border-slate-700 rounded-xl group hover:border-sky-400/50 transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
+                    <ion-icon name="wifi-outline" class="text-base"></ion-icon>
+                  </div>
+                  <div>
+                    <div class="text-xs font-mono font-black text-white">{{ ip }}</div>
+                    <div class="text-[8px] text-text-muted uppercase tracking-wider">Puerto: {{ lanPort }}</div>
+                  </div>
+                </div>
+                <button type="button" (click)="usarIpSugerida(ip)" class="text-[8px] font-black uppercase tracking-widest text-sky-400 bg-sky-400/10 hover:bg-sky-400/20 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer" title="Usar esta IP en la configuración">
+                  <ion-icon name="copy-outline"></ion-icon> Usar IP
+                </button>
+              </div>
+              <div *ngIf="lanIps.length === 0" class="p-4 bg-white/5 rounded-xl text-center text-text-muted text-[10px]">
+                Presiona "Probar Conexión" para detectar las IPs de tu red local.
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-glass-border space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1 h-5 bg-amber-400 rounded-full"></div>
+                <h5 class="text-xs font-black text-white uppercase tracking-tight">Copia de Seguridad Local</h5>
+              </div>
+              <p class="text-[9px] font-bold text-text-muted">
+                Descarga un respaldo instantáneo del archivo de base de datos SQLite (.db) con un solo clic.
+              </p>
+              <button type="button" (click)="descargarBackupLocal()"
+                      class="w-full py-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                <ion-icon name="download-outline" class="text-base text-amber-400"></ion-icon>
+                Descargar Base de Datos (.db)
+              </button>
+            </div>
+
+            <!-- Sincronización Manual con Supabase -->
+            <div class="pt-4 border-t border-glass-border space-y-4" *ngIf="syncService.syncState$ | async as sync">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-5 bg-primary rounded-full"></div>
+                  <h5 class="text-xs font-black text-white uppercase tracking-tight">Sincronización con Nube (Supabase)</h5>
+                </div>
+                <span class="text-[8px] font-bold text-text-muted" *ngIf="sync.lastSyncTime">
+                  Última: {{ sync.lastSyncTime }}
+                </span>
+              </div>
+              <p class="text-[9px] font-bold text-text-muted">
+                Sube los datos locales hacia la nube o descarga cambios bajo demanda. (Las consultas de cédula JCE siguen funcionando por internet).
+              </p>
+
+              <!-- Progress Bar if Syncing -->
+              <div *ngIf="sync.isSyncing" class="space-y-1.5">
+                <div class="flex justify-between text-[9px] font-bold text-primary">
+                  <span>{{ sync.statusText }}</span>
+                  <span>{{ sync.progress }}%</span>
+                </div>
+                <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-primary h-full transition-all duration-300" [style.width.%]="sync.progress"></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button type="button" (click)="syncService.downloadAllFromCloud()" [disabled]="sync.isSyncing"
+                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                  <ion-icon [name]="sync.isSyncing && sync.type === 'download' ? 'sync' : 'cloud-download-outline'" [class.animate-spin]="sync.isSyncing && sync.type === 'download'" class="text-base"></ion-icon>
+                  Descargar de la Nube (Inicio)
+                </button>
+
+                <button type="button" (click)="syncService.uploadAllToCloud()" [disabled]="sync.isSyncing"
+                        class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                  <ion-icon [name]="sync.isSyncing && sync.type === 'upload' ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="sync.isSyncing && sync.type === 'upload'" class="text-base"></ion-icon>
+                  Subir a la Nube (Fin Jornada)
+                </button>
+              </div>
+            </div>
+
+            <!-- Actualización del Software desde el Repositorio -->
+            <div class="pt-4 border-t border-glass-border space-y-4" *ngIf="updateService.updateStatus$ | async as update">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-5 bg-indigo-500 rounded-full"></div>
+                  <div>
+                    <h5 class="text-xs font-black text-white uppercase tracking-tight">Actualizaciones del Sistema</h5>
+                    <p class="text-[8px] font-black uppercase text-indigo-400 tracking-widest mt-0.5">Versión Actual: v{{ updateService.appVersion }}</p>
+                  </div>
+                </div>
+                <button type="button" (click)="updateService.checkForUpdates()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
+                        class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                  <ion-icon [name]="update.status === 'checking' ? 'sync' : 'refresh-outline'" [class.animate-spin]="update.status === 'checking'" class="text-sm"></ion-icon>
+                  <span>{{ update.status === 'checking' ? 'Buscando...' : 'Buscar Actualización' }}</span>
+                </button>
+              </div>
+
+              <p class="text-[9px] font-bold text-text-muted">
+                Detecta y descarga automáticamente las nuevas versiones publicadas en el repositorio sin necesidad de reinstalar manualmente con una memoria USB.
+              </p>
+
+              <!-- State: Available -->
+              <div *ngIf="update.status === 'available'" class="p-3.5 bg-indigo-950/60 border border-indigo-500/40 rounded-xl flex items-center justify-between gap-3 animate-fade-in">
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+                    <span>Nueva versión v{{ update.version }} encontrada</span>
+                  </div>
+                  <div class="text-[9px] text-text-muted mt-0.5">Hay una versión más reciente lista para descargar.</div>
+                </div>
+                <button type="button" (click)="updateService.downloadUpdate()"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md transition-all shrink-0 cursor-pointer">
+                  Descargar Ahora
+                </button>
+              </div>
+
+              <!-- State: Downloading with progress bar -->
+              <div *ngIf="update.status === 'downloading'" class="p-3.5 bg-indigo-950/60 border border-indigo-500/40 rounded-xl space-y-2 animate-fade-in">
+                <div class="flex items-center justify-between text-[9px] font-bold text-indigo-300">
+                  <span class="flex items-center gap-1.5">
+                    <ion-spinner name="crescent" class="text-xs text-indigo-400"></ion-spinner>
+                    Descargando actualización en segundo plano...
+                  </span>
+                  <span>{{ update.percent || 0 }}%</span>
+                </div>
+                <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div class="bg-indigo-500 h-full transition-all duration-300 rounded-full" [style.width.%]="update.percent || 0"></div>
+                </div>
+              </div>
+
+              <!-- State: Downloaded and ready to install -->
+              <div *ngIf="update.status === 'downloaded'" class="p-3.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl flex items-center justify-between gap-3 animate-fade-in">
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ion-icon name="checkmark-circle" class="text-emerald-400 text-base"></ion-icon>
+                    <span>¡Versión v{{ update.version }} descargada y lista!</span>
+                  </div>
+                  <div class="text-[9px] text-emerald-300 mt-0.5">Reinicia el sistema para aplicar los cambios sin perder ningún dato.</div>
+                </div>
+                <button type="button" (click)="updateService.installUpdate()"
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md transition-all shrink-0 cursor-pointer">
+                  Reiniciar e Instalar
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECCIÓN FACTURACIÓN ELECTRÓNICA (e-CF DGII) -->
+      <div *ngIf="selectedSegment === 'facturacion'" class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6 animate-fade-in-up">
+        
+        <!-- COLUMNA IZQUIERDA: Datos Fiscales del Emisor (Médico / Clínica) -->
+        <div class="xl:col-span-6 space-y-6">
+          <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl space-y-6">
+            
+            <div class="flex items-center justify-between border-b border-glass-border pb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-purple-500 rounded-full"></div>
+                <div>
+                  <h5 class="text-sm font-black text-white uppercase tracking-tight">Datos Fiscales del Emisor</h5>
+                  <p class="text-[8px] font-black uppercase text-purple-400 tracking-widest mt-0.5">Emisor Autorizado e-CF (Ley 32-23)</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-lg text-[8px] font-black uppercase tracking-wider">
+                DGII e-CF
+              </span>
+            </div>
+
+            <!-- Tipo de Contribuyente -->
+            <div class="space-y-2">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Tipo de Contribuyente</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" 
+                        (click)="config.facturacion && (config.facturacion.tipoContribuyente = 'fisica')"
+                        [class.bg-purple-600]="config.facturacion?.tipoContribuyente === 'fisica'"
+                        [class.text-white]="config.facturacion?.tipoContribuyente === 'fisica'"
+                        [class.border-purple-400]="config.facturacion?.tipoContribuyente === 'fisica'"
+                        [class.bg-white\/5]="config.facturacion?.tipoContribuyente !== 'fisica'"
+                        [class.text-text-muted]="config.facturacion?.tipoContribuyente !== 'fisica'"
+                        class="p-3.5 border border-glass-border rounded-xl text-left transition-all duration-300 flex flex-col justify-between cursor-pointer">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <ion-icon name="person" class="text-base text-purple-400"></ion-icon>
+                    <span *ngIf="config.facturacion?.tipoContribuyente === 'fisica'" class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-white/20 text-white">Activo</span>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider">Persona Física</span>
+                  <span class="text-[7px] opacity-70 mt-0.5">Médico independiente (Cédula como RNC)</span>
+                </button>
+
+                <button type="button" 
+                        (click)="config.facturacion && (config.facturacion.tipoContribuyente = 'juridica')"
+                        [class.bg-purple-600]="config.facturacion?.tipoContribuyente === 'juridica'"
+                        [class.text-white]="config.facturacion?.tipoContribuyente === 'juridica'"
+                        [class.border-purple-400]="config.facturacion?.tipoContribuyente === 'juridica'"
+                        [class.bg-white\/5]="config.facturacion?.tipoContribuyente !== 'juridica'"
+                        [class.text-text-muted]="config.facturacion?.tipoContribuyente !== 'juridica'"
+                        class="p-3.5 border border-glass-border rounded-xl text-left transition-all duration-300 flex flex-col justify-between cursor-pointer">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <ion-icon name="business" class="text-base text-purple-400"></ion-icon>
+                    <span *ngIf="config.facturacion?.tipoContribuyente === 'juridica'" class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-white/20 text-white">Activo</span>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider">Persona Jurídica</span>
+                  <span class="text-[7px] opacity-70 mt-0.5">Centro Médico / Clínica (RNC 9 dígitos)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- RNC del Emisor con botón de búsqueda automática -->
+            <div class="space-y-1.5" *ngIf="config.facturacion">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">
+                {{ config.facturacion.tipoContribuyente === 'fisica' ? 'RNC / Cédula del Médico (11 dígitos)' : 'RNC de la Empresa / Clínica (9 dígitos)' }}
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="text" [(ngModel)]="config.facturacion.rncEmisor" 
+                       class="flex-1 bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-purple-500/50 transition-all placeholder:text-text-muted/30" 
+                       [placeholder]="config.facturacion.tipoContribuyente === 'fisica' ? '00100000000' : '101000000'">
+                <button type="button" (click)="consultarRncAuto()" [disabled]="buscandoRnc || !config.facturacion.rncEmisor"
+                        class="px-3.5 py-3 bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer">
+                  <ion-icon [name]="buscandoRnc ? 'sync' : 'search-outline'" [class.animate-spin]="buscandoRnc" class="text-sm"></ion-icon>
+                  <span>{{ buscandoRnc ? 'Consultando...' : 'Verificar DGII' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Razón Social & Nombre Comercial -->
+            <div class="space-y-4" *ngIf="config.facturacion">
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Razón Social Oficial (DGII)</label>
+                <input type="text" [(ngModel)]="config.facturacion.razonSocial" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-purple-500/50 transition-all" 
+                       placeholder="Ej: DR. THEVENIN / CENTRO MEDICO PROMEDICAL S.R.L.">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Nombre Comercial del Consultorio</label>
+                <input type="text" [(ngModel)]="config.facturacion.nombreComercial" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-purple-500/50 transition-all" 
+                       placeholder="Ej: Consultorio Urológico Especializado">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Actividad Económica Principal</label>
+                <input type="text" [(ngModel)]="config.facturacion.actividadEconomica" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-purple-500/50 transition-all" 
+                       placeholder="Ej: 85121 - Servicios Médicos Especializados">
+              </div>
+            </div>
+
+            <!-- Ubicación y Contacto Fiscal -->
+            <div class="space-y-3 pt-2 border-t border-glass-border" *ngIf="config.facturacion">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Teléfono Fiscal</label>
+                  <input type="text" [(ngModel)]="config.facturacion.telefono" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none focus:border-purple-500/50" 
+                         placeholder="809-555-0000">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Correo para e-CF</label>
+                  <input type="email" [(ngModel)]="config.facturacion.correoEmisor" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none focus:border-purple-500/50" 
+                         placeholder="facturacion@promedical.com">
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Dirección Fiscal Completa</label>
+                <input type="text" [(ngModel)]="config.facturacion.direccionFiscal" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none focus:border-purple-500/50" 
+                       placeholder="Ej: Av. Juan Pablo Duarte #12, Suite 401">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Provincia</label>
+                  <input type="text" [(ngModel)]="config.facturacion.provincia" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none" 
+                         placeholder="Santiago">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Municipio</label>
+                  <input type="text" [(ngModel)]="config.facturacion.municipio" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none" 
+                         placeholder="Santiago de los Caballeros">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: Conexión Microservicio DGII & Impresión RI -->
+        <div class="xl:col-span-6 space-y-6">
+          
+          <!-- Tarjeta 2: Conexión Microservicio DGII -->
+          <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl space-y-5" *ngIf="config.facturacion">
+            <div class="flex items-center justify-between border-b border-glass-border pb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-sky-500 rounded-full"></div>
+                <div>
+                  <h5 class="text-xs font-black text-white uppercase tracking-tight">Servicio de Timbrado y API DGII</h5>
+                  <p class="text-[8px] font-black uppercase text-sky-400 tracking-widest mt-0.5">Microservicio en tech-server</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider"
+                    [class.bg-emerald-500\/10]="dgiiStatus?.ok" [class.text-emerald-400]="dgiiStatus?.ok"
+                    [class.bg-white\/5]="!dgiiStatus" [class.text-text-muted]="!dgiiStatus"
+                    [class.bg-rose-500\/10]="dgiiStatus && !dgiiStatus.ok" [class.text-rose-400]="dgiiStatus && !dgiiStatus.ok">
+                {{ dgiiStatus?.ok ? 'CONECTADO' : (dgiiStatus && !dgiiStatus.ok ? 'DESCONECTADO' : 'SIN PROBAR') }}
+              </span>
+            </div>
+
+            <!-- Ambiente DGII -->
+            <div class="space-y-2">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Ambiente de Operación</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" 
+                        (click)="config.facturacion.ambiente = 'certecf'"
+                        [class.bg-amber-500]="config.facturacion.ambiente === 'certecf'"
+                        [class.text-dark-deep]="config.facturacion.ambiente === 'certecf'"
+                        [class.bg-white\/5]="config.facturacion.ambiente !== 'certecf'"
+                        [class.text-text-muted]="config.facturacion.ambiente !== 'certecf'"
+                        class="p-3 border border-glass-border rounded-xl text-left transition-all font-black cursor-pointer">
+                  <div class="text-[10px] uppercase tracking-wider">Certecf (Pruebas)</div>
+                  <div class="text-[7px] opacity-80 uppercase mt-0.5 font-bold">Certificación DGII</div>
+                </button>
+
+                <button type="button" 
+                        (click)="config.facturacion.ambiente = 'ecf'"
+                        [class.bg-emerald-600]="config.facturacion.ambiente === 'ecf'"
+                        [class.text-white]="config.facturacion.ambiente === 'ecf'"
+                        [class.bg-white\/5]="config.facturacion.ambiente !== 'ecf'"
+                        [class.text-text-muted]="config.facturacion.ambiente !== 'ecf'"
+                        class="p-3 border border-glass-border rounded-xl text-left transition-all font-black cursor-pointer">
+                  <div class="text-[10px] uppercase tracking-wider">Ecf (Producción)</div>
+                  <div class="text-[7px] opacity-80 uppercase mt-0.5 font-bold">Validez Fiscal Real</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- URL del Microservicio DGII -->
+            <div class="space-y-1.5">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">URL Microservicio DGII (tech-server)</label>
+              <div class="flex items-center gap-2">
+                <input type="text" [(ngModel)]="config.facturacion.apiUrlDgii" 
+                       class="flex-1 bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[10px] font-black text-white focus:outline-none focus:border-sky-500/50" 
+                       placeholder="http://192.168.1.15:8000 o https://unrude-unpopular-gerri.ngrok-free.dev">
+                <button type="button" (click)="probarConexionDgii()" [disabled]="testingDgii"
+                        class="px-4 py-3 bg-sky-600 hover:bg-sky-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50">
+                  <ion-icon [name]="testingDgii ? 'sync' : 'flash-outline'" [class.animate-spin]="testingDgii" class="text-sm"></ion-icon>
+                  <span>{{ testingDgii ? 'Probando...' : 'Probar Conexión' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Status Banner -->
+            <div *ngIf="dgiiStatus" class="p-3 rounded-xl border text-[9px] font-bold flex items-center gap-2.5"
+                 [class.bg-emerald-950\/40]="dgiiStatus.ok" [class.border-emerald-500\/30]="dgiiStatus.ok" [class.text-emerald-300]="dgiiStatus.ok"
+                 [class.bg-rose-950\/40]="!dgiiStatus.ok" [class.border-rose-500\/30]="!dgiiStatus.ok" [class.text-rose-300]="!dgiiStatus.ok">
+              <ion-icon [name]="dgiiStatus.ok ? 'checkmark-circle' : 'alert-circle'" class="text-base"></ion-icon>
+              <span>{{ dgiiStatus.message }}</span>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Configuración de Impresión / Representación Impresa (RI) -->
+          <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl space-y-5" *ngIf="config.facturacion">
+            <div class="flex items-center justify-between border-b border-glass-border pb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+                <div>
+                  <h5 class="text-xs font-black text-white uppercase tracking-tight">Representación Impresa (RI)</h5>
+                  <p class="text-[8px] font-black uppercase text-emerald-400 tracking-widest mt-0.5">Comprobante Fiscal con Código QR DGII</p>
+                </div>
+              </div>
+              <ion-icon name="print-outline" class="text-xl text-emerald-400"></ion-icon>
+            </div>
+
+            <!-- Formato de Impresión -->
+            <div class="space-y-2">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Formato de Comprobante Impreso</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" 
+                        (click)="config.facturacion.formatoImpresion = 'termico_80mm'"
+                        [class.bg-emerald-600]="config.facturacion.formatoImpresion === 'termico_80mm'"
+                        [class.text-white]="config.facturacion.formatoImpresion === 'termico_80mm'"
+                        [class.bg-white\/5]="config.facturacion.formatoImpresion !== 'termico_80mm'"
+                        [class.text-text-muted]="config.facturacion.formatoImpresion !== 'termico_80mm'"
+                        class="p-3.5 border border-glass-border rounded-xl text-left transition-all flex flex-col justify-between cursor-pointer">
+                  <div class="flex items-center justify-between mb-1">
+                    <ion-icon name="receipt" class="text-base text-emerald-400"></ion-icon>
+                    <span *ngIf="config.facturacion.formatoImpresion === 'termico_80mm'" class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-white/20">Activo</span>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider">Ticket 80mm (POS)</span>
+                  <span class="text-[7px] opacity-70 mt-0.5">Impresora térmica de recibos</span>
+                </button>
+
+                <button type="button" 
+                        (click)="config.facturacion.formatoImpresion = 'hoja_carta'"
+                        [class.bg-emerald-600]="config.facturacion.formatoImpresion === 'hoja_carta'"
+                        [class.text-white]="config.facturacion.formatoImpresion === 'hoja_carta'"
+                        [class.bg-white\/5]="config.facturacion.formatoImpresion !== 'hoja_carta'"
+                        [class.text-text-muted]="config.facturacion.formatoImpresion !== 'hoja_carta'"
+                        class="p-3.5 border border-glass-border rounded-xl text-left transition-all flex flex-col justify-between cursor-pointer">
+                  <div class="flex items-center justify-between mb-1">
+                    <ion-icon name="document-text" class="text-base text-emerald-400"></ion-icon>
+                    <span *ngIf="config.facturacion.formatoImpresion === 'hoja_carta'" class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-white/20">Activo</span>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider">Hoja Carta (PDF)</span>
+                  <span class="text-[7px] opacity-70 mt-0.5">Impresora estándar 8.5 x 11</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Impresión Automática -->
+            <div class="flex items-center justify-between p-3.5 bg-white/5 border border-glass-border rounded-xl">
+              <div>
+                <span class="block text-[10px] font-black text-white uppercase tracking-wider">Impresión Automática</span>
+                <span class="block text-[8px] text-text-muted mt-0.5">Imprimir automáticamente al cobrar la consulta o copago</span>
+              </div>
+              <input type="checkbox" [(ngModel)]="config.facturacion.impresionAutomatica" class="w-5 h-5 accent-purple-600 rounded cursor-pointer">
+            </div>
+
+            <!-- Pie de Factura -->
+            <div class="space-y-1">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Leyenda / Pie del Comprobante</label>
+              <textarea [(ngModel)]="config.facturacion.pieFactura" rows="2" 
+                        class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-bold text-white focus:outline-none focus:border-purple-500/50" 
+                        placeholder="Mensaje de pie de página..."></textarea>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- SECCIÓN CERTIFICADO DIGITAL (Firma Electrónica e-CF) -->
+      <div *ngIf="selectedSegment === 'certificado'" class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6 animate-fade-in-up">
+        
+        <!-- COLUMNA IZQUIERDA: Carga del Archivo y Llave Privada -->
+        <div class="xl:col-span-6 space-y-6">
+          <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl space-y-6">
+            
+            <div class="flex items-center justify-between border-b border-glass-border pb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                <div>
+                  <h5 class="text-sm font-black text-white uppercase tracking-tight">Certificado Digital e-CF</h5>
+                  <p class="text-[8px] font-black uppercase text-amber-400 tracking-widest mt-0.5">Firma Criptográfica Ley 126-02 y 32-23</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg text-[8px] font-black uppercase tracking-wider">
+                Firma PKCS#12
+              </span>
+            </div>
+
+            <!-- Archivo del Certificado (.p12 / .pfx) -->
+            <div class="space-y-2" *ngIf="config.certificado">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Archivo de Certificado (.p12 / .pfx)</label>
+              
+              <div class="border-2 border-dashed border-glass-border hover:border-amber-500/50 rounded-2xl p-5 text-center transition-all bg-white/5 relative group cursor-pointer">
+                <input type="file" (change)="onCertificadoFileSelected($event)" accept=".p12,.pfx" 
+                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <div class="flex flex-col items-center gap-2">
+                  <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl group-hover:scale-110 transition-transform">
+                    <ion-icon name="key-outline"></ion-icon>
+                  </div>
+                  <div>
+                    <span class="text-[11px] font-black text-white block">
+                      {{ config.certificado.nombreArchivo || 'Haz clic o arrastra tu certificado (.p12 / .pfx)' }}
+                    </span>
+                    <span class="text-[8px] text-text-muted uppercase tracking-wider mt-0.5 block">
+                      {{ config.certificado.nombreArchivo ? 'Archivo seleccionado y cargado en el sistema' : 'Certificado emitido por Avansi, DIGIFIRMA o Cámara de Comercio' }}
+                    </span>
+                  </div>
+                  <span class="mt-1 px-3 py-1 bg-amber-500/20 text-amber-300 rounded-xl text-[8px] font-black uppercase tracking-widest">
+                    {{ config.certificado.nombreArchivo ? 'Cambiar Archivo' : 'Seleccionar Archivo' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contraseña / PIN de la Llave Privada -->
+            <div class="space-y-1.5" *ngIf="config.certificado">
+              <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Contraseña / PIN del Certificado</label>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                  <input [type]="verPasswordCertificado ? 'text' : 'password'" 
+                         [(ngModel)]="config.certificado.passwordCertificado"
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-3 text-[11px] font-black text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-text-muted/30 pr-10" 
+                         placeholder="Ingresa la contraseña del archivo .p12">
+                  <button type="button" (click)="verPasswordCertificado = !verPasswordCertificado" 
+                          class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors cursor-pointer">
+                    <ion-icon [name]="verPasswordCertificado ? 'eye-off-outline' : 'eye-outline'" class="text-base"></ion-icon>
+                  </button>
+                </div>
+                <button type="button" (click)="validarCertificadoDigital()" [disabled]="validandoCertificado || !config.certificado.nombreArchivo"
+                        class="px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50">
+                  <ion-icon [name]="validandoCertificado ? 'sync' : 'lock-open-outline'" [class.animate-spin]="validandoCertificado" class="text-sm"></ion-icon>
+                  <span>{{ validandoCertificado ? 'Validando...' : 'Desbloquear y Probar' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Entidad Emisora y Titular -->
+            <div class="space-y-4 pt-2 border-t border-glass-border" *ngIf="config.certificado">
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Entidad de Certificación Acreditada</label>
+                <input type="text" [(ngModel)]="config.certificado.emisor" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none focus:border-amber-500/50" 
+                       placeholder="Ej: Avansi SRL / DIGIFIRMA / Cámara de Comercio Santo Domingo">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Titular / Sujeto</label>
+                  <input type="text" [(ngModel)]="config.certificado.sujeto" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none" 
+                         placeholder="Nombre del Médico o Clínica">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">RNC del Titular</label>
+                  <input type="text" [(ngModel)]="config.certificado.rncSujeto" 
+                         class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none" 
+                         placeholder="Cédula o RNC">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: Estado y Parámetros Criptográficos -->
+        <div class="xl:col-span-6 space-y-6">
+          <div class="bg-glass-light backdrop-blur-xl border border-glass-border rounded-2xl p-6 lg:p-7 shadow-xl space-y-5" *ngIf="config.certificado">
+            
+            <div class="flex items-center justify-between border-b border-glass-border pb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+                <div>
+                  <h5 class="text-xs font-black text-white uppercase tracking-tight">Estado de la Firma Electrónica</h5>
+                  <p class="text-[8px] font-black uppercase text-emerald-400 tracking-widest mt-0.5">Seguridad y Validez Jurídica</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider"
+                    [class.bg-emerald-500\/10]="config.certificado.estado === 'vigente'" [class.text-emerald-400]="config.certificado.estado === 'vigente'"
+                    [class.bg-amber-500\/10]="config.certificado.estado === 'por_vencer'" [class.text-amber-400]="config.certificado.estado === 'por_vencer'"
+                    [class.bg-rose-500\/10]="config.certificado.estado === 'vencido'" [class.text-rose-400]="config.certificado.estado === 'vencido'"
+                    [class.bg-white\/5]="config.certificado.estado === 'no_configurado'" [class.text-text-muted]="config.certificado.estado === 'no_configurado'">
+                {{ config.certificado.estado === 'vigente' ? 'VIGENTE Y ACTIVO' : (config.certificado.estado === 'por_vencer' ? 'POR VENCER' : (config.certificado.estado === 'vencido' ? 'VENCIDO' : 'NO CONFIGURADO')) }}
+              </span>
+            </div>
+
+            <!-- Resultado de Validación -->
+            <div *ngIf="resultadoCertificado" class="p-4 rounded-xl border text-[9.5px] font-bold space-y-2"
+                 [class.bg-emerald-950\/40]="resultadoCertificado.ok" [class.border-emerald-500\/30]="resultadoCertificado.ok" [class.text-emerald-200]="resultadoCertificado.ok"
+                 [class.bg-rose-950\/40]="!resultadoCertificado.ok" [class.border-rose-500\/30]="!resultadoCertificado.ok" [class.text-rose-300]="!resultadoCertificado.ok">
+              <div class="flex items-center gap-2">
+                <ion-icon [name]="resultadoCertificado.ok ? 'checkmark-circle' : 'alert-circle'" class="text-lg text-emerald-400"></ion-icon>
+                <span>{{ resultadoCertificado.message }}</span>
+              </div>
+              <div *ngIf="resultadoCertificado.ok" class="text-[8.5px] opacity-80 pl-6 space-y-0.5">
+                <div>• Válido hasta: <strong class="text-white">{{ resultadoCertificado.vencimiento }}</strong> ({{ resultadoCertificado.diasRestantes }} días restantes)</div>
+                <div>• Autoridad Emisora: <strong class="text-white">{{ resultadoCertificado.emisor }}</strong></div>
+              </div>
+            </div>
+
+            <!-- Datos Técnicos del Certificado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3.5 bg-white/5 border border-glass-border rounded-xl">
+                <span class="block text-[8px] font-black text-text-muted uppercase tracking-wider">Algoritmo de Firma</span>
+                <span class="block text-[11px] font-black text-white mt-1">RSA-SHA256 (XMLDSig)</span>
+                <span class="block text-[7px] text-text-muted mt-0.5">Estándar obligatorio DGII</span>
+              </div>
+
+              <div class="p-3.5 bg-white/5 border border-glass-border rounded-xl">
+                <span class="block text-[8px] font-black text-text-muted uppercase tracking-wider">Número de Serie</span>
+                <span class="block text-[11px] font-black text-white mt-1 font-mono">{{ config.certificado.serialNumber || 'DO-9A4F2C81' }}</span>
+                <span class="block text-[7px] text-text-muted mt-0.5">Identificador único</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Fecha de Emisión</label>
+                <input type="date" [(ngModel)]="config.certificado.fechaEmision" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">Fecha de Expiración</label>
+                <input type="date" [(ngModel)]="config.certificado.fechaVencimiento" 
+                       class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[10px] font-black text-white focus:outline-none">
+              </div>
+            </div>
+
+            <div class="p-4 bg-purple-950/20 border border-purple-500/20 rounded-xl space-y-1.5">
+              <div class="flex items-center gap-2 text-purple-300 text-[9px] font-black uppercase tracking-wider">
+                <ion-icon name="shield-checkmark" class="text-sm"></ion-icon>
+                <span>Seguridad Criptográfica</span>
+              </div>
+              <p class="text-[8px] text-text-muted leading-relaxed">
+                El certificado digital y su clave privada se almacenan de forma segura y encriptada en tu equipo y en <strong class="text-white">tech-server</strong>. Cada factura electrónica emitida se firma automáticamente con el estándar XMLDSig antes de enviarse a la DGII.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
   </main>

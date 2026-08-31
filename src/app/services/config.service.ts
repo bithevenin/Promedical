@@ -31,7 +31,36 @@ export class ConfigService {
       { seguro: 'ARS Mapfre', montoCobertura: 500, copago: 200 },
       { seguro: 'ARS Futuro', montoCobertura: 450, copago: 250 },
       { seguro: 'ARS Palic', montoCobertura: 480, copago: 220 }
-    ]
+    ],
+    facturacion: {
+      tipoContribuyente: 'fisica',
+      rncEmisor: '',
+      razonSocial: 'Dr. Thevenin',
+      nombreComercial: 'Consultorio Médico Dr. Thevenin',
+      actividadEconomica: '85121 - Servicios Médicos Especializados',
+      telefono: '',
+      correoEmisor: 'doctor@promedical.com',
+      direccionFiscal: '',
+      provincia: 'Santiago',
+      municipio: 'Santiago de los Caballeros',
+      ambiente: 'certecf',
+      apiUrlDgii: 'http://192.168.1.15:8000',
+      formatoImpresion: 'termico_80mm',
+      impresionAutomatica: true,
+      pieFactura: 'Servicio Médico Exento de ITBIS según Art. 344 del Código Tributario.'
+    },
+    certificado: {
+      nombreArchivo: '',
+      rutaArchivo: '',
+      passwordCertificado: '',
+      emisor: 'Avansi / DIGIFIRMA (Acreditado INDOTEL)',
+      sujeto: 'Dr. Thevenin',
+      rncSujeto: '',
+      fechaEmision: '',
+      fechaVencimiento: '',
+      estado: 'no_configurado',
+      serialNumber: ''
+    }
   };
 
   private configSubject = new BehaviorSubject<ConfiguracionDoctor>(this.defaultConfig);
@@ -55,6 +84,14 @@ export class ConfigService {
 
         if (configRows) {
           console.log('[ConfigService] Row from Supabase:', JSON.stringify(configRows));
+          const facturacionData = configRows.facturacion_json 
+            ? (typeof configRows.facturacion_json === 'string' ? JSON.parse(configRows.facturacion_json) : configRows.facturacion_json)
+            : this.defaultConfig.facturacion;
+
+          const certificadoData = configRows.certificado_json
+            ? (typeof configRows.certificado_json === 'string' ? JSON.parse(configRows.certificado_json) : configRows.certificado_json)
+            : this.defaultConfig.certificado;
+
           const config: ConfiguracionDoctor = {
             nombreDoctor: configRows.nombre_doctor,
             especialidad: configRows.especialidad,
@@ -67,7 +104,9 @@ export class ConfigService {
               seguro: t.seguro,
               montoCobertura: t.monto_cobertura,
               copago: t.copago
-            }))
+            })),
+            facturacion: { ...this.defaultConfig.facturacion, ...facturacionData },
+            certificado: { ...this.defaultConfig.certificado, ...certificadoData }
           };
 
           await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
@@ -81,7 +120,19 @@ export class ConfigService {
 
     const local = await this.offlineService.getLocalData<ConfiguracionDoctor>('configuracion_doctor');
     if (local.length > 0) {
-      this.configSubject.next(local[0]);
+      const merged: ConfiguracionDoctor = {
+        ...this.defaultConfig,
+        ...local[0],
+        facturacion: {
+          ...this.defaultConfig.facturacion!,
+          ...(local[0].facturacion || {})
+        },
+        certificado: {
+          ...this.defaultConfig.certificado!,
+          ...(local[0].certificado || {})
+        }
+      };
+      this.configSubject.next(merged);
     } else {
       this.configSubject.next(this.defaultConfig);
     }
@@ -100,7 +151,9 @@ export class ConfigService {
         foto_url: config.fotoUrl,
         email: config.email,
         monto_consulta_particular: config.montoConsultaParticular,
-        exequatur: config.exequatur
+        exequatur: config.exequatur,
+        facturacion_json: config.facturacion ? JSON.stringify(config.facturacion) : null,
+        certificado_json: config.certificado ? JSON.stringify(config.certificado) : null
       };
 
       if (navigator.onLine) {
@@ -143,7 +196,8 @@ export class ConfigService {
         foto_url: config.fotoUrl,
         email: config.email,
         monto_consulta_particular: config.montoConsultaParticular,
-        exequatur: config.exequatur
+        exequatur: config.exequatur,
+        facturacion_json: config.facturacion ? JSON.stringify(config.facturacion) : null
       };
       await this.offlineService.addToQueue('configuracion_doctor', 'update', dbConfigPayload, 'id', 1);
     }

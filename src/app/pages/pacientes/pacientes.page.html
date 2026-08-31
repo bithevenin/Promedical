@@ -1,109 +1,75 @@
-<div class="dashboard-wrapper h-[100dvh] overflow-y-auto overflow-x-hidden bg-medical-dark text-white font-inter selection:bg-primary selection:text-white">
-  <!-- Mobile Header -->
-  <div class="mobile-header flex lg:hidden items-center justify-between px-6 h-16 bg-dark-secondary/50 backdrop-blur-lg border-b border-glass-border fixed top-0 w-full z-50">
-    <div class="logo flex items-center gap-3" routerLink="/main">
-      <div class="logo-icon w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-        <ion-icon name="pulse-outline" class="text-xl"></ion-icon>
-      </div>
-      <span class="logo-text text-xl font-bold tracking-tight">ProMedical</span>
-    </div>
-    <div class="header-actions">
-      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema"><ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
-    </div>
-  </div>
-
-  <!-- Sidebar (Desktop) -->
-  <aside class="sidebar hidden lg:flex flex-col w-64 p-6 bg-dark-secondary border-r border-glass-border fixed h-screen z-50 transition-all duration-300">
-    <!-- Header -->
-    <div class="sidebar-header mb-10 px-2 flex items-center gap-3 cursor-pointer" routerLink="/main">
-      <div class="logo-box w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-xl shadow-primary/30 hover:scale-105 transition-transform">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+  <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
+  <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2 max-w-full overflow-hidden">
+    <!-- Logo & Brand -->
+    <div class="flex items-center gap-2.5 cursor-pointer shrink-0" routerLink="/main">
+      <div class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-primary/30 hover:scale-105 transition-transform">
         <ion-icon name="pulse-outline"></ion-icon>
       </div>
-      <span class="logo-text text-xl font-bold tracking-tight text-white">ProMedical</span>
+      <div class="hidden sm:block">
+        <span class="logo-text text-sm font-black tracking-tight text-white block leading-none">ProMedical</span>
+        <span class="text-[7.5px] font-black uppercase text-primary tracking-widest mt-0.5 block">Clinical System</span>
+      </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav flex-grow flex flex-col gap-2">
+    <!-- Center Navigation Menu (Barra de Menú Horizontal) -->
+    <nav class="hidden md:flex items-center gap-1 bg-white/5 border border-glass-border p-1 rounded-2xl shadow-inner overflow-x-auto no-scrollbar shrink min-w-0 max-w-[55vw] xl:max-w-none">
       @for (item of navigationItems(); track item.label) {
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 w-full" 
-           [class.bg-primary/10]="item.active" 
-           [class.text-primary]="item.active"
-           [class.text-text-secondary]="!item.active"
-           [routerLink]="item.route">
-        <ion-icon [name]="item.icon" class="text-2xl group-hover:scale-105 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">{{ item.label }}</span>
-      </div>
+        <a [routerLink]="item.route"
+           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-200 whitespace-nowrap shrink-0"
+           [class.bg-primary]="item.active"
+           [class.text-white]="item.active"
+           [class.shadow-md]="item.active"
+           [class.shadow-primary\/20]="item.active"
+           [class.text-text-muted]="!item.active"
+           [class.hover:text-white]="!item.active"
+           [class.hover:bg-white\/5]="!item.active">
+          <ion-icon [name]="item.icon" class="text-sm"></ion-icon>
+          <span>{{ item.label }}</span>
+        </a>
       }
     </nav>
 
-    <!-- Footer Profile/Logout -->
-    <div class="sidebar-footer mt-auto pt-6 border-t border-glass-border flex flex-col gap-4">
-      <div class="nav-item group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-danger hover:bg-danger/10 transition-all duration-300 w-full" (click)="logout()">
-        <ion-icon name="log-out-outline" class="text-2xl group-hover:translate-x-0.5 transition-transform"></ion-icon>
-        <span class="text-sm font-semibold tracking-wide">Cerrar Sesión</span>
+    <!-- Right Controls (LAN Badge, Theme, Profile, Logout) -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <!-- LAN Mode Indicator Badge -->
+      <div routerLink="/configuracion" class="hidden xl:flex items-center gap-1.5 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-emerald-900/60 transition-all shadow-sm" title="Sistema operando en Red Local">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-[8.5px] font-black uppercase tracking-wider text-emerald-400">LAN Local</span>
       </div>
 
-      <div class="profile-box flex items-center gap-3 px-2">
-        <div class="avatar-box w-10 h-10 rounded-full border-2 border-primary/30 overflow-hidden ring-4 ring-primary/5 shrink-0">
+      <!-- Theme Toggle Button -->
+      <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner shrink-0" title="Cambiar Tema">
+        <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+      </button>
+
+      <!-- User Profile Box -->
+      <div class="flex items-center gap-2 bg-white/5 border border-glass-border p-1 pr-2.5 rounded-xl shrink-0">
+        <div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 shrink-0">
           <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
         </div>
-        <div class="user-details overflow-hidden">
-          <span class="block text-sm font-bold text-white truncate leading-none uppercase tracking-wider">{{ currentProfile()?.nombre || 'ProMedical System' }}</span>
-          <span class="block text-[10px] font-semibold text-text-muted uppercase mt-1.5 truncate">
-            {{ currentProfile()?.rol || 'Doctor' }}
-            <span *ngIf="currentProfile()?.rol === 'doctor' && currentProfile()?.especialidad" class="text-primary/70"> | {{ currentProfile()?.especialidad }}</span>
-          </span>
+        <div class="hidden 2xl:block text-left">
+          <span class="block text-xs font-bold text-white leading-none truncate max-w-[100px]">{{ currentProfile()?.nombre || 'Usuario' }}</span>
+          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
         </div>
       </div>
-    </div>
-  </aside>
 
-  <main class="main-content lg:ml-64 flex flex-col relative pt-16 lg:pt-0 min-h-screen pb-24 lg:pb-0">
-    
-    <!-- Top Bar -->
-    <header class="top-bar hidden lg:flex items-center justify-between h-16 px-8 bg-medical-dark/50 backdrop-blur-md border-b border-glass-border sticky top-0 z-40 shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center text-primary text-lg">
-          <ion-icon name="people-outline"></ion-icon>
-        </div>
-        <div>
-          <h4 class="text-sm font-black text-white uppercase tracking-tight">Registro de Pacientes</h4>
-          <p class="text-[8px] font-black uppercase text-text-muted tracking-widest mt-0.5">Gestión de expedientes</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-8">
-        <!-- Quick stats -->
-        <div class="flex items-center gap-6">
-          <div class="text-center">
-            <span class="block text-xl font-black text-white">{{ pacientes.length }}</span>
-            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Total</span>
-          </div>
-          <div class="w-px h-8 bg-glass-border"></div>
-          <div class="text-center">
-            <span class="block text-xl font-black text-primary">{{ pacientesFiltradosTodos.length }}</span>
-            <span class="text-[8px] font-black text-text-muted uppercase tracking-widest">Encontrados</span>
-          </div>
-        </div>
-        <div class="w-px h-8 bg-glass-border"></div>
-        <!-- Theme Toggle Button -->
-        <button (click)="themeService.toggleTheme()" class="w-8 h-8 bg-white/5 hover:bg-white/10 border border-glass-border rounded-lg flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition-colors shadow-inner" title="Cambiar Tema">
-          <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
-        </button>
-        <div class="w-px h-8 bg-glass-border"></div>
-        <div class="user-info text-right">
-          <span class="block text-sm font-bold text-white uppercase leading-tight">{{ currentProfile()?.nombre || 'Administración' }}</span>
-          <span class="block text-[9px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
-        </div>
-      </div>
-    </header>
+      <!-- Logout Button -->
+      <button (click)="logout()" class="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg flex items-center justify-center transition-colors shrink-0" title="Cerrar Sesión">
+        <ion-icon name="log-out-outline" class="text-base"></ion-icon>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content flex flex-col relative w-full pb-24 lg:pb-8 flex-grow">
 
     <!-- Content -->
-    <div class="content-body px-4 py-5 lg:px-8 lg:py-6 w-full animate-fade-in flex flex-col flex-grow">
+    <div class="content-body px-3 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 w-full max-w-full animate-fade-in flex flex-col flex-grow">
       
       <!-- Page Title + Search + New Patient -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-4 shrink-0">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-3 shrink-0">
         <div>
-          <h5 class="text-lg font-black text-white tracking-tight">Pacientes Registrados</h5>
+          <h5 class="text-base sm:text-lg font-black text-white tracking-tight">Pacientes Registrados</h5>
           <div class="flex items-center gap-3 mt-0.5">
             <p class="text-[10px] text-text-muted font-black uppercase tracking-widest">{{ pacientesFiltradosTodos.length }} registros encontrados</p>
             @if (cargandoFotos) {
@@ -114,28 +80,44 @@
             }
           </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Bajar de la Nube Button -->
+          <button (click)="syncService.downloadAllFromCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+                  title="Descargar todos los pacientes y consultas desde Supabase a la base de datos local">
+            <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'download' ? 'sync' : 'cloud-download-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'download'" class="text-sm"></ion-icon>
+            <span>Bajar Nube</span>
+          </button>
+
+          <!-- Subir a la Nube Button (Fin de Jornada) -->
+          <button (click)="syncService.uploadAllToCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-sky-500/10 disabled:opacity-50"
+                  title="Subir todos los datos locales modificados a Supabase (Fin de jornada laboral)">
+            <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'upload' ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'upload'" class="text-sm"></ion-icon>
+            <span>Subir Nube</span>
+          </button>
+
           <!-- Eliminar Todo Button -->
           <button (click)="eliminarTodosLosPacientes()" 
-                  class="flex items-center gap-2 px-4 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-rose-500/10"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-rose-500/10"
                   title="Eliminar Todos los Pacientes">
-            <ion-icon name="trash-outline" class="text-base"></ion-icon>
-            Eliminar Todo
+            <ion-icon name="trash-outline" class="text-sm"></ion-icon>
+            <span class="hidden sm:inline">Eliminar Todo</span>
           </button>
           
           <!-- Cartas Button -->
           <button (click)="abrirModalCartas()" 
-                  class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary/80 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-primary/20 hover:shadow-primary/30"
                   title="Cartas de Consentimiento">
-            <ion-icon name="document-text-outline" class="text-base"></ion-icon>
-            Carta Consentimiento
+            <ion-icon name="document-text-outline" class="text-sm"></ion-icon>
+            <span>Carta Consentimiento</span>
           </button>
 
           <!-- Search -->
-          <div class="relative">
-            <ion-icon name="search-outline" class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-base"></ion-icon>
+          <div class="relative flex-grow sm:flex-grow-0">
+            <ion-icon name="search-outline" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-sm"></ion-icon>
             <input type="text" 
-                   class="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-glass-light border border-glass-border rounded-xl text-sm text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
+                   class="w-full sm:w-52 lg:w-60 pl-9 pr-3.5 py-2 bg-glass-light border border-glass-border rounded-xl text-xs text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
                    placeholder="Buscar nombre o cédula..."
                    [ngModel]="filtroNombre"
                    (ngModelChange)="onFiltroChange($event)">
@@ -143,74 +125,96 @@
         </div>
       </div>
 
+      <!-- Sync Banner if syncing -->
+      <div *ngIf="syncService.syncState$ | async as sync" [class.hidden]="!sync.isSyncing" class="mb-4 p-4 bg-primary/10 border border-primary/30 rounded-2xl animate-fade-in shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 text-primary text-xs font-black uppercase tracking-wider">
+            <ion-icon name="sync" class="animate-spin text-base"></ion-icon>
+            <span>{{ sync.statusText }}</span>
+          </div>
+          <span class="text-xs font-black text-primary">{{ sync.progress }}%</span>
+        </div>
+        <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+          <div class="bg-primary h-full transition-all duration-300 rounded-full" [style.width.%]="sync.progress"></div>
+        </div>
+      </div>
+
       <!-- Table Card - Full Width, Flex Grow to Fill Floor -->
-      <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl flex flex-col flex-grow overflow-hidden mb-2">
-        <div class="overflow-auto custom-scrollbar flex-grow border-b border-glass-border" (scroll)="onScroll($event)">
-          <table class="w-full text-left border-collapse">
+      <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl flex flex-col flex-grow overflow-hidden mb-2 w-full max-w-full shadow-lg">
+        <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-grow border-b border-glass-border w-full" (scroll)="onScroll($event)">
+          <table class="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr class="bg-white/[0.03] text-text-muted uppercase text-[9px] font-black tracking-[0.15em] border-b border-glass-border">
-                <th class="px-5 py-3.5">Cédula</th>
-                <th class="px-5 py-3.5">Nombre</th>
-                <th class="px-5 py-3.5 hidden md:table-cell">Edad</th>
-                <th class="px-5 py-3.5 hidden sm:table-cell">Profesión</th>
-                <th class="px-5 py-3.5">Seguro</th>
-                <th class="px-5 py-3.5 text-right">Acciones</th>
+                <th class="px-4 py-3 whitespace-nowrap">Cédula</th>
+                <th class="px-4 py-3">Nombre</th>
+                <th class="px-3 py-3 hidden md:table-cell whitespace-nowrap">Edad</th>
+                <th class="px-3 py-3 hidden lg:table-cell whitespace-nowrap">Profesión</th>
+                <th class="px-3 py-3 whitespace-nowrap">Seguro</th>
+                <th class="px-4 py-3 text-right whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-glass-border/50">
               @for (paciente of pacientesFiltrados; track paciente.cedula) {
               <tr class="hover:bg-white/[0.04] transition-colors group">
-                <td class="patient-cedula px-5 py-3.5 text-[12px] font-black tracking-tight">{{ paciente.cedula }}</td>
-                <td class="px-5 py-3.5">
-                  <div class="flex items-center gap-3">
+                <td class="patient-cedula px-4 py-2.5 text-[11px] font-black tracking-tight whitespace-nowrap">{{ paciente.cedula }}</td>
+                <td class="px-4 py-2.5">
+                  <div class="flex items-center gap-2.5">
                     @if (paciente.fotoUrl) {
-                      <img [src]="paciente.fotoUrl" class="w-9 h-9 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
+                      <img [src]="paciente.fotoUrl" class="w-8 h-8 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
                     } @else {
-                      <div class="patient-avatar-box w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                      <div class="patient-avatar-box w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0">
                         {{ paciente.nombre.charAt(0).toUpperCase() }}
                       </div>
                     }
-                    <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">{{ paciente.nombre }}</span>
+                    <div class="truncate max-w-[200px] lg:max-w-xs font-bold text-white text-xs">
+                      {{ paciente.nombre }}
+                    </div>
                   </div>
                 </td>
-                <td class="px-5 py-3.5 text-sm font-bold text-white hidden md:table-cell">{{ paciente.edad }} <span class="text-[10px] opacity-50">años</span></td>
-                <td class="px-5 py-3.5 hidden sm:table-cell">
-                  <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[9px] font-black rounded-lg uppercase tracking-wide">
-                    {{ paciente.profesion }}
-                  </span>
+                <td class="px-3 py-2.5 hidden md:table-cell text-xs font-bold text-slate-300 whitespace-nowrap">
+                  {{ paciente.edad }} años
                 </td>
-                <td class="px-5 py-3.5">
-                  <span class="px-2 py-0.5 text-[9px] font-black rounded-lg uppercase tracking-wide"
+                <td class="px-3 py-2.5 hidden lg:table-cell text-xs text-text-muted truncate max-w-[130px]">
+                  {{ paciente.profesion || '-' }}
+                </td>
+                <td class="px-3 py-2.5 whitespace-nowrap">
+                  <span class="px-2 py-0.5 text-[9px] font-black rounded-lg uppercase tracking-wide inline-block"
                         [ngClass]="paciente.seguro === 'Particular' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary/10 text-primary'">
                     {{ paciente.seguro }}
                   </span>
                 </td>
-                <td class="px-5 py-3.5 text-right">
+                <td class="px-4 py-2.5 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end gap-1.5">
                     <button *ngIf="currentProfile()?.rol === 'doctor' || currentProfile()?.rol === 'admin'" class="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-all" 
                             (click)="consultarPaciente(paciente)" title="Iniciar Consulta">
-                      <ion-icon name="medical-outline" class="text-base"></ion-icon>
+                      <ion-icon name="medical-outline" class="text-sm"></ion-icon>
                     </button>
                     <button class="btn-action-eye p-1.5 rounded-lg transition-all" 
                             (click)="verHistorial(paciente)" title="Ver Historial">
-                      <ion-icon name="eye-outline" class="text-base"></ion-icon>
+                      <ion-icon name="eye-outline" class="text-sm"></ion-icon>
                     </button>
                     <button class="p-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition-all" 
                             (click)="editarPaciente(paciente)" title="Editar Paciente">
-                      <ion-icon name="create-outline" class="text-base"></ion-icon>
+                      <ion-icon name="create-outline" class="text-sm"></ion-icon>
                     </button>
                     <button class="p-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-all" 
                             (click)="eliminarPaciente(paciente)" title="Eliminar Paciente">
-                      <ion-icon name="trash-outline" class="text-base"></ion-icon>
+                      <ion-icon name="trash-outline" class="text-sm"></ion-icon>
                     </button>
                   </div>
                 </td>
               </tr>
               } @empty {
               <tr>
-                <td colspan="6" class="px-6 py-16 text-center">
-                  <ion-icon name="people-outline" class="text-5xl text-text-muted opacity-30 block mx-auto mb-3"></ion-icon>
-                  <p class="text-text-muted font-bold text-sm opacity-50">No se encontraron pacientes</p>
+                <td colspan="6" class="px-6 py-14 text-center">
+                  <ion-icon name="cloud-download-outline" class="text-5xl text-primary opacity-60 block mx-auto mb-3"></ion-icon>
+                  <p class="text-white font-black text-base mb-1">Base de Datos Local Lista</p>
+                  <p class="text-text-muted text-xs mb-5 max-w-md mx-auto">No hay pacientes guardados en este equipo todavía. Haz clic en el botón para descargar toda la base de datos histórica de Supabase en una sola llamada.</p>
+                  <button (click)="syncService.downloadAllFromCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing"
+                          class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-deep text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
+                    <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing ? 'sync' : 'cloud-download-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing" class="text-lg"></ion-icon>
+                    {{ (syncService.syncState$ | async)?.isSyncing ? 'Descargando desde Supabase...' : '📥 Descargar Todos los Datos de Supabase' }}
+                  </button>
                 </td>
               </tr>
               }

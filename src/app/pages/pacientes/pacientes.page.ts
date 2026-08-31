@@ -4,6 +4,7 @@ import { PatientService } from '../../services/patient.service';
 import { ConsultationService } from '../../services/consultation.service';
 import { ConfigService } from '../../services/config.service';
 import { AuthService } from '../../services/auth.service';
+import { SyncService } from '../../services/sync.service';
 import { Paciente, Consulta, UserProfile } from '../../models';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
 import { ToastController, AlertController } from '@ionic/angular';
@@ -23,6 +24,11 @@ interface JceResult {
   direccion?: string;
   dirección?: string;
   lugarNacimiento?: string;
+  tipo_sangre?: string;
+  tipoSangre?: string;
+  grupoSanguineo?: string;
+  grupo_sanguineo?: string;
+  sangre?: string;
 }
 
 @Component({
@@ -135,6 +141,7 @@ export class PacientesPage implements OnInit {
     private configService: ConfigService,
     private router: Router,
     private authService: AuthService,
+    public syncService: SyncService,
     private toastController: ToastController,
     private alertController: AlertController,
     public themeService: ThemeService
@@ -309,13 +316,18 @@ export class PacientesPage implements OnInit {
         this.editData.direccion = result.direccion || result.dirección ||
           [result.lugarNacimiento].filter(Boolean).join(', ') || '';
 
+        // Tipo de Sangre
+        if (result.tipo_sangre) {
+          this.editData.tipo_sangre = result.tipo_sangre;
+        }
+
         // Foto
         this.editData.fotoUrl = result.fotoUrl || this.editData.fotoUrl || '';
 
         this.presentToast('¡Datos de la cédula cargados con éxito!', 'success');
       }
     } catch (error: any) {
-      this.presentToast('Error al consultar cédula JCE: ' + (error?.message || error), 'danger');
+      this.presentToast('Consulta JCE: ' + (error?.message || error), 'danger');
     } finally {
       this.isLoadingJce = false;
     }
