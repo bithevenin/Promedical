@@ -72,7 +72,7 @@ body {
 
 .content-body {
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
@@ -92,6 +92,13 @@ body {
     padding-left: 2rem;
     padding-right: 2rem;
   }
+}
+
+main.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Ensure grid and flex items never overflow parent width */
@@ -318,10 +325,8 @@ body.light-theme {
     padding-right: 24px !important;
   }
 
-  /* Main content adjusts to the collapsed sidebar width.
-     Keep this margin constant so that the sidebar overlays on top of the content
-     instead of shifting the entire layout. */
-  main.main-content {
+  /* In layouts with active sidebar only */
+  .layout aside.sidebar ~ main.main-content {
     margin-left: 80px !important;
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
