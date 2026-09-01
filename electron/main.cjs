@@ -42,6 +42,22 @@ function saveConfig(config) {
 }
 
 function setupAutoUpdater() {
+  const ghToken = process.env.GH_TOKEN || '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';
+  if (ghToken) {
+    try {
+      autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'bithevenin',
+        repo: 'Promedical',
+        private: true,
+        token: ghToken
+      });
+      console.log('[AutoUpdater] Configurado para repositorio privado usando token de GitHub');
+    } catch (e) {
+      console.error('[AutoUpdater] Error configurando feed privado:', e);
+    }
+  }
+
   autoUpdater.on('checking-for-update', () => {
     console.log('[AutoUpdater] Checking for updates...');
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -75,10 +91,14 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[AutoUpdater] Error:', err);
+    let message = err.message || 'Error al comprobar actualizaciones';
+    if (message.includes('404') || message.includes('releases.atom')) {
+      message = 'No se encontró ninguna versión publicada en GitHub (o el repositorio es privado/requiere token).';
+    }
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-status', {
         status: 'error',
-        message: err.message || 'Error al comprobar actualizaciones'
+        message
       });
     }
   });
@@ -225,7 +245,11 @@ ipcMain.handle('check-for-updates', async () => {
     const result = await autoUpdater.checkForUpdates();
     return { success: true, updateInfo: result?.updateInfo };
   } catch (err) {
-    return { success: false, error: err.message };
+    let msg = err.message || 'Error al comprobar actualizaciones';
+    if (msg.includes('404') || msg.includes('releases.atom')) {
+      msg = 'No se encontró ninguna versión publicada en GitHub (o el repositorio es privado/requiere token).';
+    }
+    return { success: false, error: msg };
   }
 });
 
