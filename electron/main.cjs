@@ -144,7 +144,16 @@ function getLocalIpAddresses() {
 
 function startEmbeddedServer(port, dbDir) {
   return new Promise((resolve, reject) => {
-    const serverScript = path.join(__dirname, '../server/server-process.cjs');
+    // When packaged in an .asar file, child_process.fork() cannot read files
+    // from inside the asar. With asarUnpack, server/ files are at app.asar.unpacked/server/
+    const appPath = app.getAppPath(); // e.g. /path/to/resources/app.asar
+    const isPackaged = appPath.endsWith('.asar');
+    const serverScript = isPackaged
+      ? path.join(appPath.replace('app.asar', 'app.asar.unpacked'), 'server', 'server-process.cjs')
+      : path.join(__dirname, '../server/server-process.cjs');
+
+    console.log('[Electron] Forking server process at:', serverScript);
+
     const child = fork(serverScript, [], {
       execArgv: ['--experimental-sqlite'],
       env: {

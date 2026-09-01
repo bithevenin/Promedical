@@ -35,6 +35,9 @@
       "!node_modules/.bin/**/*"
     ],
     "asar": true,
+    "asarUnpack": [
+      "server/**/*"
+    ],
     "win": {
       "target": [
         {
