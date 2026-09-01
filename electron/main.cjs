@@ -42,7 +42,7 @@ function saveConfig(config) {
 }
 
 function setupAutoUpdater() {
-  const ghToken = process.env.GH_TOKEN || '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';
+  const ghToken = process.env.GH_TOKEN || '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';
   if (ghToken) {
     try {
       autoUpdater.setFeedURL({
