@@ -1,6 +1,6 @@
 {
   "name": "promedical",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "author": "ProMedical System",
   "homepage": "https://ionicframework.com/",
   "main": "electron/main.cjs",
@@ -15,7 +15,7 @@
     "electron": "electron electron/main.cjs",
     "electron:dev": "electron electron/main.cjs --dev",
     "dev:local": "concurrently \"node server/server.cjs\" \"ng serve\"",
-    "electron:build": "ng build --configuration production && npx electron-builder"
+    "electron:build": "node scripts/make-icon.cjs && ng build --configuration production && npx electron-builder"
   },
   "build": {
     "electronVersion": "33.2.1",
@@ -43,6 +43,7 @@
       "node_modules/ws/**/*"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",

@@ -169,7 +169,7 @@ async function createWindow() {
     minHeight: 700,
     backgroundColor: '#0f172a',
     title: 'Promedical - Sistema Médico Local',
-    icon: path.join(__dirname, '../favicon.png'),
+    icon: path.join(__dirname, '../build/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
