@@ -158,6 +158,7 @@ function startEmbeddedServer(port, dbDir) {
       execArgv: ['--experimental-sqlite'],
       env: {
         ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
         SERVER_PORT: String(port),
         SERVER_DB_DIR: dbDir
       },

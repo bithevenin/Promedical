@@ -102,10 +102,19 @@ export class UpdateService {
   }
 
   async forceUpdate(): Promise<void> {
-    await this.checkForUpdates();
-    setTimeout(() => {
-      this.downloadUpdate();
-    }, 1000);
+    this.checkForUpdates();
+    // Suscribirse temporalmente al estado hasta que deje de ser 'checking'
+    const sub = this.updateStatus$.subscribe((statusObj) => {
+      if (statusObj.status === 'available') {
+        sub.unsubscribe();
+        this.downloadUpdate();
+      } else if (statusObj.status === 'downloaded') {
+        sub.unsubscribe();
+        this.installUpdate();
+      } else if (statusObj.status === 'not-available' || statusObj.status === 'error') {
+        sub.unsubscribe();
+      }
+    });
   }
 
   async downloadUpdate(): Promise<void> {
