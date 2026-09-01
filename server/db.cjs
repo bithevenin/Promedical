@@ -1,4 +1,4 @@
-const { DatabaseSync } = require('node:sqlite');
+const Database = require('better-sqlite3');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -10,16 +10,14 @@ class LocalDB {
     }
     this.dbPath = path.join(dataDir, 'promedical_local.db');
     console.log(`[LocalDB] Initializing SQLite database at: ${this.dbPath}`);
-    this.db = new DatabaseSync(this.dbPath);
+    this.db = new Database(this.dbPath);
+    this.db.pragma('journal_mode = WAL');
     this.initTables();
     this.seedInitialData();
   }
 
   initTables() {
-    this.db.exec(`
-      PRAGMA journal_mode = WAL;
-
-      CREATE TABLE IF NOT EXISTS usuarios (
+    this.db.exec(`      CREATE TABLE IF NOT EXISTS usuarios (
         id TEXT PRIMARY KEY,
         correo TEXT UNIQUE,
         nombre TEXT,
@@ -413,38 +411,27 @@ class LocalDB {
     const results = [];
     if (records.length === 0) return Array.isArray(data) ? [] : null;
 
-    const useTx = records.length > 1;
-    if (useTx) this.db.exec('BEGIN TRANSACTION');
-
-    try {
-      for (const item of records) {
+    const doInsert = this.db.transaction((recs) => {
+      for (const item of recs) {
         const keys = Object.keys(item);
         if (keys.length === 0) continue;
         const placeholders = keys.map(() => '?').join(', ');
         const values = keys.map(k => {
           const val = item[k];
-          if (typeof val === 'object' && val !== null) {
-            return JSON.stringify(val);
-          }
+          if (typeof val === 'object' && val !== null) return JSON.stringify(val);
           return val;
         });
-
         const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
-        const stmt = this.db.prepare(sql);
-        const info = stmt.run(...values);
-
+        const info = this.db.prepare(sql).run(...values);
         let createdRecord = { ...item };
         if (info.lastInsertRowid && !item.id) {
           createdRecord.id = Number(info.lastInsertRowid);
         }
         results.push(this.parseRow(createdRecord));
       }
-      if (useTx) this.db.exec('COMMIT');
-    } catch (err) {
-      if (useTx) this.db.exec('ROLLBACK');
-      throw err;
-    }
+    });
 
+    doInsert(records);
     return Array.isArray(data) ? results : results[0];
   }
 
@@ -458,11 +445,8 @@ class LocalDB {
     if (table === 'pacientes') actualConflictKey = 'cedula';
     if (table === 'tarifas_seguro') actualConflictKey = 'seguro';
 
-    const useTx = records.length > 1;
-    if (useTx) this.db.exec('BEGIN TRANSACTION');
-
-    try {
-      for (const item of records) {
+    const doUpsert = this.db.transaction((recs) => {
+      for (const item of recs) {
         const keys = Object.keys(item);
         if (keys.length === 0) continue;
         const placeholders = keys.map(() => '?').join(', ');
@@ -470,29 +454,20 @@ class LocalDB {
           .filter(k => k !== actualConflictKey)
           .map(k => `${k} = excluded.${k}`)
           .join(', ');
-
         const values = keys.map(k => {
           const val = item[k];
-          if (typeof val === 'object' && val !== null) {
-            return JSON.stringify(val);
-          }
+          if (typeof val === 'object' && val !== null) return JSON.stringify(val);
           return val;
         });
-
         const sql = updateClauses.length > 0
           ? `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${actualConflictKey}) DO UPDATE SET ${updateClauses}`
           : `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${actualConflictKey}) DO NOTHING`;
-
-        const stmt = this.db.prepare(sql);
-        stmt.run(...values);
+        this.db.prepare(sql).run(...values);
         results.push(this.parseRow(item));
       }
-      if (useTx) this.db.exec('COMMIT');
-    } catch (err) {
-      if (useTx) this.db.exec('ROLLBACK');
-      throw err;
-    }
+    });
 
+    doUpsert(records);
     return Array.isArray(data) ? results : results[0];
   }
 
