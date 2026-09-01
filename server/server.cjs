@@ -93,7 +93,7 @@ function startServer(port = 3000, customDbPath = null) {
           nombre: email.split('@')[0],
           rol: 'doctor',
           especialidad: 'Medicina General',
-          password_hash: password || '123456'
+          password_hash: password || '12345678'
         };
         db.insert('usuarios', newUser);
         return res.json({

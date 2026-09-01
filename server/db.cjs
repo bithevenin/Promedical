@@ -297,12 +297,15 @@ class LocalDB {
       const insertUser = this.db.prepare(`
         INSERT INTO usuarios (id, correo, nombre, rol, especialidad, password_hash)
         VALUES 
-          ('c4124d50-2460-4bfb-9586-442a1f6966ef', 'brayam.alfa@gmail.com', 'Brayam Thevenin', 'doctor', 'Urólogo', '123456'),
-          ('local-doc-1', 'dr.miguelthevenin@gmail.com', 'Dr. Thevenin', 'doctor', 'Urólogo', '123456'),
-          ('local-sec-1', 'secretaria@promedical.local', 'Recepcionista', 'secretaria', 'Recepción', '123456'),
-          ('local-adm-1', 'admin@promedical.local', 'Administrador', 'admin', 'Sistemas', '123456')
+          ('c4124d50-2460-4bfb-9586-442a1f6966ef', 'brayam.alfa@gmail.com', 'Brayam Thevenin', 'doctor', 'Urólogo', '12345678'),
+          ('local-doc-1', 'dr.miguelthevenin@gmail.com', 'Dr. Thevenin', 'doctor', 'Urólogo', '12345678'),
+          ('local-sec-1', 'secretaria@promedical.local', 'Recepcionista', 'secretaria', 'Recepción', '12345678'),
+          ('local-adm-1', 'admin@promedical.local', 'Administrador', 'admin', 'Sistemas', '12345678')
       `);
       insertUser.run();
+    } else {
+      // Migrate any legacy '123456' passwords to '12345678'
+      this.db.prepare("UPDATE usuarios SET password_hash = '12345678' WHERE password_hash = '123456' OR password_hash IS NULL").run();
     }
   }
 
