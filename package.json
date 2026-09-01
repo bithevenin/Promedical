@@ -23,7 +23,7 @@
     "productName": "ProMedical",
     "npmRebuild": false,
     "directories": {
-      "output": "C:\\Users\\brayam Thevenin\\promedical-build"
+      "output": "dist-electron"
     },
     "files": [
       "electron/**/*",
