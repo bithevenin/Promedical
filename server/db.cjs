@@ -1,4 +1,15 @@
-const initSqlJs = require('sql.js');
+let initSqlJs;
+try {
+  initSqlJs = require('sql.js');
+} catch (e1) {
+  try {
+    const fallbackPath = require('node:path').join(__dirname, '..', 'node_modules', 'sql.js');
+    initSqlJs = require(fallbackPath);
+  } catch (e2) {
+    console.error('[LocalDB] sql.js load failed:', e1.message, e2.message);
+    initSqlJs = require('sql.js');
+  }
+}
 const path = require('node:path');
 const fs = require('node:fs');
 

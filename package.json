@@ -1,6 +1,6 @@
 {
   "name": "promedical",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": "ProMedical System",
   "homepage": "https://ionicframework.com/",
   "main": "electron/main.cjs",
@@ -36,7 +36,11 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "server/**/*"
+      "server/**/*",
+      "node_modules/sql.js/**/*",
+      "node_modules/express/**/*",
+      "node_modules/cors/**/*",
+      "node_modules/ws/**/*"
     ],
     "win": {
       "target": [
