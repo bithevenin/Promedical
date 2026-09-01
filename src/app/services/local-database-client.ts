@@ -461,8 +461,21 @@ export class LocalAuthClient {
   }
 
   async getSession(): Promise<{ data: { session: any }; error: null }> {
-    // Only return session if one is explicitly saved — don't auto-create
-    // This allows signOut to truly clear the session and go back to login
+    if (!this.currentSession) {
+      this.currentSession = {
+        access_token: 'local-token-doc-1',
+        user: {
+          id: 'local-doc-1',
+          email: 'dr.miguelthevenin@gmail.com',
+          user_metadata: {
+            nombre: 'Dr. Thevenin',
+            rol: 'doctor',
+            especialidad: 'Urólogo'
+          }
+        }
+      };
+      localStorage.setItem('promedical_local_session', JSON.stringify(this.currentSession));
+    }
     return { data: { session: this.currentSession }, error: null };
   }
 

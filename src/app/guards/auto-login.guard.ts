@@ -1,23 +1,13 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map, take } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AutoLoginGuard implements CanActivate {
-
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private router: Router) {}
 
   async canActivate(): Promise<boolean | UrlTree> {
-    const isActive = await this.authService.isSessionActive();
-    if (isActive) {
-      // If logged in, redirect away from login page to main
-      return this.router.createUrlTree(['/main']);
-    } else {
-      return true;
-    }
+    return this.router.createUrlTree(['/main']);
   }
 }

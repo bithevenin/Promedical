@@ -9,7 +9,7 @@ let mainWindow = null;
 let serverProcess = null;
 
 // Configure autoUpdater
-autoUpdater.autoDownload = false;
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 const configPath = path.join(app.getPath('userData'), 'promedical_lan_config.json');

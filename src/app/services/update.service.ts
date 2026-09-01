@@ -101,6 +101,13 @@ export class UpdateService {
     }
   }
 
+  async forceUpdate(): Promise<void> {
+    await this.checkForUpdates();
+    setTimeout(() => {
+      this.downloadUpdate();
+    }, 1000);
+  }
+
   async downloadUpdate(): Promise<void> {
     if (typeof window !== 'undefined') {
       const electronApi = (window as any).electronAPI;

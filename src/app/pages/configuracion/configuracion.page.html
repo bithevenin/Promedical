@@ -593,11 +593,19 @@
                     <p class="text-[8px] font-black uppercase text-indigo-400 tracking-widest mt-0.5">Versión Actual: v{{ updateService.appVersion }}</p>
                   </div>
                 </div>
-                <button type="button" (click)="updateService.checkForUpdates()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
-                        class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-                  <ion-icon [name]="update.status === 'checking' ? 'sync' : 'refresh-outline'" [class.animate-spin]="update.status === 'checking'" class="text-sm"></ion-icon>
-                  <span>{{ update.status === 'checking' ? 'Buscando...' : 'Buscar Actualización' }}</span>
-                </button>
+                <div class="flex items-center gap-2">
+                  <button type="button" (click)="updateService.checkForUpdates()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
+                          class="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                    <ion-icon [name]="update.status === 'checking' ? 'sync' : 'refresh-outline'" [class.animate-spin]="update.status === 'checking'" class="text-sm"></ion-icon>
+                    <span>{{ update.status === 'checking' ? 'Buscando...' : 'Buscar' }}</span>
+                  </button>
+
+                  <button type="button" (click)="updateService.forceUpdate()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
+                          class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                    <ion-icon name="cloud-download-outline" class="text-base"></ion-icon>
+                    <span>DESCARGAR E INSTALAR ACTUALIZACIÓN AHORA</span>
+                  </button>
+                </div>
               </div>
 
               <p class="text-[9px] font-bold text-text-muted">

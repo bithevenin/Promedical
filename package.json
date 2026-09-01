@@ -1,6 +1,6 @@
 {
   "name": "promedical",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "author": "ProMedical System",
   "homepage": "https://ionicframework.com/",
   "main": "electron/main.cjs",
