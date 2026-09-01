@@ -21,7 +21,7 @@
     "electronVersion": "33.2.1",
     "appId": "com.promedical.clinic",
     "productName": "ProMedical",
-    "npmRebuild": true,
+    "npmRebuild": false,
     "directories": {
       "output": "dist-electron"
     },
@@ -59,7 +59,6 @@
   },
   "private": true,
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",

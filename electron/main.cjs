@@ -1,11 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { fork } = require('node:child_process');
+const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
-const { startServer, getLocalIpAddresses } = require('../server/server.cjs');
 
 let mainWindow = null;
-let serverInstance = null;
+let serverProcess = null;
 
 // Configure autoUpdater
 autoUpdater.autoDownload = false;
@@ -130,14 +131,67 @@ function setupAutoUpdater() {
   });
 }
 
+function getLocalIpAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) addresses.push(iface.address);
+    }
+  }
+  return addresses;
+}
+
+function startEmbeddedServer(port, dbDir) {
+  return new Promise((resolve, reject) => {
+    const serverScript = path.join(__dirname, '../server/server-process.cjs');
+    const child = fork(serverScript, [], {
+      execArgv: ['--experimental-sqlite'],
+      env: {
+        ...process.env,
+        SERVER_PORT: String(port),
+        SERVER_DB_DIR: dbDir
+      },
+      silent: false
+    });
+
+    const timeout = setTimeout(() => {
+      reject(new Error('Server startup timeout'));
+    }, 15000);
+
+    child.on('message', (msg) => {
+      if (msg && msg.type === 'SERVER_READY') {
+        clearTimeout(timeout);
+        serverProcess = child;
+        console.log('[Electron] Embedded server ready on port', msg.port);
+        resolve(child);
+      } else if (msg && msg.type === 'SERVER_ERROR') {
+        clearTimeout(timeout);
+        reject(new Error(msg.error));
+      }
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+
+    child.on('exit', (code) => {
+      if (code !== 0) console.error('[Electron] Server process exited with code', code);
+      serverProcess = null;
+    });
+  });
+}
+
 async function createWindow() {
   const config = loadConfig();
 
-  // If running as Server/Host, start local Express/WebSocket server
+  // If running as Server/Host, start local Express/WebSocket server as a child process
+  // using --experimental-sqlite so that node:sqlite is available in that process
   if (config.mode === 'server') {
     try {
       const dbDir = path.join(app.getPath('userData'), 'db');
-      serverInstance = await startServer(config.port || 3000, dbDir);
+      await startEmbeddedServer(config.port || 3000, dbDir);
       console.log('[Electron] Embedded LAN Server started on port', config.port);
     } catch (err) {
       console.error('[Electron] Failed to start embedded server:', err);
@@ -269,6 +323,10 @@ ipcMain.handle('install-update', () => {
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
+  if (serverProcess) {
+    try { serverProcess.send({ type: 'SHUTDOWN' }); } catch {}
+    setTimeout(() => { if (serverProcess) serverProcess.kill(); }, 2000);
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }

@@ -1,4 +1,4 @@
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -10,14 +10,16 @@ class LocalDB {
     }
     this.dbPath = path.join(dataDir, 'promedical_local.db');
     console.log(`[LocalDB] Initializing SQLite database at: ${this.dbPath}`);
-    this.db = new Database(this.dbPath);
-    this.db.pragma('journal_mode = WAL');
+    this.db = new DatabaseSync(this.dbPath);
     this.initTables();
     this.seedInitialData();
   }
 
   initTables() {
-    this.db.exec(`      CREATE TABLE IF NOT EXISTS usuarios (
+    this.db.exec(`
+      PRAGMA journal_mode = WAL;
+
+
         id TEXT PRIMARY KEY,
         correo TEXT UNIQUE,
         nombre TEXT,
@@ -411,8 +413,11 @@ class LocalDB {
     const results = [];
     if (records.length === 0) return Array.isArray(data) ? [] : null;
 
-    const doInsert = this.db.transaction((recs) => {
-      for (const item of recs) {
+    const useTx = records.length > 1;
+    if (useTx) this.db.exec('BEGIN TRANSACTION');
+
+    try {
+      for (const item of records) {
         const keys = Object.keys(item);
         if (keys.length === 0) continue;
         const placeholders = keys.map(() => '?').join(', ');
@@ -422,16 +427,20 @@ class LocalDB {
           return val;
         });
         const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
-        const info = this.db.prepare(sql).run(...values);
+        const stmt = this.db.prepare(sql);
+        const info = stmt.run(...values);
         let createdRecord = { ...item };
         if (info.lastInsertRowid && !item.id) {
           createdRecord.id = Number(info.lastInsertRowid);
         }
         results.push(this.parseRow(createdRecord));
       }
-    });
+      if (useTx) this.db.exec('COMMIT');
+    } catch (err) {
+      if (useTx) this.db.exec('ROLLBACK');
+      throw err;
+    }
 
-    doInsert(records);
     return Array.isArray(data) ? results : results[0];
   }
 
@@ -445,8 +454,11 @@ class LocalDB {
     if (table === 'pacientes') actualConflictKey = 'cedula';
     if (table === 'tarifas_seguro') actualConflictKey = 'seguro';
 
-    const doUpsert = this.db.transaction((recs) => {
-      for (const item of recs) {
+    const useTx = records.length > 1;
+    if (useTx) this.db.exec('BEGIN TRANSACTION');
+
+    try {
+      for (const item of records) {
         const keys = Object.keys(item);
         if (keys.length === 0) continue;
         const placeholders = keys.map(() => '?').join(', ');
@@ -465,9 +477,12 @@ class LocalDB {
         this.db.prepare(sql).run(...values);
         results.push(this.parseRow(item));
       }
-    });
+      if (useTx) this.db.exec('COMMIT');
+    } catch (err) {
+      if (useTx) this.db.exec('ROLLBACK');
+      throw err;
+    }
 
-    doUpsert(records);
     return Array.isArray(data) ? results : results[0];
   }
 
