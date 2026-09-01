@@ -29,7 +29,10 @@
       "electron/**/*",
       "server/**/*",
       "www/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!node_modules/.bin/**/*"
     ],
     "asar": true,
     "win": {
