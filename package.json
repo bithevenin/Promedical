@@ -18,6 +18,7 @@
     "electron:build": "ng build --configuration production && npx electron-builder"
   },
   "build": {
+    "electronVersion": "33.2.1",
     "appId": "com.promedical.clinic",
     "productName": "ProMedical",
     "npmRebuild": false,
@@ -98,7 +99,7 @@
     "autoprefixer": "^10.4.27",
     "concurrently": "^10.0.5",
     "dictionary-es": "^4.0.0",
-    "electron": "^44.0.0",
+    "electron": "33.2.1",
     "electron-builder": "^26.15.3",
     "eslint": "^9.16.0",
     "eslint-plugin-import": "^2.29.1",
