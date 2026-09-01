@@ -48,9 +48,15 @@ export class SupabaseService {
                 try {
                     const cfg = await electronApi.getConfig();
                     if (cfg) {
+                        const oldHost = localStorage.getItem('promedical_lan_server_host');
+                        const oldMode = localStorage.getItem('promedical_lan_mode');
                         if (cfg.mode) localStorage.setItem('promedical_lan_mode', cfg.mode);
                         if (cfg.serverHost) localStorage.setItem('promedical_lan_server_host', cfg.serverHost);
                         if (cfg.port) localStorage.setItem('promedical_lan_server_port', String(cfg.port));
+
+                        if (cfg.serverHost !== oldHost || cfg.mode !== oldMode) {
+                            this.localClient.reconnect();
+                        }
                     }
                 } catch (e) {
                     console.warn('[SupabaseService] Error syncing config from Electron:', e);

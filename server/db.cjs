@@ -117,6 +117,7 @@ class LocalDB {
   initTables() {
     this.exec(`
       CREATE TABLE IF NOT EXISTS usuarios (
+        id TEXT PRIMARY KEY,
         correo TEXT UNIQUE,
         nombre TEXT,
         rol TEXT DEFAULT 'doctor',
@@ -291,6 +292,7 @@ class LocalDB {
     this.ensureColumn('configuracion_doctor', 'facturacion_json', 'TEXT');
     this.ensureColumn('configuracion_doctor', 'certificado_json', 'TEXT');
     this.ensureColumn('configuracion_doctor', 'password', 'TEXT');
+    this.ensureColumn('usuarios', 'id', 'TEXT');
     this.ensureColumn('usuarios', 'password', 'TEXT');
     this.ensureColumn('consultas', 'receta', 'TEXT');
     this.ensureColumn('transacciones', 'paciente', 'TEXT');
@@ -344,28 +346,28 @@ class LocalDB {
   }
 
   seedInitialData() {
-    const docQuery = this.db.prepare('SELECT * FROM configuracion_doctor LIMIT 1');
+    const docQuery = this.prepare('SELECT * FROM configuracion_doctor LIMIT 1');
     const docRow = docQuery.get();
     if (!docRow) {
-      const insertDoc = this.db.prepare(`
+      const insertDoc = this.prepare(`
         INSERT INTO configuracion_doctor (id, nombre_doctor, especialidad, exequatur, email, monto_consulta_particular, foto_url)
         VALUES (1, 'Dr. Thevenin', 'Urólogo', '34535', 'dr.miguelthevenin@gmail.com', 4000, 'https://i.pravatar.cc/150?u=doctor')
       `);
       insertDoc.run();
     } else if (docRow.exequatur === '12345-67' || docRow.monto_consulta_particular === 1500) {
       // Update legacy seed to match real Supabase doctor configuration
-      this.db.prepare(`
+      this.prepare(`
         UPDATE configuracion_doctor 
         SET exequatur = '34535', email = 'dr.miguelthevenin@gmail.com', monto_consulta_particular = 4000
         WHERE id = ? OR id = 1
       `).run(docRow.id);
     }
 
-    const tarifQuery = this.db.prepare('SELECT count(*) as count FROM tarifas_seguro');
+    const tarifQuery = this.prepare('SELECT count(*) as count FROM tarifas_seguro');
     const tarifRow = tarifQuery.get();
     if (tarifRow && (tarifRow.count === 0 || tarifRow.count === 6)) {
       if (tarifRow.count === 6) {
-        this.db.exec('DELETE FROM tarifas_seguro WHERE monto_cobertura = 500 OR monto_cobertura = 450 OR monto_cobertura = 400');
+        this.exec('DELETE FROM tarifas_seguro WHERE monto_cobertura = 500 OR monto_cobertura = 450 OR monto_cobertura = 400');
       }
       const defaultTarifas = [
         { id: 'ab975e42-92ca-46ac-9995-d1cf998b6ab8', seguro: 'ARS Humano', monto_cobertura: 750, copago: 3000 },
@@ -378,7 +380,7 @@ class LocalDB {
         { id: '0b030875-1491-4911-9da3-5dc00785d1d7', seguro: 'renacer', monto_cobertura: 750, copago: 3000 },
         { id: '7d84aad6-5b7f-4761-818d-76127c1632cc', seguro: 'monumental', monto_cobertura: 750, copago: 3000 }
       ];
-      const insertTarifa = this.db.prepare(`
+      const insertTarifa = this.prepare(`
         INSERT OR REPLACE INTO tarifas_seguro (id, seguro, monto_cobertura, copago)
         VALUES (?, ?, ?, ?)
       `);
@@ -387,10 +389,10 @@ class LocalDB {
       }
     }
 
-    const userQuery = this.db.prepare('SELECT count(*) as count FROM usuarios');
+    const userQuery = this.prepare('SELECT count(*) as count FROM usuarios');
     const userRow = userQuery.get();
     if (userRow && userRow.count === 0) {
-      const insertUser = this.db.prepare(`
+      const insertUser = this.prepare(`
         INSERT INTO usuarios (id, correo, nombre, rol, especialidad, password_hash)
         VALUES 
           ('c4124d50-2460-4bfb-9586-442a1f6966ef', 'brayam.alfa@gmail.com', 'Brayam Thevenin', 'doctor', 'Urólogo', '12345678'),
@@ -401,7 +403,7 @@ class LocalDB {
       insertUser.run();
     } else {
       // Migrate any legacy '123456' passwords to '12345678'
-      this.db.prepare("UPDATE usuarios SET password_hash = '12345678' WHERE password_hash = '123456' OR password_hash IS NULL").run();
+      this.prepare("UPDATE usuarios SET password_hash = '12345678' WHERE password_hash = '123456' OR password_hash IS NULL").run();
     }
   }
 
@@ -456,7 +458,7 @@ class LocalDB {
       }
     }
 
-    const stmt = this.db.prepare(sql);
+    const stmt = this.prepare(sql);
     const rows = stmt.all(...params);
     // Parse JSON fields if necessary
     return rows.map(r => this.parseRow(r));
@@ -481,7 +483,7 @@ class LocalDB {
     if (!this._tableColumns) this._tableColumns = {};
     if (!this._tableColumns[table]) {
       try {
-        const rows = this.db.prepare(`PRAGMA table_info(${table})`).all();
+        const rows = this.prepare(`PRAGMA table_info(${table})`).all();
         if (rows && rows.length > 0) {
           this._tableColumns[table] = new Set(rows.map(r => r.name));
         }
@@ -513,7 +515,7 @@ class LocalDB {
     if (records.length === 0) return Array.isArray(data) ? [] : null;
 
     const useTx = records.length > 1;
-    if (useTx) this.db.exec('BEGIN TRANSACTION');
+    if (useTx) this.exec('BEGIN TRANSACTION');
 
     try {
       for (const item of records) {
@@ -526,7 +528,7 @@ class LocalDB {
           return val;
         });
         const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
-        const stmt = this.db.prepare(sql);
+        const stmt = this.prepare(sql);
         const info = stmt.run(...values);
         let createdRecord = { ...item };
         if (info.lastInsertRowid && !item.id) {
@@ -534,9 +536,9 @@ class LocalDB {
         }
         results.push(this.parseRow(createdRecord));
       }
-      if (useTx) this.db.exec('COMMIT');
+      if (useTx) this.exec('COMMIT');
     } catch (err) {
-      if (useTx) this.db.exec('ROLLBACK');
+      if (useTx) this.exec('ROLLBACK');
       throw err;
     }
 
@@ -554,7 +556,7 @@ class LocalDB {
     if (table === 'tarifas_seguro') actualConflictKey = 'seguro';
 
     const useTx = records.length > 1;
-    if (useTx) this.db.exec('BEGIN TRANSACTION');
+    if (useTx) this.exec('BEGIN TRANSACTION');
 
     try {
       for (const item of records) {
@@ -573,12 +575,12 @@ class LocalDB {
         const sql = updateClauses.length > 0
           ? `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${actualConflictKey}) DO UPDATE SET ${updateClauses}`
           : `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${actualConflictKey}) DO NOTHING`;
-        this.db.prepare(sql).run(...values);
+        this.prepare(sql).run(...values);
         results.push(this.parseRow(item));
       }
-      if (useTx) this.db.exec('COMMIT');
+      if (useTx) this.exec('COMMIT');
     } catch (err) {
-      if (useTx) this.db.exec('ROLLBACK');
+      if (useTx) this.exec('ROLLBACK');
       throw err;
     }
 
@@ -611,7 +613,7 @@ class LocalDB {
       sql += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
-    const stmt = this.db.prepare(sql);
+    const stmt = this.prepare(sql);
     stmt.run(...params);
     return this.select(table, { filters });
   }
@@ -631,7 +633,7 @@ class LocalDB {
       sql += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
-    const stmt = this.db.prepare(sql);
+    const stmt = this.prepare(sql);
     stmt.run(...params);
     return { success: true };
   }

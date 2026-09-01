@@ -279,12 +279,15 @@ export class LocalWebSocketManager {
     }
   }
 
+  private retryCount = 0;
+
   connect() {
     if (typeof window === 'undefined') return;
     try {
       const url = this.getWsUrl();
       if (this.ws) {
         try {
+          this.ws.onopen = null;
           this.ws.onclose = null;
           this.ws.onerror = null;
           this.ws.onmessage = null;
@@ -296,6 +299,7 @@ export class LocalWebSocketManager {
 
       this.ws.onopen = () => {
         console.log('[LocalWS] Connected to LAN server:', url);
+        this.retryCount = 0;
         clearInterval(this.pingInterval);
         this.pingInterval = setInterval(() => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -326,22 +330,24 @@ export class LocalWebSocketManager {
       this.ws.onclose = () => {
         clearInterval(this.pingInterval);
         clearTimeout(this.reconnectTimeout);
-        this.reconnectTimeout = setTimeout(() => this.connect(), 2500);
+        this.retryCount++;
+        const delay = Math.min(10000, 2000 * this.retryCount);
+        this.reconnectTimeout = setTimeout(() => this.connect(), delay);
       };
 
       this.ws.onerror = () => {
-        if (this.ws) {
-          try { this.ws.close(); } catch {}
-        }
+        // ws.onclose will fire automatically after onerror
       };
     } catch (e) {
-      console.warn('[LocalWS] Could not connect to WebSocket:', e);
       clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
+      this.retryCount++;
+      const delay = Math.min(10000, 2000 * this.retryCount);
+      this.reconnectTimeout = setTimeout(() => this.connect(), delay);
     }
   }
 
   reconnect() {
+    this.retryCount = 0;
     clearTimeout(this.reconnectTimeout);
     this.connect();
   }
