@@ -46,6 +46,9 @@ function setupAutoUpdater() {
   const ghToken = process.env.GH_TOKEN || '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';
   if (ghToken) {
     try {
+      autoUpdater.requestHeaders = {
+        'Authorization': `token ${ghToken}`
+      };
       autoUpdater.setFeedURL({
         provider: 'github',
         owner: 'bithevenin',
@@ -53,7 +56,7 @@ function setupAutoUpdater() {
         private: true,
         token: ghToken
       });
-      console.log('[AutoUpdater] Configurado para repositorio privado usando token de GitHub');
+      console.log('[AutoUpdater] Configurado requestHeaders y feedURL para repositorio privado');
     } catch (e) {
       console.error('[AutoUpdater] Error configurando feed privado:', e);
     }
@@ -196,13 +199,14 @@ function startEmbeddedServer(port, dbDir) {
 async function createWindow() {
   const config = loadConfig();
 
-  // If running as Server/Host, start local Express/WebSocket server as a child process
-  // using --experimental-sqlite so that node:sqlite is available in that process
-  if (config.mode === 'server') {
+  // Always ensure the embedded server process runs by default on port 3000
+  // unless explicitly set to client mode with a remote server host
+  const shouldStartServer = config.mode === 'server' || config.serverHost === 'localhost' || !config.mode;
+  if (shouldStartServer && !serverProcess) {
     try {
       const dbDir = path.join(app.getPath('userData'), 'db');
       await startEmbeddedServer(config.port || 3000, dbDir);
-      console.log('[Electron] Embedded LAN Server started on port', config.port);
+      console.log('[Electron] Embedded LAN Server started on port', config.port || 3000);
     } catch (err) {
       console.error('[Electron] Failed to start embedded server:', err);
     }
@@ -280,8 +284,17 @@ ipcMain.handle('get-config', () => {
   return loadConfig();
 });
 
-ipcMain.handle('save-config', (event, newConfig) => {
+ipcMain.handle('save-config', async (event, newConfig) => {
   const success = saveConfig(newConfig);
+  if (success && newConfig.mode === 'server' && !serverProcess) {
+    try {
+      const dbDir = path.join(app.getPath('userData'), 'db');
+      await startEmbeddedServer(newConfig.port || 3000, dbDir);
+      console.log('[Electron] Embedded LAN Server started via IPC on port', newConfig.port || 3000);
+    } catch (err) {
+      console.error('[Electron] Failed to start server via IPC:', err);
+    }
+  }
   return success;
 });
 
