@@ -200,6 +200,11 @@ async function createWindow() {
     }
   });
 
+  // Clear any legacy ServiceWorkers or corrupted cache storage at Chromium session level
+  mainWindow.webContents.session.clearStorageData({
+    storages: ['serviceworkers', 'cachestorage']
+  }).catch(() => {});
+
   const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
   if (isDev) {
     mainWindow.loadURL('http://localhost:4200');
