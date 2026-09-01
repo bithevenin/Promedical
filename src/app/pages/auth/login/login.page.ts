@@ -13,6 +13,7 @@ import { ErrorModalComponent } from '../components/error-modal/error-modal.compo
 })
 export class LoginPage implements OnInit {
   loginForm: FormGroup;
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -31,50 +32,70 @@ export class LoginPage implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe(async params => {
       if (params['authWarning']) {
-        const modal = await this.modalCtrl.create({
-          component: ErrorModalComponent,
-          componentProps: {
-            title: 'Sesión Expirada',
-            message: 'Su sesión ha expirado o no ha iniciado sesión. Por favor ingrese sus credenciales nuevamente.',
-            type: 'warning'
-          },
-          cssClass: 'auto-height-modal',
-          backdropDismiss: false
-        });
-        await modal.present();
+        try {
+          const modal = await this.modalCtrl.create({
+            component: ErrorModalComponent,
+            componentProps: {
+              title: 'Sesión Expirada',
+              message: 'Su sesión ha expirado o no ha iniciado sesión. Por favor ingrese sus credenciales nuevamente.',
+              type: 'warning'
+            },
+            cssClass: 'auto-height-modal',
+            backdropDismiss: false
+          });
+          await modal.present();
+        } catch {}
       }
     });
   }
 
   async onLogin() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid || this.isLoading) return;
 
-    const loading = await this.loadingCtrl.create({
-      message: 'Iniciando sesión...',
-      spinner: 'circles'
-    });
-    await loading.present();
+    this.isLoading = true;
+    let loadingElement: any = null;
+
+    try {
+      loadingElement = await this.loadingCtrl.create({
+        message: 'Iniciando sesión...',
+        spinner: 'circles',
+        duration: 8000
+      });
+      await loadingElement.present();
+    } catch (e) {
+      console.warn('[LoginPage] Loading controller fallback:', e);
+    }
 
     try {
       const { email, password } = this.loginForm.value;
       await this.authService.signIn(email, password);
+      if (loadingElement) {
+        try { await loadingElement.dismiss(); } catch {}
+      }
       this.router.navigate(['/main']);
     } catch (error: any) {
+      if (loadingElement) {
+        try { await loadingElement.dismiss(); } catch {}
+      }
       let message = error?.message || 'Correo o contraseña incorrectos. Por favor verifique sus datos.';
       
-      const modal = await this.modalCtrl.create({
-        component: ErrorModalComponent,
-        componentProps: {
-          title: 'Error de Acceso',
-          message: message,
-          type: 'error'
-        },
-        cssClass: 'auto-height-modal',
-        backdropDismiss: false
-      });
-      await modal.present();
+      try {
+        const modal = await this.modalCtrl.create({
+          component: ErrorModalComponent,
+          componentProps: {
+            title: 'Error de Acceso',
+            message: message,
+            type: 'error'
+          },
+          cssClass: 'auto-height-modal',
+          backdropDismiss: false
+        });
+        await modal.present();
+      } catch {
+        alert(message);
+      }
     } finally {
-      loading.dismiss();
+      this.isLoading = false;
     }
   }
 }

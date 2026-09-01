@@ -1,12 +1,11 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const { fork } = require('node:child_process');
 const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
-let serverProcess = null;
+let serverInstance = null;
 
 // Configure autoUpdater
 autoUpdater.autoDownload = true;
@@ -43,21 +42,15 @@ function saveConfig(config) {
 }
 
 function setupAutoUpdater() {
-  try {
-    autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: 'bithevenin',
-      repo: 'Promedical'
-    });
-    console.log('[AutoUpdater] Configurado para repositorio público de GitHub');
-  } catch (e) {
-    console.error('[AutoUpdater] Error configurando feed público:', e);
-  }
+  autoUpdater.logger = console;
 
   autoUpdater.on('checking-for-update', () => {
-    console.log('[AutoUpdater] Checking for updates...');
+    console.log('[AutoUpdater] Checking for update...');
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'checking', message: 'Buscando actualizaciones...' });
+      mainWindow.webContents.send('update-status', {
+        status: 'checking',
+        message: 'Comprobando actualizaciones...'
+      });
     }
   });
 
@@ -137,55 +130,20 @@ function getLocalIpAddresses() {
   return addresses;
 }
 
-function startEmbeddedServer(port, dbDir) {
-  return new Promise((resolve, reject) => {
-    // When packaged in an .asar file, child_process.fork() cannot read files
-    // from inside the asar. With asarUnpack, server/ files are at app.asar.unpacked/server/
-    const appPath = app.getAppPath(); // e.g. /path/to/resources/app.asar
-    const isPackaged = appPath.endsWith('.asar');
-    const serverScript = isPackaged
-      ? path.join(appPath.replace('app.asar', 'app.asar.unpacked'), 'server', 'server-process.cjs')
-      : path.join(__dirname, '../server/server-process.cjs');
-
-    console.log('[Electron] Forking server process at:', serverScript);
-
-    const child = fork(serverScript, [], {
-      execArgv: [],
-      env: {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
-        SERVER_PORT: String(port),
-        SERVER_DB_DIR: dbDir
-      },
-      silent: false
-    });
-
-    const timeout = setTimeout(() => {
-      reject(new Error('Server startup timeout'));
-    }, 15000);
-
-    child.on('message', (msg) => {
-      if (msg && msg.type === 'SERVER_READY') {
-        clearTimeout(timeout);
-        serverProcess = child;
-        console.log('[Electron] Embedded server ready on port', msg.port);
-        resolve(child);
-      } else if (msg && msg.type === 'SERVER_ERROR') {
-        clearTimeout(timeout);
-        reject(new Error(msg.error));
-      }
-    });
-
-    child.on('error', (err) => {
-      clearTimeout(timeout);
-      reject(err);
-    });
-
-    child.on('exit', (code) => {
-      if (code !== 0) console.error('[Electron] Server process exited with code', code);
-      serverProcess = null;
-    });
-  });
+async function startEmbeddedServer(port, dbDir) {
+  try {
+    if (serverInstance && serverInstance.server) {
+      try { serverInstance.server.close(); } catch {}
+      serverInstance = null;
+    }
+    const { startServer } = require('../server/server.cjs');
+    serverInstance = await startServer(port, dbDir);
+    console.log('[Electron] In-process LAN Server running on port', port, 'dbDir:', dbDir);
+    return serverInstance;
+  } catch (err) {
+    console.error('[Electron] Error starting LAN server:', err);
+    throw err;
+  }
 }
 
 async function createWindow() {
@@ -194,7 +152,7 @@ async function createWindow() {
   // Always ensure the embedded server process runs by default on port 3000
   // unless explicitly set to client mode with a remote server host
   const shouldStartServer = config.mode === 'server' || config.serverHost === 'localhost' || !config.mode;
-  if (shouldStartServer && !serverProcess) {
+  if (shouldStartServer && !serverInstance) {
     try {
       const dbDir = path.join(app.getPath('userData'), 'db');
       await startEmbeddedServer(config.port || 3000, dbDir);
@@ -278,13 +236,23 @@ ipcMain.handle('get-config', () => {
 
 ipcMain.handle('save-config', async (event, newConfig) => {
   const success = saveConfig(newConfig);
-  if (success && newConfig.mode === 'server' && !serverProcess) {
-    try {
-      const dbDir = path.join(app.getPath('userData'), 'db');
-      await startEmbeddedServer(newConfig.port || 3000, dbDir);
-      console.log('[Electron] Embedded LAN Server started via IPC on port', newConfig.port || 3000);
-    } catch (err) {
-      console.error('[Electron] Failed to start server via IPC:', err);
+  if (success) {
+    if (newConfig.mode === 'server') {
+      try {
+        const dbDir = path.join(app.getPath('userData'), 'db');
+        await startEmbeddedServer(newConfig.port || 3000, dbDir);
+        console.log('[Electron] In-process LAN Server started via IPC on port', newConfig.port || 3000);
+      } catch (err) {
+        console.error('[Electron] Failed to start server via IPC:', err);
+      }
+    } else if (newConfig.mode === 'client' && serverInstance && serverInstance.server) {
+      try {
+        serverInstance.server.close();
+        serverInstance = null;
+        console.log('[Electron] Stopped local server process because client mode was set');
+      } catch (err) {
+        console.error('[Electron] Error stopping server:', err);
+      }
     }
   }
   return success;
@@ -338,12 +306,19 @@ ipcMain.handle('install-update', () => {
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  if (serverProcess) {
-    try { serverProcess.send({ type: 'SHUTDOWN' }); } catch {}
-    setTimeout(() => { if (serverProcess) serverProcess.kill(); }, 2000);
+  if (serverInstance && serverInstance.server) {
+    try { serverInstance.server.close(); } catch {}
+    serverInstance = null;
   }
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  if (serverInstance && serverInstance.server) {
+    try { serverInstance.server.close(); } catch {}
+    serverInstance = null;
   }
 });
 
