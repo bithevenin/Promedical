@@ -135,36 +135,48 @@ export class LocalQueryBuilder<T = any> {
         url.searchParams.append('offset', String(this.offsetCount));
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
       let response: Response;
 
-      if (this.operation === 'select') {
-        response = await fetch(url.toString(), {
-          headers: { 'Accept': 'application/json' }
-        });
-      } else if (this.operation === 'insert') {
-        response = await fetch(url.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isUpsert: false, data: this.payload })
-        });
-      } else if (this.operation === 'upsert') {
-        response = await fetch(url.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isUpsert: true, onConflict: this.upsertConflict, data: this.payload })
-        });
-      } else if (this.operation === 'update') {
-        response = await fetch(url.toString(), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.payload)
-        });
-      } else if (this.operation === 'delete') {
-        response = await fetch(url.toString(), {
-          method: 'DELETE'
-        });
-      } else {
-        throw new Error(`Unsupported operation: ${this.operation}`);
+      try {
+        if (this.operation === 'select') {
+          response = await fetch(url.toString(), {
+            headers: { 'Accept': 'application/json' },
+            signal: controller.signal
+          });
+        } else if (this.operation === 'insert') {
+          response = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isUpsert: false, data: this.payload }),
+            signal: controller.signal
+          });
+        } else if (this.operation === 'upsert') {
+          response = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isUpsert: true, onConflict: this.upsertConflict, data: this.payload }),
+            signal: controller.signal
+          });
+        } else if (this.operation === 'update') {
+          response = await fetch(url.toString(), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.payload),
+            signal: controller.signal
+          });
+        } else if (this.operation === 'delete') {
+          response = await fetch(url.toString(), {
+            method: 'DELETE',
+            signal: controller.signal
+          });
+        } else {
+          throw new Error(`Unsupported operation: ${this.operation}`);
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
 
       if (!response.ok) {
@@ -457,8 +469,12 @@ export class LocalDatabaseClient {
 
   getServerUrl(): string {
     if (typeof window !== 'undefined') {
-      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
+      const mode = localStorage.getItem('promedical_lan_mode') || 'server';
       const savedPort = localStorage.getItem('promedical_lan_server_port') || '3000';
+      if (mode === 'server') {
+        return `http://localhost:${savedPort}`;
+      }
+      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
       return `http://${savedHost}:${savedPort}`;
     }
     return 'http://localhost:3000';
@@ -466,8 +482,12 @@ export class LocalDatabaseClient {
 
   getWsUrl(): string {
     if (typeof window !== 'undefined') {
-      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
+      const mode = localStorage.getItem('promedical_lan_mode') || 'server';
       const savedPort = localStorage.getItem('promedical_lan_server_port') || '3000';
+      if (mode === 'server') {
+        return `ws://localhost:${savedPort}`;
+      }
+      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
       return `ws://${savedHost}:${savedPort}`;
     }
     return 'ws://localhost:3000';
