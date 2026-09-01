@@ -39,14 +39,14 @@
           <ion-icon [name]="themeService.isDarkMode() ? 'sunny-outline' : 'moon-outline'"></ion-icon>
         </button>
 
-        <div class="user-profile flex items-center gap-3 bg-slate-800 border border-slate-700 p-1.5 pr-4 rounded-xl shadow-lg group hover:border-primary transition-all cursor-pointer" *ngIf="profile">
+        <div routerLink="/configuracion" [queryParams]="{ tab: 'usuarios' }" class="user-profile flex items-center gap-3 bg-slate-800 border border-slate-700 hover:border-primary p-1.5 pr-4 rounded-xl shadow-lg group transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]" *ngIf="profile" title="Configuración de Perfil y Usuarios">
           <div class="avatar w-8 h-8 rounded-lg overflow-hidden shadow-lg group-hover:ring-2 ring-primary/30 transition-all">
             <img [src]="profile.foto_url || 'https://i.pravatar.cc/150?u=' + profile.id" alt="Profile" class="w-full h-full object-cover">
           </div>
           <div class="text-left hidden sm:block">
             <h6 class="text-[11px] font-black text-white leading-none uppercase">{{ profile.nombre }}</h6>
             <p class="text-[8px] font-black text-primary uppercase tracking-widest mt-0.5">
-              {{ profile.rol }}
+              {{ profile.rol === 'admin' ? 'Control Maestro' : (profile.especialidad || profile.rol || 'Usuario') }}
             </p>
           </div>
         </div>

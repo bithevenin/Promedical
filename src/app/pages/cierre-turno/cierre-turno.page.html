@@ -44,13 +44,13 @@
       </button>
 
       <!-- User Profile Box -->
-      <div class="flex items-center gap-2 bg-white/5 border border-glass-border p-1 pr-2.5 rounded-xl shrink-0">
+      <div routerLink="/configuracion" [queryParams]="{ tab: 'usuarios' }" class="flex items-center gap-2 bg-white/5 hover:bg-white/15 border border-glass-border hover:border-primary/40 p-1 pr-2.5 rounded-xl shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]" title="Configuración de Perfil y Usuarios">
         <div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 shrink-0">
           <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
         </div>
         <div class="hidden 2xl:block text-left">
           <span class="block text-xs font-bold text-white leading-none truncate max-w-[100px]">{{ currentProfile()?.nombre || 'Secretaria' }}</span>
-          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
+          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol === 'admin' ? 'Control Maestro' : (currentProfile()?.especialidad || currentProfile()?.rol || 'Usuario') }}</span>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ConfigService } from '../../services/config.service';
 import { PatientService } from '../../services/patient.service';
 import { ConsultationService } from '../../services/consultation.service';
@@ -22,6 +22,7 @@ import * as XLSX from 'xlsx';
 })
 export class ConfiguracionPage implements OnInit, OnDestroy {
     private configSub?: Subscription;
+    private routeSub?: Subscription;
     config: ConfiguracionDoctor = {
         nombreDoctor: '',
         especialidad: '',
@@ -111,12 +112,25 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         public syncService: SyncService,
         public updateService: UpdateService,
         private router: Router,
+        private route: ActivatedRoute,
         public themeService: ThemeService,
         private notificationService: NotificationService
     ) { }
 
     ngOnInit() {
         this.cargarConfiguracionLan();
+        // Suscribirse a queryParams para abrir pestaña específica (ej: tab=usuarios)
+        this.routeSub = this.route.queryParams.subscribe(params => {
+            if (params && params['tab']) {
+                const validTabs: Array<'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado'> = [
+                    'consultorio', 'usuarios', 'datos', 'red_lan', 'facturacion', 'certificado'
+                ];
+                if (validTabs.includes(params['tab'])) {
+                    this.selectedSegment = params['tab'];
+                }
+            }
+        });
+
         // Suscribirse al observable para recibir datos en tiempo real desde Supabase
         this.configSub = this.configService.config$.subscribe(cfg => {
             this.config = { ...cfg };
@@ -128,6 +142,7 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
 
     ngOnDestroy() {
         this.configSub?.unsubscribe();
+        this.routeSub?.unsubscribe();
     }
 
     cargarConfiguracion() {
