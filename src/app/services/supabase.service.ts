@@ -7,31 +7,52 @@ import { LocalDatabaseClient } from './local-database-client';
     providedIn: 'root'
 })
 export class SupabaseService {
-    private supabaseCloud: SupabaseClient | null = null;
+    private supabaseCloud: SupabaseClient;
     private localClient: LocalDatabaseClient;
-    private useLocalMode = true; // Forzado a true para operar 100% en local y no tocar la nube
+    private useLocalMode = true;
 
     constructor() {
-        this.localClient = new LocalDatabaseClient();
+        // Inicializar cliente Supabase Cloud SIEMPRE para Autenticación (login, logout, sesiones)
+        this.supabaseCloud = createClient(
+            environment.supabaseUrl,
+            environment.supabaseKey,
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    flowType: 'pkce',
+                    storageKey: 'promedical-auth-token'
+                }
+            }
+        );
 
-        // Modo configurable desde localStorage si en el futuro se desea cambiar
+        // Cliente local para datos (pacientes, citas, consultas en SQLite LAN), con Auth delegado a Supabase
+        this.localClient = new LocalDatabaseClient(this.supabaseCloud.auth);
+
+        // Modo de base de datos
         const savedMode = typeof localStorage !== 'undefined' ? localStorage.getItem('promedical_db_mode') : 'local';
         this.useLocalMode = savedMode !== 'cloud';
 
-        if (!this.useLocalMode) {
-            this.supabaseCloud = createClient(
-                environment.supabaseUrl,
-                environment.supabaseKey,
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true,
-                        detectSessionInUrl: true,
-                        flowType: 'pkce',
-                        storageKey: 'promedical-auth-token'
+        // Sincronizar configuración de Electron si está disponible
+        this.syncElectronConfig();
+    }
+
+    private async syncElectronConfig() {
+        if (typeof window !== 'undefined') {
+            const electronApi = (window as any).electronAPI;
+            if (electronApi?.getConfig) {
+                try {
+                    const cfg = await electronApi.getConfig();
+                    if (cfg) {
+                        if (cfg.mode) localStorage.setItem('promedical_lan_mode', cfg.mode);
+                        if (cfg.serverHost) localStorage.setItem('promedical_lan_server_host', cfg.serverHost);
+                        if (cfg.port) localStorage.setItem('promedical_lan_server_port', String(cfg.port));
                     }
+                } catch (e) {
+                    console.warn('[SupabaseService] Error syncing config from Electron:', e);
                 }
-            );
+            }
         }
     }
 
@@ -39,6 +60,10 @@ export class SupabaseService {
         if (this.useLocalMode) {
             return this.localClient;
         }
+        return this.supabaseCloud;
+    }
+
+    get cloudClient(): SupabaseClient {
         return this.supabaseCloud;
     }
 
@@ -53,8 +78,11 @@ export class SupabaseService {
         }
     }
 
-    setLanServer(host: string, port: number = 3000) {
+    setLanServer(host: string, port: number = 3000, mode?: 'server' | 'client') {
         if (typeof localStorage !== 'undefined') {
+            if (mode) {
+                localStorage.setItem('promedical_lan_mode', mode);
+            }
             localStorage.setItem('promedical_lan_server_host', host);
             localStorage.setItem('promedical_lan_server_port', String(port));
         }
@@ -75,13 +103,15 @@ export class SupabaseService {
         }
     }
 
-    getLanServer(): { host: string; port: string } {
+    getLanServer(): { host: string; port: string; mode: string } {
         if (typeof localStorage !== 'undefined') {
             return {
                 host: localStorage.getItem('promedical_lan_server_host') || 'localhost',
-                port: localStorage.getItem('promedical_lan_server_port') || '3000'
+                port: localStorage.getItem('promedical_lan_server_port') || '3000',
+                mode: localStorage.getItem('promedical_lan_mode') || 'server'
             };
         }
-        return { host: 'localhost', port: '3000' };
+        return { host: 'localhost', port: '3000', mode: 'server' };
     }
 }
+

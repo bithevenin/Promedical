@@ -652,10 +652,22 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
     }
 
     async guardarConfiguracionLan() {
+        if (this.lanMode === 'client') {
+            const host = (this.lanHost || '').trim();
+            if (!host || host === 'localhost' || host === '127.0.0.1') {
+                this.notificationService.showError(
+                    'IP de Servidor Requerida',
+                    'Para configurar como Terminal Cliente, debes ingresar la IP de la PC Servidor Principal (ej: 192.168.1.15).'
+                );
+                return;
+            }
+        }
+
         this.guardando = true;
         try {
-            const hostToSave = this.lanMode === 'server' ? 'localhost' : (this.lanHost || 'localhost');
-            this.supabaseService.setLanServer(hostToSave, this.lanPort);
+            const hostToSave = this.lanMode === 'server' ? 'localhost' : this.lanHost.trim();
+            this.supabaseService.setLanServer(hostToSave, this.lanPort, this.lanMode);
+
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('promedical_lan_mode', this.lanMode);
                 localStorage.setItem('promedical_lan_server_host', hostToSave);
@@ -671,8 +683,13 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
                 });
             }
 
-            this.notificationService.showSuccess('Ajustes LAN Guardados', `Configurado como ${this.lanMode === 'server' ? 'SERVIDOR PRINCIPAL' : 'TERMINAL CLIENTE (' + hostToSave + ')'}.`);
+            this.notificationService.showSuccess(
+                'Ajustes LAN Guardados',
+                `Configurado como ${this.lanMode === 'server' ? 'SERVIDOR PRINCIPAL (localhost)' : 'TERMINAL CLIENTE (' + hostToSave + ')'}.`
+            );
+
             // Recargar datos locales en caliente
+            this.configService.refreshConfig();
             this.patientService.refreshPatients();
             this.consultationService.refreshConsultas();
         } catch (e: any) {

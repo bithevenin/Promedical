@@ -440,12 +440,9 @@
                   <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">
                     {{ lanMode === 'server' ? 'Conexión Local (Servidor)' : 'IP de la PC Servidor Principal' }}
                   </label>
-                  <span class="text-[8px] font-bold text-sky-400 cursor-pointer hover:underline" *ngIf="lanMode === 'client'" (click)="lanHost = lanIps[0] || ''">
-                    Usar IP Detectada ({{ lanIps[0] || '192.168.1.10' }})
-                  </span>
                 </div>
                 <div class="relative flex items-center">
-                  <input type="text" [(ngModel)]="lanHost" [placeholder]="lanMode === 'server' ? 'localhost' : 'Ejemplo: 192.168.1.10'" 
+                  <input type="text" [(ngModel)]="lanHost" [placeholder]="lanMode === 'server' ? 'localhost' : 'Ej: 192.168.1.15'" 
                          class="w-full bg-slate-900/90 border-2 border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-bold text-white placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                   <button type="button" *ngIf="lanHost && lanHost !== 'localhost'" (click)="lanHost = ''" class="absolute right-3 text-slate-400 hover:text-white p-1 text-xs">
                     <ion-icon name="close-circle"></ion-icon>
