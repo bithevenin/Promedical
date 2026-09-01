@@ -595,7 +595,7 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         this.lanTesting = true;
         this.lanStatus = null;
         const startTime = Date.now();
-        const targetHost = this.lanHost || 'localhost';
+        const targetHost = this.lanMode === 'server' ? 'localhost' : (this.lanHost || 'localhost');
         const targetPort = this.lanPort || 3000;
 
         try {
