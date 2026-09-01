@@ -60,13 +60,8 @@ export class LoginPage implements OnInit {
       await this.authService.signIn(email, password);
       this.router.navigate(['/main']);
     } catch (error: any) {
-      let message = 'Correo o contraseña incorrectos. Por favor verifique sus datos.';
+      let message = error?.message || 'Correo o contraseña incorrectos. Por favor verifique sus datos.';
       
-      // Intentar identificar si es un error de red o algo más, pero mantener el mensaje de credenciales genérico
-      if (error.message && error.message.includes('network')) {
-        message = 'Error de conexión. Por favor verifique su internet.';
-      }
-
       const modal = await this.modalCtrl.create({
         component: ErrorModalComponent,
         componentProps: {

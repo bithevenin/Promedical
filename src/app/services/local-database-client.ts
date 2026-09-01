@@ -117,93 +117,108 @@ export class LocalQueryBuilder<T = any> {
   }
 
   async execute(): Promise<LocalResponse<T>> {
-    try {
-      const baseUrl = this.getBaseUrl();
-      const url = new URL(`${baseUrl}/api/data/${this.table}`);
-
-      // Append filter parameters
-      for (const [k, v] of Object.entries(this.filters)) {
-        url.searchParams.append(k, String(v));
-      }
-      if (this.orderConfig) {
-        url.searchParams.append('order', `${this.orderConfig.column}.${this.orderConfig.ascending ? 'asc' : 'desc'}`);
-      }
-      if (this.limitCount !== null) {
-        url.searchParams.append('limit', String(this.limitCount));
-      }
-      if (this.offsetCount !== null && this.offsetCount > 0) {
-        url.searchParams.append('offset', String(this.offsetCount));
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-      let response: Response;
-
-      try {
-        if (this.operation === 'select') {
-          response = await fetch(url.toString(), {
-            headers: { 'Accept': 'application/json' },
-            signal: controller.signal
-          });
-        } else if (this.operation === 'insert') {
-          response = await fetch(url.toString(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isUpsert: false, data: this.payload }),
-            signal: controller.signal
-          });
-        } else if (this.operation === 'upsert') {
-          response = await fetch(url.toString(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isUpsert: true, onConflict: this.upsertConflict, data: this.payload }),
-            signal: controller.signal
-          });
-        } else if (this.operation === 'update') {
-          response = await fetch(url.toString(), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.payload),
-            signal: controller.signal
-          });
-        } else if (this.operation === 'delete') {
-          response = await fetch(url.toString(), {
-            method: 'DELETE',
-            signal: controller.signal
-          });
-        } else {
-          throw new Error(`Unsupported operation: ${this.operation}`);
-        }
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return { data: null, error: { message: errorText, code: String(response.status) } };
-      }
-
-      let resData = await response.json();
-
-      if (this.isSingle) {
-        if (Array.isArray(resData)) {
-          if (resData.length === 0) {
-            return { data: null, error: { message: 'Row not found', code: 'PGRST116' } };
-          }
-          resData = resData[0];
-        }
-      } else if (this.isMaybeSingle) {
-        if (Array.isArray(resData)) {
-          resData = resData.length > 0 ? resData[0] : null;
-        }
-      }
-
-      return { data: resData, error: null };
-    } catch (err: any) {
-      console.warn(`[LocalQueryBuilder] Execution failed on table ${this.table}:`, err);
-      return { data: null, error: { message: err?.message || 'Network/Server Error' } };
+    const primaryBaseUrl = this.getBaseUrl();
+    const urlsToTry = [primaryBaseUrl];
+    if (!primaryBaseUrl.includes('localhost') && !primaryBaseUrl.includes('127.0.0.1')) {
+      urlsToTry.push('http://localhost:3000');
     }
+
+    let lastError: any = null;
+
+    for (const baseUrl of urlsToTry) {
+      try {
+        const url = new URL(`${baseUrl}/api/data/${this.table}`);
+
+        for (const [k, v] of Object.entries(this.filters)) {
+          url.searchParams.append(k, String(v));
+        }
+        if (this.orderConfig) {
+          url.searchParams.append('order', `${this.orderConfig.column}.${this.orderConfig.ascending ? 'asc' : 'desc'}`);
+        }
+        if (this.limitCount !== null) {
+          url.searchParams.append('limit', String(this.limitCount));
+        }
+        if (this.offsetCount !== null && this.offsetCount > 0) {
+          url.searchParams.append('offset', String(this.offsetCount));
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        let response: Response;
+
+        try {
+          if (this.operation === 'select') {
+            response = await fetch(url.toString(), {
+              headers: { 'Accept': 'application/json' },
+              signal: controller.signal
+            });
+          } else if (this.operation === 'insert') {
+            response = await fetch(url.toString(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isUpsert: false, data: this.payload }),
+              signal: controller.signal
+            });
+          } else if (this.operation === 'upsert') {
+            response = await fetch(url.toString(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isUpsert: true, onConflict: this.upsertConflict, data: this.payload }),
+              signal: controller.signal
+            });
+          } else if (this.operation === 'update') {
+            response = await fetch(url.toString(), {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.payload),
+              signal: controller.signal
+            });
+          } else if (this.operation === 'delete') {
+            response = await fetch(url.toString(), {
+              method: 'DELETE',
+              signal: controller.signal
+            });
+          } else {
+            throw new Error(`Unsupported operation: ${this.operation}`);
+          }
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          return { data: null, error: { message: errorText, code: String(response.status) } };
+        }
+
+        let resData = await response.json();
+
+        // Re-establecer host a localhost si el fallback funcionó
+        if (baseUrl.includes('localhost') && typeof localStorage !== 'undefined' && localStorage.getItem('promedical_lan_server_host') !== 'localhost') {
+          localStorage.setItem('promedical_lan_server_host', 'localhost');
+        }
+
+        if (this.isSingle) {
+          if (Array.isArray(resData)) {
+            if (resData.length === 0) {
+              return { data: null, error: { message: 'Row not found', code: 'PGRST116' } };
+            }
+            resData = resData[0];
+          }
+        } else if (this.isMaybeSingle) {
+          if (Array.isArray(resData)) {
+            resData = resData.length > 0 ? resData[0] : null;
+          }
+        }
+
+        return { data: resData, error: null };
+      } catch (err: any) {
+        console.warn(`[LocalQueryBuilder] Failed on ${baseUrl} for table ${this.table}:`, err);
+        lastError = err;
+      }
+    }
+
+    return { data: null, error: { message: lastError?.message || 'Network/Server Error' } };
   }
 }
 
@@ -374,24 +389,47 @@ export class LocalAuthClient {
   }
 
   async signInWithPassword({ email, password }: { email: string; password?: string }): Promise<LocalResponse<any>> {
-    try {
-      const baseUrl = this.getBaseUrl();
-      const res = await fetch(`${baseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { data: null, error: { message: data.error || 'Error al iniciar sesión' } };
-      }
-      this.currentSession = data.session;
-      localStorage.setItem('promedical_local_session', JSON.stringify(data.session));
-      this.notifyAuthStateChange('SIGNED_IN', data.session);
-      return { data, error: null };
-    } catch (err: any) {
-      return { data: null, error: { message: err?.message || 'Error de conexión LAN' } };
+    const primaryUrl = this.getBaseUrl();
+    const urlsToTry = [primaryUrl];
+    if (!primaryUrl.includes('localhost') && !primaryUrl.includes('127.0.0.1')) {
+      urlsToTry.push('http://localhost:3000');
     }
+
+    let lastErrorMsg = 'Error al iniciar sesión';
+
+    for (const baseUrl of urlsToTry) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch(`${baseUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await res.json();
+        if (!res.ok) {
+          return { data: null, error: { message: data.error || 'Correo o contraseña incorrectos.' } };
+        }
+
+        if (baseUrl.includes('localhost') && typeof localStorage !== 'undefined') {
+          localStorage.setItem('promedical_lan_server_host', 'localhost');
+        }
+
+        this.currentSession = data.session;
+        localStorage.setItem('promedical_local_session', JSON.stringify(data.session));
+        this.notifyAuthStateChange('SIGNED_IN', data.session);
+        return { data, error: null };
+      } catch (err: any) {
+        console.warn(`[LocalAuthClient] Failed to login via ${baseUrl}:`, err);
+        lastErrorMsg = err?.message || 'Error de conexión LAN';
+      }
+    }
+
+    return { data: null, error: { message: `No se pudo conectar al servidor local en ${primaryUrl}. Verifique la conexión o la IP en Ajustes.` } };
   }
 
   async signUp({ email, password, options }: { email: string; password?: string; options?: any }): Promise<LocalResponse<any>> {
