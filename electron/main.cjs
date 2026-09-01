@@ -43,23 +43,15 @@ function saveConfig(config) {
 }
 
 function setupAutoUpdater() {
-  const ghToken = process.env.GH_TOKEN || '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';
-  if (ghToken) {
-    try {
-      autoUpdater.requestHeaders = {
-        'Authorization': `token ${ghToken}`
-      };
-      autoUpdater.setFeedURL({
-        provider: 'github',
-        owner: 'bithevenin',
-        repo: 'Promedical',
-        private: true,
-        token: ghToken
-      });
-      console.log('[AutoUpdater] Configurado requestHeaders y feedURL para repositorio privado');
-    } catch (e) {
-      console.error('[AutoUpdater] Error configurando feed privado:', e);
-    }
+  try {
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'bithevenin',
+      repo: 'Promedical'
+    });
+    console.log('[AutoUpdater] Configurado para repositorio público de GitHub');
+  } catch (e) {
+    console.error('[AutoUpdater] Error configurando feed público:', e);
   }
 
   autoUpdater.on('checking-for-update', () => {
@@ -158,7 +150,7 @@ function startEmbeddedServer(port, dbDir) {
     console.log('[Electron] Forking server process at:', serverScript);
 
     const child = fork(serverScript, [], {
-      execArgv: ['--experimental-sqlite'],
+      execArgv: [],
       env: {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',

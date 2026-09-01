@@ -1,26 +1,111 @@
-const { DatabaseSync } = require('node:sqlite');
+const initSqlJs = require('sql.js');
 const path = require('node:path');
 const fs = require('node:fs');
 
 class LocalDB {
+  static async create(customPath) {
+    const instance = new LocalDB(customPath);
+    await instance.init();
+    return instance;
+  }
+
   constructor(customPath) {
     const dataDir = customPath || path.join(process.env.APPDATA || process.env.HOME || '.', '.promedical_data');
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     this.dbPath = path.join(dataDir, 'promedical_local.db');
-    console.log(`[LocalDB] Initializing SQLite database at: ${this.dbPath}`);
-    this.db = new DatabaseSync(this.dbPath);
+  }
+
+  async init() {
+    console.log(`[LocalDB] Initializing sql.js SQLite database at: ${this.dbPath}`);
+    const SQL = await initSqlJs();
+    if (fs.existsSync(this.dbPath)) {
+      try {
+        const filebuffer = fs.readFileSync(this.dbPath);
+        this.db = new SQL.Database(filebuffer);
+      } catch (e) {
+        console.warn('[LocalDB] Error reading existing database file, creating fresh DB:', e);
+        this.db = new SQL.Database();
+      }
+    } else {
+      this.db = new SQL.Database();
+    }
+
     this.initTables();
     this.seedInitialData();
+    this.save();
+  }
+
+  save() {
+    try {
+      if (!this.db) return;
+      const data = this.db.export();
+      const buffer = Buffer.from(data);
+      fs.writeFileSync(this.dbPath, buffer);
+    } catch (e) {
+      console.error('[LocalDB] Error saving database to disk:', e);
+    }
+  }
+
+  exec(sql) {
+    if (!sql || !sql.trim()) return;
+    this.db.run(sql);
+    this.save();
+  }
+
+  prepare(sql) {
+    const self = this;
+    return {
+      all(...params) {
+        let stmt;
+        try {
+          stmt = self.db.prepare(sql);
+          if (params.length > 0) stmt.bind(params);
+          const results = [];
+          while (stmt.step()) {
+            results.push(stmt.getAsObject());
+          }
+          return results;
+        } catch (e) {
+          console.error(`[LocalDB] prepare.all error on SQL [${sql}]:`, e);
+          return [];
+        } finally {
+          if (stmt) stmt.free();
+        }
+      },
+      get(...params) {
+        let stmt;
+        try {
+          stmt = self.db.prepare(sql);
+          if (params.length > 0) stmt.bind(params);
+          if (stmt.step()) {
+            return stmt.getAsObject();
+          }
+          return undefined;
+        } catch (e) {
+          console.error(`[LocalDB] prepare.get error on SQL [${sql}]:`, e);
+          return undefined;
+        } finally {
+          if (stmt) stmt.free();
+        }
+      },
+      run(...params) {
+        try {
+          self.db.run(sql, params);
+          self.save();
+          return { lastInsertRowid: null, changes: 1 };
+        } catch (e) {
+          console.error(`[LocalDB] prepare.run error on SQL [${sql}]:`, e);
+          throw e;
+        }
+      }
+    };
   }
 
   initTables() {
-    this.db.exec(`
-      PRAGMA journal_mode = WAL;
-
-
-        id TEXT PRIMARY KEY,
+    this.exec(`
+      CREATE TABLE IF NOT EXISTS usuarios (
         correo TEXT UNIQUE,
         nombre TEXT,
         rol TEXT DEFAULT 'doctor',
@@ -220,10 +305,10 @@ class LocalDB {
 
   migrateTarifasTable() {
     try {
-      const cols = this.db.prepare("PRAGMA table_info(tarifas_seguro)").all();
+      const cols = this.prepare("PRAGMA table_info(tarifas_seguro)").all();
       const idCol = cols && cols.find(c => c.name === 'id');
       if (idCol && idCol.type && idCol.type.toUpperCase() === 'INTEGER') {
-        this.db.exec(`
+        this.exec(`
           DROP TABLE IF EXISTS tarifas_seguro;
           CREATE TABLE tarifas_seguro (
             id TEXT PRIMARY KEY,
@@ -241,7 +326,7 @@ class LocalDB {
 
   ensureColumn(table, colName, colType) {
     try {
-      this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${colName} ${colType}`);
+      this.exec(`ALTER TABLE ${table} ADD COLUMN ${colName} ${colType}`);
     } catch {
       // Column already exists, safe to ignore
     }

@@ -20,12 +20,12 @@ function getLocalIpAddresses() {
   return addresses;
 }
 
-function startServer(port = 3000, customDbPath = null) {
+async function startServer(port = 3000, customDbPath = null) {
   const app = express();
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server });
 
-  const db = new LocalDB(customDbPath);
+  const db = await LocalDB.create(customDbPath);
 
   app.use(cors({ origin: '*' }));
   app.use(express.json({ limit: '50mb' }));
