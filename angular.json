@@ -39,8 +39,7 @@
             ],
             "scripts": [],
             "allowedCommonJsDependencies": ["nspell"],
-            "serviceWorker": true,
-            "ngswConfigPath": "ngsw-config.json"
+            "serviceWorker": false
           },
           "configurations": {
             "production": {

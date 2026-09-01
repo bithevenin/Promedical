@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
-import { LoadingController, ModalController } from '@ionic/angular';
+import { ModalController } from '@ionic/angular';
 import { ErrorModalComponent } from '../components/error-modal/error-modal.component';
 
 @Component({
@@ -19,7 +19,6 @@ export class LoginPage implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private loadingCtrl: LoadingController,
     private modalCtrl: ModalController,
     private route: ActivatedRoute
   ) {
@@ -53,30 +52,12 @@ export class LoginPage implements OnInit {
     if (this.loginForm.invalid || this.isLoading) return;
 
     this.isLoading = true;
-    let loadingElement: any = null;
-
-    try {
-      loadingElement = await this.loadingCtrl.create({
-        message: 'Iniciando sesión...',
-        spinner: 'circles',
-        duration: 8000
-      });
-      await loadingElement.present();
-    } catch (e) {
-      console.warn('[LoginPage] Loading controller fallback:', e);
-    }
 
     try {
       const { email, password } = this.loginForm.value;
       await this.authService.signIn(email, password);
-      if (loadingElement) {
-        try { await loadingElement.dismiss(); } catch {}
-      }
       this.router.navigate(['/main']);
     } catch (error: any) {
-      if (loadingElement) {
-        try { await loadingElement.dismiss(); } catch {}
-      }
       let message = error?.message || 'Correo o contraseña incorrectos. Por favor verifique sus datos.';
       
       try {

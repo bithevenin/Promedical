@@ -20,9 +20,12 @@ export class SupabaseService {
                 auth: {
                     autoRefreshToken: true,
                     persistSession: true,
-                    detectSessionInUrl: true,
+                    detectSessionInUrl: false,
                     flowType: 'pkce',
-                    storageKey: 'promedical-auth-token'
+                    storageKey: 'promedical-auth-token',
+                    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+                        return await fn();
+                    }
                 }
             }
         );
