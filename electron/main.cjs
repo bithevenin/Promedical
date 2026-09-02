@@ -180,15 +180,31 @@ async function createWindow() {
 
   mainWindow.maximize();
 
-  // Initialize auto-updater events
-  setupAutoUpdater();
+  // Prevenir Super Zoom excesivo por escalado de pantalla en Windows
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.setZoomFactor(0.88);
+  });
 
-  // Allow F12 or Ctrl+Shift+I to open DevTools for diagnostic support
+  // Atajos de Teclado: F12 (DevTools), Ctrl + / Ctrl - / Ctrl 0 (Zoom)
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
       mainWindow.webContents.toggleDevTools();
     }
+    if (input.control && (input.key === '+' || input.key === '=')) {
+      const currentZoom = mainWindow.webContents.getZoomFactor();
+      mainWindow.webContents.setZoomFactor(Math.min(currentZoom + 0.05, 1.3));
+    }
+    if (input.control && (input.key === '-' || input.key === '_')) {
+      const currentZoom = mainWindow.webContents.getZoomFactor();
+      mainWindow.webContents.setZoomFactor(Math.max(currentZoom - 0.05, 0.6));
+    }
+    if (input.control && input.key === '0') {
+      mainWindow.webContents.setZoomFactor(0.88);
+    }
   });
+
+  // Initialize auto-updater events
+  setupAutoUpdater();
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('[Electron] Page failed to load:', errorCode, errorDescription);

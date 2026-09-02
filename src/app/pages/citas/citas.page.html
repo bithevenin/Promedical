@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-36 max-w-full overflow-y-auto overflow-x-hidden">
   <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
   <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2 max-w-full overflow-hidden">
     <!-- Logo & Brand -->
@@ -61,14 +61,14 @@
     </div>
   </header>
 
-  <main class="main-content flex-grow relative w-full pb-24 lg:pb-8">
+  <main class="main-content flex-grow relative w-full pb-36">
 
     <div class="content-body px-3 sm:px-4 lg:px-6 py-4 w-full max-w-full animate-fade-in">
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6">
+      <div class="grid grid-cols-1 2xl:grid-cols-12 gap-5 lg:gap-6">
 
         <!-- Formulario de Registro -->
-        <div class="xl:col-span-4">
-          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-6 shadow-xl sticky top-24">
+        <div class="2xl:col-span-4">
+          <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-6 shadow-xl">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
                 <div class="w-1 h-6 bg-primary rounded-full"></div>
@@ -258,7 +258,7 @@
         </div>
 
         <!-- Panel de Listados -->
-        <div class="xl:col-span-8 flex flex-col gap-5 lg:gap-6">
+        <div class="2xl:col-span-8 flex flex-col gap-5 lg:gap-6">
           <!-- Cola de Pacientes -->
           <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl overflow-hidden shadow-xl animate-slide-up">
             <div class="p-4 lg:p-6 border-b border-glass-border flex items-center justify-between bg-white/[0.01]">
@@ -274,49 +274,49 @@
               </div>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left border-collapse min-w-[550px]">
                 <thead>
-                  <tr class="bg-white/[0.02] text-text-muted uppercase text-[9px] font-black tracking-[0.1em] border-b border-glass-border">
-                    <th class="px-5 py-3">Turno</th>
-                    <th class="px-5 py-3">Paciente</th>
-                    <th class="px-5 py-3 hidden sm:table-cell">Seguro</th>
-                    <th class="px-5 py-3 text-right">Acciones</th>
+                  <tr class="bg-white/[0.02] text-text-muted uppercase text-xs font-black tracking-wider border-b border-glass-border">
+                    <th class="px-5 py-3.5 whitespace-nowrap">Turno</th>
+                    <th class="px-5 py-3.5">Paciente</th>
+                    <th class="px-5 py-3.5 hidden sm:table-cell whitespace-nowrap">Seguro</th>
+                    <th class="px-5 py-3.5 text-right whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-glass-border/50">
                   @for (cita of proximasCitas; track cita.turno) {
                   <tr class="hover:bg-white/[0.03] transition-colors group">
-                    <td class="px-5 py-3">
-                      <span class="w-8 h-8 flex items-center justify-center bg-primary/10 text-primary font-black rounded-lg text-sm group-hover:bg-primary group-hover:text-white transition-all">
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                      <span class="w-9 h-9 flex items-center justify-center bg-primary/10 text-primary font-black rounded-lg text-base group-hover:bg-primary group-hover:text-white transition-all">
                         {{ cita.turno }}
                       </span>
                     </td>
-                    <td class="px-5 py-3">
+                    <td class="px-5 py-3.5">
                       <div class="flex items-center gap-3">
                         @if (getPatientPhoto(cita.cedula)) {
-                          <img [src]="getPatientPhoto(cita.cedula)" class="w-8 h-8 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
+                          <img [src]="getPatientPhoto(cita.cedula)" class="w-9 h-9 rounded-xl object-cover border border-glass-border shadow-sm shrink-0">
                         } @else {
-                          <div class="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black shrink-0">
+                          <div class="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black shrink-0">
                             {{ cita.nombre.charAt(0) }}
                           </div>
                         }
                         <div>
-                          <span class="block text-xs font-bold text-white group-hover:text-primary transition-colors">{{ cita.nombre }}</span>
-                          <span class="block text-[8px] font-semibold text-text-muted uppercase tracking-wider">{{ cita.cedula }} • {{ cita.edad }} años</span>
+                          <span class="block text-sm font-bold text-white group-hover:text-primary transition-colors truncate max-w-[200px] sm:max-w-none">{{ cita.nombre }}</span>
+                          <span class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{{ cita.cedula }} • {{ cita.edad }} años</span>
                         </div>
                       </div>
                     </td>
-                    <td class="px-5 py-3 hidden sm:table-cell">
-                      <span class="inline-block px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-glass-border text-text-secondary">
+                    <td class="px-5 py-3.5 hidden sm:table-cell whitespace-nowrap">
+                      <span class="inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-white/5 border border-glass-border text-slate-200">
                         {{ cita.seguro || 'Particular' }}
                       </span>
                     </td>
-                    <td class="px-5 py-3 text-right">
+                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
                       <button (click)="enviarRecordatorio(cita)" 
                               class="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors" 
                               title="Recordatorio WhatsApp">
-                        <ion-icon name="logo-whatsapp" class="text-base"></ion-icon>
+                        <ion-icon name="logo-whatsapp" class="text-lg"></ion-icon>
                       </button>
                     </td>
                   </tr>
@@ -337,43 +337,43 @@
           <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl overflow-hidden shadow-xl animate-slide-up">
             <div class="p-4 lg:p-6 border-b border-glass-border flex items-center justify-between bg-white/[0.01]">
               <div class="flex items-center gap-3">
-                <h5 class="text-sm font-black text-white uppercase tracking-tight">Pacientes Atendidos por Cobrar</h5>
+                <h5 class="text-base font-black text-white uppercase tracking-tight">Pacientes Atendidos por Cobrar</h5>
               </div>
               <div class="w-8 h-8 flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black rounded-lg">
                 {{ citasPorCobrar.length }}
               </div>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left border-collapse min-w-[550px]">
                 <thead>
-                  <tr class="bg-white/[0.02] text-text-muted uppercase text-[9px] font-black tracking-[0.1em] border-b border-glass-border">
-                    <th class="px-5 py-3">Turno</th>
-                    <th class="px-5 py-3">Paciente</th>
-                    <th class="px-5 py-3 hidden sm:table-cell">Seguro</th>
-                    <th class="px-5 py-3 text-right">Cobro</th>
+                  <tr class="bg-white/[0.02] text-text-muted uppercase text-xs font-black tracking-wider border-b border-glass-border">
+                    <th class="px-5 py-3.5 whitespace-nowrap">Turno</th>
+                    <th class="px-5 py-3.5">Paciente</th>
+                    <th class="px-5 py-3.5 hidden sm:table-cell whitespace-nowrap">Seguro</th>
+                    <th class="px-5 py-3.5 text-right whitespace-nowrap">Cobro</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-glass-border/50">
                   @for (cita of citasPorCobrar; track cita.turno) {
                   <tr class="hover:bg-white/[0.03] transition-colors group">
-                    <td class="px-5 py-3">
-                      <span class="w-8 h-8 flex items-center justify-center bg-emerald-500/10 text-emerald-400 font-black rounded-lg text-sm">
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                      <span class="w-9 h-9 flex items-center justify-center bg-emerald-500/10 text-emerald-400 font-black rounded-lg text-base">
                         {{ cita.turno }}
                       </span>
                     </td>
-                    <td class="px-5 py-3">
-                      <span class="block text-xs font-bold text-white">{{ cita.nombre }}</span>
-                      <span class="block text-[8px] font-semibold text-text-muted uppercase tracking-wider">{{ cita.cedula }}</span>
+                    <td class="px-5 py-3.5">
+                      <span class="block text-sm font-bold text-white truncate max-w-[200px] sm:max-w-none">{{ cita.nombre }}</span>
+                      <span class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{{ cita.cedula }}</span>
                     </td>
-                    <td class="px-5 py-3 hidden sm:table-cell">
-                      <span class="inline-block px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-glass-border text-text-secondary">
+                    <td class="px-5 py-3.5 hidden sm:table-cell whitespace-nowrap">
+                      <span class="inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-white/5 border border-glass-border text-slate-200">
                         {{ cita.seguro || 'Particular' }}
                       </span>
                     </td>
-                    <td class="px-5 py-3 text-right">
-                      <button (click)="cobrar(cita)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-1.5 ml-auto">
-                        <ion-icon name="cash-outline" class="text-sm"></ion-icon> Cobrar
+                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                      <button (click)="cobrar(cita)" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2 ml-auto">
+                        <ion-icon name="cash-outline" class="text-base"></ion-icon> Cobrar
                       </button>
                     </td>
                   </tr>

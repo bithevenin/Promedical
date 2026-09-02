@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-36 max-w-full overflow-y-auto overflow-x-hidden">
   <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
   <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2 max-w-full overflow-hidden">
     <!-- Logo & Brand -->
@@ -61,7 +61,7 @@
     </div>
   </header>
 
-  <main class="main-content flex-grow relative w-full pb-24 lg:pb-8">
+  <main class="main-content flex-grow relative w-full pb-36">
 
     <div class="content-body px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full animate-fade-in">
       
@@ -116,48 +116,48 @@
            <div class="flex items-center gap-3">
              <h5 class="text-sm font-black text-white uppercase tracking-tight">Movimientos del Día</h5>
            </div>
-           <div class="flex items-center gap-3">
-             <button class="btn-cerrar-turno flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-deep border border-primary/40 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95" (click)="cerrarTurno()">
+           <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+             <button class="btn-cerrar-turno flex items-center gap-2 px-3.5 py-2 bg-primary hover:bg-primary-deep border border-primary/40 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95" (click)="cerrarTurno()">
                 <ion-icon name="lock-closed" class="text-base"></ion-icon> Cerrar Turno
              </button>
-             <button class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarExcel()">
+             <button class="flex items-center gap-2 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarExcel()">
                 <ion-icon name="document-text-outline" class="text-base"></ion-icon> Excel
              </button>
-             <button class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-rose-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarPDF()">
+             <button class="flex items-center gap-2 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-glass-border text-rose-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all" (click)="exportarPDF()">
                 <ion-icon name="download-outline" class="text-base"></ion-icon> PDF
              </button>
            </div>
         </div>
 
-        <div class="overflow-auto max-h-[500px] custom-scrollbar">
-          <table class="w-full text-left">
+        <div class="overflow-x-auto overflow-y-auto max-h-[500px] custom-scrollbar">
+          <table class="w-full text-left min-w-[650px]">
             <thead>
-              <tr class="bg-white/[0.02] text-text-muted uppercase text-[9px] font-black tracking-widest border-b border-glass-border">
-                <th class="px-5 py-4">Hora</th>
+              <tr class="bg-white/[0.02] text-text-muted uppercase text-xs font-black tracking-wider border-b border-glass-border">
+                <th class="px-5 py-4 whitespace-nowrap">Hora</th>
                 <th class="px-5 py-4">Concepto</th>
-                <th class="px-5 py-4">Paciente</th>
-                <th class="px-5 py-4">Tipo</th>
-                <th class="px-5 py-4 text-right">Monto</th>
+                <th class="px-5 py-4 whitespace-nowrap">Paciente</th>
+                <th class="px-5 py-4 whitespace-nowrap">Tipo</th>
+                <th class="px-5 py-4 text-right whitespace-nowrap">Monto</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-glass-border/50">
               @for (t of transacciones(); track t.id) {
               <tr class="hover:bg-white/[0.03] transition-colors group">
-                <td class="px-5 py-4 text-[11px] font-bold text-text-muted whitespace-nowrap">{{ t.fecha }}</td>
+                <td class="px-5 py-4 text-xs font-bold text-slate-300 whitespace-nowrap">{{ t.fecha }}</td>
                 <td class="px-5 py-4">
-                  <div class="text-[13px] font-bold text-white leading-tight">{{ t.concepto }}</div>
+                  <div class="text-sm sm:text-base font-bold text-white leading-tight">{{ t.concepto }}</div>
                   @if (t.monto === 0 && !t.concepto.includes('(')) {
-                    <span class="inline-block mt-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    <span class="inline-block mt-1 px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
                       Cubierto 100% por Seguro
                     </span>
                   }
                 </td>
                 <td class="px-5 py-4">
-                  <span class="text-[12px] font-bold text-white/80" *ngIf="t.paciente">{{ t.paciente }}</span>
-                  <span class="text-[12px] font-bold text-text-muted italic" *ngIf="!t.paciente">-</span>
+                  <span class="text-xs sm:text-sm font-bold text-white/90" *ngIf="t.paciente">{{ t.paciente }}</span>
+                  <span class="text-xs sm:text-sm font-bold text-text-muted italic" *ngIf="!t.paciente">-</span>
                 </td>
                 <td class="px-5 py-4">
-                  <span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider" 
+                  <span class="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider" 
                         [class.bg-emerald-500/10]="t.tipo === 'ingreso' && t.monto > 0" [class.text-emerald-500]="t.tipo === 'ingreso' && t.monto > 0"
                         [class.bg-sky-500/10]="t.tipo === 'ingreso' && t.monto === 0" [class.text-sky-400]="t.tipo === 'ingreso' && t.monto === 0"
                         [class.bg-rose-500/10]="t.tipo === 'gasto'" [class.text-rose-500]="t.tipo === 'gasto'"
@@ -165,8 +165,8 @@
                     {{ t.monto === 0 ? 'Seguro $0' : t.tipo }}
                   </span>
                 </td>
-                <td class="px-5 py-4 text-right">
-                  <span class="text-[14px] font-black tracking-tighter" 
+                <td class="px-5 py-4 text-right whitespace-nowrap">
+                  <span class="text-base sm:text-lg font-black tracking-tight" 
                         [class.text-sky-400]="t.monto === 0"
                         [class.text-emerald-400]="t.monto > 0 && t.tipo === 'ingreso'" 
                         [class.text-rose-400]="t.tipo === 'gasto'"
@@ -174,7 +174,7 @@
                     <ng-container *ngIf="t.monto > 0">{{ t.tipo === 'ingreso' ? '+' : '-' }}</ng-container>{{ formatMonto(t.monto) }}
                   </span>
                   @if (t.monto === 0) {
-                    <span class="block text-[8px] font-black text-sky-400 uppercase tracking-widest mt-0.5">Cubierto 100%</span>
+                    <span class="block text-[9px] font-black text-sky-400 uppercase tracking-widest mt-0.5">Cubierto 100%</span>
                   }
                 </td>
               </tr>
