@@ -380,7 +380,10 @@ export class LocalDatabaseClient {
       if (mode === 'server') {
         return `http://localhost:${savedPort}`;
       }
-      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
+      let savedHost = localStorage.getItem('promedical_lan_server_host');
+      if (!savedHost || savedHost === 'localhost' || savedHost === '127.0.0.1') {
+        savedHost = '192.168.0.101';
+      }
       return `http://${savedHost}:${savedPort}`;
     }
     return 'http://localhost:3000';
@@ -393,7 +396,10 @@ export class LocalDatabaseClient {
       if (mode === 'server') {
         return `ws://localhost:${savedPort}`;
       }
-      const savedHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
+      let savedHost = localStorage.getItem('promedical_lan_server_host');
+      if (!savedHost || savedHost === 'localhost' || savedHost === '127.0.0.1') {
+        savedHost = '192.168.0.101';
+      }
       return `ws://${savedHost}:${savedPort}`;
     }
     return 'ws://localhost:3000';

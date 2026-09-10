@@ -158,6 +158,10 @@ export class ContabilidadPage implements OnInit {
     this.authService.profile$.subscribe(p => this.currentProfile.set(p));
   }
 
+  ionViewWillEnter() {
+    this.financialService.refreshAll();
+  }
+
   verReporteSeguros() {
     this.router.navigate(['/contabilidad/seguros']);
   }

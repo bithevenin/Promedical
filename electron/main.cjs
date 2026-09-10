@@ -16,7 +16,7 @@ const configPath = path.join(app.getPath('userData'), 'promedical_lan_config.jso
 function loadConfig() {
   const defaultConfig = {
     mode: 'server', // 'server' (Host / Principal) or 'client' (Terminal)
-    serverHost: 'localhost',
+    serverHost: '192.168.0.101',
     port: 3000
   };
 
@@ -33,7 +33,12 @@ function loadConfig() {
 
 function saveConfig(config) {
   try {
+    const dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    console.log('[Electron] LAN config successfully saved to:', configPath, config);
     return true;
   } catch (err) {
     console.error('[Electron] Error saving config:', err);
@@ -149,9 +154,9 @@ async function startEmbeddedServer(port, dbDir) {
 async function createWindow() {
   const config = loadConfig();
 
-  // Always ensure the embedded server process runs by default on port 3000
-  // unless explicitly set to client mode with a remote server host
-  const shouldStartServer = config.mode === 'server' || config.serverHost === 'localhost' || !config.mode;
+  // Ensure embedded server only runs in server mode (Host).
+  // In client (terminal) mode, do NOT run local server process.
+  const shouldStartServer = config.mode !== 'client';
   if (shouldStartServer && !serverInstance) {
     try {
       const dbDir = path.join(app.getPath('userData'), 'db');
@@ -258,7 +263,7 @@ ipcMain.handle('get-config', () => {
 ipcMain.handle('save-config', async (event, newConfig) => {
   const success = saveConfig(newConfig);
   if (success) {
-    if (newConfig.mode === 'server') {
+    if (newConfig.mode === 'server' && !serverInstance) {
       try {
         const dbDir = path.join(app.getPath('userData'), 'db');
         await startEmbeddedServer(newConfig.port || 3000, dbDir);

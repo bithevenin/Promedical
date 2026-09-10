@@ -89,30 +89,28 @@ export class ConsultationService {
 
   async refreshConsultas() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase
-          .from('consultas')
-          .select('*')
-          .order('fecha', { ascending: false })
-          .limit(200);
-        if (error) throw error;
+      const { data, error } = await this.supabase
+        .from('consultas')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .limit(200);
+      if (error) throw error;
 
-        if (data) {
-          const consultas: Consulta[] = data.map((c: DbConsulta) => ({
-            id: c.id,
-            cedula: c.paciente_cedula,
-            fecha: c.fecha,
-            diagnostico: c.diagnostico || '',
-            receta: c.receta || ''
-          }));
+      if (data) {
+        const consultas: Consulta[] = data.map((c: DbConsulta) => ({
+          id: c.id,
+          cedula: c.paciente_cedula,
+          fecha: c.fecha,
+          diagnostico: c.diagnostico || '',
+          receta: c.receta || ''
+        }));
 
-          this.consultationsSubject.next(consultas);
-          this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
-          return;
-        }
+        this.consultationsSubject.next(consultas);
+        this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching consultations from offline storage:', error);
+      console.warn('[ConsultationService] Network issue, fetching consultations from offline storage:', error);
     }
 
     const local = await this.offlineService.getLocalData<Consulta>('consultas');
@@ -134,33 +132,31 @@ export class ConsultationService {
 
     // 2. Consulta rápida local / online
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase
-          .from('consultas')
-          .select('*')
-          .eq('paciente_cedula', cedula)
-          .order('fecha', { ascending: false });
-        if (error) throw error;
+      const { data, error } = await this.supabase
+        .from('consultas')
+        .select('*')
+        .eq('paciente_cedula', cedula)
+        .order('fecha', { ascending: false });
+      if (error) throw error;
 
-        if (data && data.length > 0) {
-          const consultas: Consulta[] = data.map((c: DbConsulta) => ({
-            id: c.id,
-            cedula: c.paciente_cedula,
-            fecha: c.fecha,
-            diagnostico: c.diagnostico || '',
-            receta: c.receta || ''
-          }));
+      if (data && data.length > 0) {
+        const consultas: Consulta[] = data.map((c: DbConsulta) => ({
+          id: c.id,
+          cedula: c.paciente_cedula,
+          fecha: c.fecha,
+          diagnostico: c.diagnostico || '',
+          receta: c.receta || ''
+        }));
 
-          // Combinar con las existentes en memoria sin duplicar
-          const current = this.consultationsSubject.value.filter(h => h.cedula !== cedula);
-          this.consultationsSubject.next([...consultas, ...current]);
-          this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
+        // Combinar con las existentes en memoria sin duplicar
+        const current = this.consultationsSubject.value.filter(h => h.cedula !== cedula);
+        this.consultationsSubject.next([...consultas, ...current]);
+        this.offlineService.saveLocalDataBulk('consultas', consultas).catch(() => {});
 
-          return consultas;
-        }
+        return consultas;
       }
     } catch (error) {
-      console.error('Error cargando historial remoto:', error);
+      console.error('[ConsultationService] Error cargando historial remoto/LAN:', error);
     }
 
     // Fallback local
@@ -204,14 +200,10 @@ export class ConsultationService {
         receta: consulta.receta
       };
 
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('consultas').insert(dbData);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('consultas', 'insert', dbData);
-      }
+      const { error } = await this.supabase.from('consultas').insert(dbData);
+      if (error) throw error;
     } catch (error) {
-      console.warn('Error saving consultation, queueing write:', error);
+      console.warn('[ConsultationService] Error saving consultation online/LAN, queueing write:', error);
       const dbData = {
         id: localConsulta.id,
         paciente_cedula: consulta.cedula,
@@ -253,15 +245,16 @@ export class ConsultationService {
         receta: c.receta
       }));
 
-      // 3. Insertar por lotes a Supabase
-      if (navigator.onLine) {
+      // 3. Insertar por lotes a Supabase / LAN
+      try {
         const BATCH_SIZE = 500;
         for (let i = 0; i < dbPayloads.length; i += BATCH_SIZE) {
           const batch = dbPayloads.slice(i, i + BATCH_SIZE);
           const { error } = await this.supabase.from('consultas').upsert(batch);
           if (error) throw error;
         }
-      } else {
+      } catch (upsertErr) {
+        console.warn('[ConsultationService] Error upserting consultations online/LAN, queuing:', upsertErr);
         for (const payload of dbPayloads) {
           await this.offlineService.addToQueue('consultas', 'insert', payload);
         }

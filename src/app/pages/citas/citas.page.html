@@ -64,25 +64,29 @@
   <main class="main-content flex-grow relative w-full pb-36">
 
     <div class="content-body px-3 sm:px-4 lg:px-6 py-4 w-full max-w-full animate-fade-in">
-      <div class="grid grid-cols-1 2xl:grid-cols-12 gap-5 lg:gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
 
         <!-- Formulario de Registro -->
-        <div class="2xl:col-span-4">
+        <div class="lg:col-span-4">
           <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl p-5 lg:p-6 shadow-xl">
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center gap-2">
-                <div class="w-1 h-6 bg-primary rounded-full"></div>
-                <h5 class="text-sm font-black text-white uppercase tracking-tight">Registro de Cita</h5>
+            <div class="flex items-center justify-between mb-6 gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-1 h-6 bg-primary rounded-full shrink-0"></div>
+                <h5 class="text-sm font-black text-white uppercase tracking-tight truncate">Registro de Cita</h5>
               </div>
-              <div class="flex bg-dark-secondary/80 p-0.5 rounded-lg border border-glass-border">
-                <button class="px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-md transition-all text-white"
-                        [class.bg-primary]="modoRegistro === 'nuevo'"
-                        [class.opacity-50]="modoRegistro !== 'nuevo'"
-                        (click)="cambiarModo('nuevo')">Nuevo</button>
-                <button class="px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-md transition-all text-white"
-                        [class.bg-primary]="modoRegistro === 'registrado'"
-                        [class.opacity-50]="modoRegistro !== 'registrado'"
-                        (click)="cambiarModo('registrado')">Ext.</button>
+              <div class="saas-toggle-group shrink-0">
+                <button type="button" class="saas-toggle-btn"
+                        [class.active]="modoRegistro === 'nuevo'"
+                        (click)="cambiarModo('nuevo')">
+                  <ion-icon name="person-add-outline" class="text-xs mr-1"></ion-icon>
+                  Nuevo
+                </button>
+                <button type="button" class="saas-toggle-btn"
+                        [class.active]="modoRegistro === 'registrado'"
+                        (click)="cambiarModo('registrado')">
+                  <ion-icon name="people-outline" class="text-xs mr-1"></ion-icon>
+                  Existente
+                </button>
               </div>
             </div>
 
@@ -116,7 +120,7 @@
                            (input)="filtrarPacientes($event)"
                            (focus)="setActiveSearchField('cedula'); mostrarDropdownPacientes = pacientesFiltrados.length > 0"
                            placeholder="000-0000000-0">
-                    <button class="px-4 py-2.5 bg-primary hover:bg-primary-deep text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                    <button class="btn-saas btn-primary btn-md shrink-0 disabled:opacity-50"
                             (click)="buscarJCE()" [disabled]="isLoadingJce" title="Buscar por Cédula / Paciente / JCE">
                        @if (isLoadingJce) {
                          <ion-spinner name="crescent" class="text-xs text-white"></ion-spinner>
@@ -247,7 +251,7 @@
                  </div>
               </div>
 
-              <button class="w-full py-3 bg-primary text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-deep transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:opacity-50" 
+              <button class="btn-saas btn-purple btn-lg w-full disabled:opacity-50" 
                       (click)="registrarCita()"
                       [disabled]="!nuevoPaciente.nombre || !nuevoPaciente.cedula || !nuevoPaciente.fecha_nacimiento">
                 <ion-icon name="add-circle" class="text-base text-white group-hover:rotate-90 transition-transform"></ion-icon>
@@ -258,7 +262,7 @@
         </div>
 
         <!-- Panel de Listados -->
-        <div class="2xl:col-span-8 flex flex-col gap-5 lg:gap-6">
+        <div class="lg:col-span-8 flex flex-col gap-5 lg:gap-6">
           <!-- Cola de Pacientes -->
           <div class="bg-glass-light backdrop-blur-lg border border-glass-border rounded-2xl overflow-hidden shadow-xl animate-slide-up">
             <div class="p-4 lg:p-6 border-b border-glass-border flex items-center justify-between bg-white/[0.01]">
@@ -372,8 +376,8 @@
                       </span>
                     </td>
                     <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                      <button (click)="cobrar(cita)" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2 ml-auto">
-                        <ion-icon name="cash-outline" class="text-base"></ion-icon> Cobrar
+                      <button (click)="cobrar(cita)" class="btn-saas btn-success btn-sm ml-auto">
+                        <ion-icon name="cash-outline" class="text-sm"></ion-icon> Cobrar
                       </button>
                     </td>
                   </tr>

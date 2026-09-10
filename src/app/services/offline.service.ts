@@ -19,7 +19,7 @@ interface QueueItem {
 })
 export class OfflineService {
   private dbName = 'promedical_offline';
-  private dbVersion = 1;
+  private dbVersion = 2;
   private db: IDBDatabase | null = null;
   private supabase: SupabaseClient;
   private isSyncing = false;

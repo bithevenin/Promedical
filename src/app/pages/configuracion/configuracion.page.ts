@@ -165,13 +165,10 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
             // 1. Guardar configuración básica en la DB
             await this.configService.saveConfig(this.config);
 
-            // 2. Si se proporcionó una contraseña y email, intentar registrar/actualizar el usuario en Auth
-            // (Esta lógica se moverá a la gestión de usuarios, pero mantenemos compatibilidad por ahora si edita su propio perfil)
-            if (this.config.email && this.config.password && this.config.password.length === 8) {
-                // Opcional: Actualizar el usuario actual si coincide el email
-            }
+            // 2. Guardar también la configuración LAN actual para evitar pérdida de ajustes
+            await this.guardarConfiguracionLan(true);
 
-            this.notificationService.showSuccess('¡Configuración Guardada!', 'Los ajustes del consultorio se actualizaron correctamente.');
+            this.notificationService.showSuccess('¡Configuración Guardada!', 'Los ajustes del consultorio y red LAN se actualizaron correctamente.');
         } catch (error) {
             console.error('Error al guardar configuración:', error);
             this.notificationService.showError('Error', 'No se pudo guardar la configuración. Revisa tu conexión.');
@@ -593,15 +590,25 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
                     const netInfo = await electronApi.getNetworkInfo();
                     this.lanIps = netInfo.ips || [];
                     this.lanMode = netInfo.mode || 'server';
-                    this.lanHost = netInfo.serverHost || 'localhost';
+                    const savedHost = netInfo.serverHost || localStorage.getItem('promedical_lan_server_host');
+                    if (this.lanMode === 'client') {
+                        this.lanHost = (savedHost && savedHost !== 'localhost' && savedHost !== '127.0.0.1') ? savedHost : '192.168.0.101';
+                    } else {
+                        this.lanHost = savedHost || 'localhost';
+                    }
                     this.lanPort = netInfo.port || 3000;
                 } catch (e) {
                     console.warn('[LAN] Error fetching Electron network info:', e);
                 }
             } else {
-                this.lanHost = localStorage.getItem('promedical_lan_server_host') || 'localhost';
-                this.lanPort = Number(localStorage.getItem('promedical_lan_server_port')) || 3000;
                 this.lanMode = (localStorage.getItem('promedical_lan_mode') as 'server' | 'client') || 'server';
+                const savedHost = localStorage.getItem('promedical_lan_server_host');
+                if (this.lanMode === 'client') {
+                    this.lanHost = (savedHost && savedHost !== 'localhost' && savedHost !== '127.0.0.1') ? savedHost : '192.168.0.101';
+                } else {
+                    this.lanHost = savedHost || 'localhost';
+                }
+                this.lanPort = Number(localStorage.getItem('promedical_lan_server_port')) || 3000;
             }
         }
     }
@@ -610,7 +617,7 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         this.lanTesting = true;
         this.lanStatus = null;
         const startTime = Date.now();
-        const targetHost = this.lanMode === 'server' ? 'localhost' : (this.lanHost || 'localhost');
+        const targetHost = this.lanMode === 'server' ? 'localhost' : (this.lanHost || '192.168.0.101');
         const targetPort = this.lanPort || 3000;
 
         try {
@@ -651,12 +658,12 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
     seleccionarModo(modo: 'server' | 'client') {
         this.lanMode = modo;
         if (modo === 'server') {
-            if (!this.lanHost || this.lanHost === '') {
+            if (!this.lanHost || this.lanHost === '192.168.0.101') {
                 this.lanHost = 'localhost';
             }
         } else {
-            if (this.lanHost === 'localhost') {
-                this.lanHost = '';
+            if (!this.lanHost || this.lanHost === 'localhost' || this.lanHost === '127.0.0.1') {
+                this.lanHost = '192.168.0.101';
             }
         }
     }
@@ -666,27 +673,27 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         this.lanMode = 'client';
     }
 
-    async guardarConfiguracionLan() {
+    async guardarConfiguracionLan(silent = false) {
         if (this.lanMode === 'client') {
-            const host = (this.lanHost || '').trim();
+            let host = (this.lanHost || '').trim();
             if (!host || host === 'localhost' || host === '127.0.0.1') {
-                this.notificationService.showError(
-                    'IP de Servidor Requerida',
-                    'Para configurar como Terminal Cliente, debes ingresar la IP de la PC Servidor Principal (ej: 192.168.1.15).'
-                );
-                return;
+                host = '192.168.0.101';
+                this.lanHost = host;
             }
         }
 
-        this.guardando = true;
+        if (!silent) this.guardando = true;
         try {
-            const hostToSave = this.lanMode === 'server' ? 'localhost' : this.lanHost.trim();
-            this.supabaseService.setLanServer(hostToSave, this.lanPort, this.lanMode);
+            const hostToSave = this.lanMode === 'server' ? 'localhost' : (this.lanHost ? this.lanHost.trim() : '192.168.0.101');
+            const portToSave = Number(this.lanPort) || 3000;
+            this.lanPort = portToSave;
+
+            this.supabaseService.setLanServer(hostToSave, portToSave, this.lanMode);
 
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('promedical_lan_mode', this.lanMode);
                 localStorage.setItem('promedical_lan_server_host', hostToSave);
-                localStorage.setItem('promedical_lan_server_port', String(this.lanPort));
+                localStorage.setItem('promedical_lan_server_port', String(portToSave));
             }
 
             const electronApi = (window as any).electronAPI;
@@ -694,23 +701,27 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
                 await electronApi.saveConfig({
                     mode: this.lanMode,
                     serverHost: hostToSave,
-                    port: Number(this.lanPort)
+                    port: portToSave
                 });
             }
 
-            this.notificationService.showSuccess(
-                'Ajustes LAN Guardados',
-                `Configurado como ${this.lanMode === 'server' ? 'SERVIDOR PRINCIPAL (localhost)' : 'TERMINAL CLIENTE (' + hostToSave + ')'}.`
-            );
+            if (!silent) {
+                this.notificationService.showSuccess(
+                    'Ajustes LAN Guardados',
+                    `Configurado como ${this.lanMode === 'server' ? 'SERVIDOR PRINCIPAL (localhost)' : 'TERMINAL CLIENTE (' + hostToSave + ')'}.`
+                );
+            }
 
             // Recargar datos locales en caliente
             this.configService.refreshConfig();
             this.patientService.refreshPatients();
             this.consultationService.refreshConsultas();
         } catch (e: any) {
-            this.notificationService.showError('Error', e.message || 'No se pudo guardar la configuración.');
+            if (!silent) {
+                this.notificationService.showError('Error', e.message || 'No se pudo guardar la configuración.');
+            }
         } finally {
-            this.guardando = false;
+            if (!silent) this.guardando = false;
         }
     }
 

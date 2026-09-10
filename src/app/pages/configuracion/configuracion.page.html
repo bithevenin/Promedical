@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-36 max-w-full overflow-y-auto overflow-x-hidden">
   <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
   <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2">
     <!-- Logo & Brand -->
@@ -105,7 +105,7 @@
            </button>
         </div>
 
-        <button class="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-deep transition-all duration-150 active:scale-[0.97] disabled:opacity-50 shrink-0 cursor-pointer" (click)="guardarConfiguracion()" [disabled]="guardando">
+        <button class="btn-saas btn-primary btn-md w-full xl:w-auto" (click)="guardarConfiguracion()" [disabled]="guardando">
            <ion-icon [name]="guardando ? 'sync' : 'save'" [class.animate-spin]="guardando" class="text-base"></ion-icon>
            <span>{{ guardando ? 'Guardando...' : 'Aplicar Cambios' }}</span>
         </button>
@@ -253,7 +253,7 @@
                     <input type="password" [(ngModel)]="nuevoUsuario.password" class="w-full bg-white/5 border border-glass-border rounded-xl px-4 py-2.5 text-[11px] font-black text-white focus:border-primary/50 outline-none" placeholder="********">
                  </div>
                  <div class="sm:col-span-2 pt-2">
-                    <button class="w-full py-3 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl shadow-lg hover:bg-primary-deep transition-all flex items-center justify-center gap-2" (click)="guardarNuevoUsuario()" [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
+                    <button class="btn-saas btn-primary btn-md w-full" (click)="guardarNuevoUsuario()" [disabled]="!nuevoUsuario.email || !nuevoUsuario.password || guardando">
                        <ion-icon name="person-add"></ion-icon>
                        Inicializar Usuario
                     </button>
@@ -281,7 +281,7 @@
                     <span class="text-primary">{{ user.rol }}</span>
                  </div>
               </div>
-              <button class="w-full py-2 bg-white/5 border border-glass-border text-text-muted hover:text-primary hover:border-primary/30 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all" (click)="guardarEdicionUsuario(user)">Sincronizar</button>
+              <button class="btn-saas btn-glass btn-sm w-full" (click)="guardarEdicionUsuario(user)">Sincronizar</button>
            </div>
            }
         </div>
@@ -300,14 +300,14 @@
              <p class="text-[9px] font-bold text-text-muted mb-6">Importa tu base de datos de pacientes o exporta la actual a formato Excel.</p>
              
              <div class="space-y-4">
-                <button class="w-full py-3 bg-white/5 border border-glass-border text-white hover:border-primary/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" (click)="descargarPlantilla('pacientes')">
+                <button class="btn-saas btn-glass btn-md w-full" (click)="descargarPlantilla('pacientes')">
                    <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
                    Descargar Plantilla
                 </button>
                 
                 <div class="relative w-full">
                    <input type="file" accept=".xlsx, .xls, .csv" (change)="importarArchivo($event, 'pacientes')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="guardando">
-                   <button class="w-full py-3 bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" [class.opacity-50]="guardando">
+                   <button class="btn-saas btn-primary btn-md w-full" [class.opacity-50]="guardando">
                       <ion-icon [name]="guardando ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="guardando" class="text-lg"></ion-icon>
                       Importar Pacientes
                    </button>
@@ -315,7 +315,7 @@
 
                 <div class="relative w-full">
                    <input type="file" accept=".xlsx, .xls, .csv" (change)="importarSistemaViejo($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="guardando">
-                   <button class="w-full py-3 bg-purple-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" [class.opacity-50]="guardando">
+                   <button class="btn-saas btn-purple btn-md w-full" [class.opacity-50]="guardando">
                       <ion-icon [name]="guardando ? 'sync' : 'server-outline'" [class.animate-spin]="guardando" class="text-lg"></ion-icon>
                       Importar Sistema Viejo (CSV)
                    </button>
@@ -328,7 +328,7 @@
                    <p class="text-[8px] font-bold text-center text-purple-400 uppercase tracking-widest mt-1">Importando... {{ progresoImportacion }}%</p>
                 }
 
-                <button class="w-full py-3 bg-primary text-white hover:bg-primary-deep rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2" (click)="exportarPacientes()">
+                <button class="btn-saas btn-primary btn-md w-full" (click)="exportarPacientes()">
                    <ion-icon name="download-outline" class="text-lg"></ion-icon>
                    Exportar Pacientes
                 </button>
@@ -344,20 +344,20 @@
              <p class="text-[9px] font-bold text-text-muted mb-6">Importa consultas históricas o exporta el registro clínico completo a Excel.</p>
              
              <div class="space-y-4">
-                <button class="w-full py-3 bg-white/5 border border-glass-border text-white hover:border-amber-500/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" (click)="descargarPlantilla('historias')">
+                <button class="btn-saas btn-glass btn-md w-full" (click)="descargarPlantilla('historias')">
                    <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
                    Descargar Plantilla
                 </button>
                 
                 <div class="relative w-full">
                    <input type="file" accept=".xlsx, .xls, .csv" (change)="importarArchivo($event, 'historias')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="guardando">
-                   <button class="w-full py-3 bg-amber-500/20 border border-amber-500/30 text-amber-500 hover:bg-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2" [class.opacity-50]="guardando">
+                   <button class="btn-saas btn-warning btn-md w-full" [class.opacity-50]="guardando">
                       <ion-icon [name]="guardando ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="guardando" class="text-lg"></ion-icon>
                       Importar Historias
                    </button>
                 </div>
 
-                <button class="w-full py-3 bg-amber-500 text-white hover:bg-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2" (click)="exportarHistorias()">
+                <button class="btn-saas btn-warning btn-md w-full" (click)="exportarHistorias()">
                    <ion-icon name="download-outline" class="text-lg"></ion-icon>
                    Exportar Historias
                 </button>
@@ -440,9 +440,12 @@
                   <label class="text-[8px] font-black text-text-muted uppercase tracking-widest ml-1">
                     {{ lanMode === 'server' ? 'Conexión Local (Servidor)' : 'IP de la PC Servidor Principal' }}
                   </label>
+                  <button type="button" *ngIf="lanMode === 'client'" (click)="lanHost = '192.168.0.101'" class="text-[9px] text-sky-400 hover:text-sky-300 font-bold transition-all">
+                    Usar 192.168.0.101
+                  </button>
                 </div>
                 <div class="relative flex items-center">
-                  <input type="text" [(ngModel)]="lanHost" [placeholder]="lanMode === 'server' ? 'localhost' : 'Ej: 192.168.1.15'" 
+                  <input type="text" [(ngModel)]="lanHost" [placeholder]="lanMode === 'server' ? 'localhost' : '192.168.0.101'" 
                          class="w-full bg-slate-900/90 border-2 border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-bold text-white placeholder-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                   <button type="button" *ngIf="lanHost && lanHost !== 'localhost'" (click)="lanHost = ''" class="absolute right-3 text-slate-400 hover:text-white p-1 text-xs">
                     <ion-icon name="close-circle"></ion-icon>
@@ -458,12 +461,12 @@
 
               <div class="flex gap-3 pt-2">
                 <button type="button" (click)="probarConexionLan()" [disabled]="lanTesting"
-                        class="flex-1 py-3 bg-white/10 hover:bg-white/15 border border-glass-border text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        class="btn-saas btn-glass btn-md flex-1">
                   <ion-icon [name]="lanTesting ? 'sync' : 'pulse-outline'" [class.animate-spin]="lanTesting" class="text-base text-emerald-400"></ion-icon>
                   {{ lanTesting ? 'Verificando...' : 'Probar Conexión' }}
                 </button>
                 <button type="button" (click)="guardarConfiguracionLan()" [disabled]="guardando"
-                        class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        class="btn-saas btn-success btn-md flex-1">
                   <ion-icon name="save-outline" class="text-base"></ion-icon>
                   Guardar y Conectar
                 </button>
@@ -533,7 +536,7 @@
                 Descarga un respaldo instantáneo del archivo de base de datos SQLite (.db) con un solo clic.
               </p>
               <button type="button" (click)="descargarBackupLocal()"
-                      class="w-full py-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                      class="btn-saas btn-warning btn-md w-full">
                 <ion-icon name="download-outline" class="text-base text-amber-400"></ion-icon>
                 Descargar Base de Datos (.db)
               </button>
@@ -567,13 +570,13 @@
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <button type="button" (click)="syncService.downloadAllFromCloud()" [disabled]="sync.isSyncing"
-                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        class="btn-saas btn-success btn-md w-full">
                   <ion-icon [name]="sync.isSyncing && sync.type === 'download' ? 'sync' : 'cloud-download-outline'" [class.animate-spin]="sync.isSyncing && sync.type === 'download'" class="text-base"></ion-icon>
                   Descargar de la Nube (Inicio)
                 </button>
 
                 <button type="button" (click)="syncService.uploadAllToCloud()" [disabled]="sync.isSyncing"
-                        class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        class="btn-saas btn-primary btn-md w-full">
                   <ion-icon [name]="sync.isSyncing && sync.type === 'upload' ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="sync.isSyncing && sync.type === 'upload'" class="text-base"></ion-icon>
                   Subir a la Nube (Fin Jornada)
                 </button>
@@ -592,13 +595,13 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <button type="button" (click)="updateService.checkForUpdates()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
-                          class="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                          class="btn-saas btn-glass btn-sm disabled:opacity-50">
                     <ion-icon [name]="update.status === 'checking' ? 'sync' : 'refresh-outline'" [class.animate-spin]="update.status === 'checking'" class="text-sm"></ion-icon>
                     <span>{{ update.status === 'checking' ? 'Buscando...' : 'Buscar' }}</span>
                   </button>
 
                   <button type="button" (click)="updateService.forceUpdate()" [disabled]="update.status === 'checking' || update.status === 'downloading'"
-                          class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                          class="btn-saas btn-purple btn-md disabled:opacity-50">
                     <ion-icon name="cloud-download-outline" class="text-base"></ion-icon>
                     <span>DESCARGAR E INSTALAR ACTUALIZACIÓN AHORA</span>
                   </button>
@@ -619,7 +622,7 @@
                   <div class="text-[9px] text-text-muted mt-0.5">Hay una versión más reciente lista para descargar.</div>
                 </div>
                 <button type="button" (click)="updateService.downloadUpdate()"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md transition-all shrink-0 cursor-pointer">
+                        class="btn-saas btn-purple btn-sm shrink-0">
                   Descargar Ahora
                 </button>
               </div>

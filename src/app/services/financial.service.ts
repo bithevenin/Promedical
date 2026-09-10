@@ -158,19 +158,16 @@ export class FinancialService {
 
   async refreshTransactions() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('transacciones').select('*');
-        if (error) throw error;
-        if (data) {
-          await this.offlineService.clearStore('transacciones');
-          // Bug #8 fix: una sola transacción IDB en lugar de N individuales
-          await this.offlineService.saveLocalDataBulk('transacciones', data);
-          this.transactionsSubject.next(data);
-          return;
-        }
+      const { data, error } = await this.supabase.from('transacciones').select('*');
+      if (error) throw error;
+      if (data) {
+        await this.offlineService.clearStore('transacciones');
+        await this.offlineService.saveLocalDataBulk('transacciones', data);
+        this.transactionsSubject.next(data);
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching transactions from offline storage:', error);
+      console.warn('[FinancialService] Could not fetch transactions from server, using local cache:', error);
     }
 
     const local = await this.offlineService.getLocalData<Transaccion>('transacciones');
@@ -179,32 +176,29 @@ export class FinancialService {
 
   async refreshFacturasSeguro() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('facturas_seguro').select('*');
-        if (error) throw error;
-        if (data) {
-          const facturas: FacturaSeguro[] = data.map((f: DbFactura) => ({
-            id: f.id,
-            cedula: f.cedula,
-            nombrePaciente: f.nombre_paciente,
-            edad: f.edad,
-            carnetSeguro: f.carnet_seguro,
-            seguro: f.seguro,
-            fecha: f.fecha,
-            monto: f.monto,
-            estado: f.estado,
-            fechaPago: f.fecha_pago
-          }));
+      const { data, error } = await this.supabase.from('facturas_seguro').select('*');
+      if (error) throw error;
+      if (data) {
+        const facturas: FacturaSeguro[] = data.map((f: DbFactura) => ({
+          id: f.id,
+          cedula: f.cedula,
+          nombrePaciente: f.nombre_paciente,
+          edad: f.edad,
+          carnetSeguro: f.carnet_seguro,
+          seguro: f.seguro,
+          fecha: f.fecha,
+          monto: f.monto,
+          estado: f.estado,
+          fechaPago: f.fecha_pago
+        }));
 
-          await this.offlineService.clearStore('facturas_seguro');
-          // Bug #8 fix: una sola transacción IDB
-          await this.offlineService.saveLocalDataBulk('facturas_seguro', facturas);
-          this.facturasSeguroSubject.next(facturas);
-          return;
-        }
+        await this.offlineService.clearStore('facturas_seguro');
+        await this.offlineService.saveLocalDataBulk('facturas_seguro', facturas);
+        this.facturasSeguroSubject.next(facturas);
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching insurance invoices from offline storage:', error);
+      console.warn('[FinancialService] Could not fetch facturas from server, using local cache:', error);
     }
 
     const local = await this.offlineService.getLocalData<FacturaSeguro>('facturas_seguro');
@@ -213,31 +207,28 @@ export class FinancialService {
 
   async refreshReportesPagosSeguro() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('reportes_pagos_seguro').select('*');
-        if (error) throw error;
-        if (data) {
-          const reportes: ReportePagoSeguro[] = data.map((r: DbReporte) => ({
-            id: r.id,
-            seguro: r.seguro,
-            mes: r.mes,
-            montoEnviado: r.monto_enviado,
-            montoRecibido: r.monto_recibido,
-            fechaEnvio: r.fecha_envio,
-            fechaPago: r.fecha_pago,
-            comentario: r.comentario,
-            estado: r.estado
-          }));
+      const { data, error } = await this.supabase.from('reportes_pagos_seguro').select('*');
+      if (error) throw error;
+      if (data) {
+        const reportes: ReportePagoSeguro[] = data.map((r: DbReporte) => ({
+          id: r.id,
+          seguro: r.seguro,
+          mes: r.mes,
+          montoEnviado: r.monto_enviado,
+          montoRecibido: r.monto_recibido,
+          fechaEnvio: r.fecha_envio,
+          fechaPago: r.fecha_pago,
+          comentario: r.comentario,
+          estado: r.estado
+        }));
 
-          await this.offlineService.clearStore('reportes_pagos_seguro');
-          // Bug #8 fix: una sola transacción IDB
-          await this.offlineService.saveLocalDataBulk('reportes_pagos_seguro', reportes);
-          this.reportesPagosSeguroSubject.next(reportes);
-          return;
-        }
+        await this.offlineService.clearStore('reportes_pagos_seguro');
+        await this.offlineService.saveLocalDataBulk('reportes_pagos_seguro', reportes);
+        this.reportesPagosSeguroSubject.next(reportes);
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching insurance reports from offline storage:', error);
+      console.warn('[FinancialService] Could not fetch reportes from server, using local cache:', error);
     }
 
     const local = await this.offlineService.getLocalData<ReportePagoSeguro>('reportes_pagos_seguro');

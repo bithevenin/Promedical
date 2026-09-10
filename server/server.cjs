@@ -64,6 +64,12 @@ async function startServer(port = 3000, customDbPath = null) {
       } catch {}
     });
     ws.send(JSON.stringify({ event: 'CONNECTED', message: 'Promedical LAN Realtime Connected' }));
+    // Send RELOAD_ALL to newly connected client so it fetches all data from the server
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'broadcast', event: 'RELOAD_ALL', table: '*' }));
+      }
+    }, 500);
   });
 
   // Status & Info endpoint

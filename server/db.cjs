@@ -542,6 +542,7 @@ class LocalDB {
       throw err;
     }
 
+    this.save();
     return Array.isArray(data) ? results : results[0];
   }
 
@@ -584,6 +585,7 @@ class LocalDB {
       throw err;
     }
 
+    this.save();
     return Array.isArray(data) ? results : results[0];
   }
 
@@ -615,6 +617,7 @@ class LocalDB {
 
     const stmt = this.prepare(sql);
     stmt.run(...params);
+    this.save();
     return this.select(table, { filters });
   }
 
@@ -635,6 +638,7 @@ class LocalDB {
 
     const stmt = this.prepare(sql);
     stmt.run(...params);
+    this.save();
     return { success: true };
   }
 }

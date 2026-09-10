@@ -20,8 +20,8 @@ export class ConfigService {
   private defaultConfig: ConfiguracionDoctor = {
     nombreDoctor: 'Dr. Thevenin',
     especialidad: 'Urólogo',
-    email: 'dr.miguelthevenin@gmail.com',
-    fotoUrl: 'https://i.pravatar.cc/150?u=doctor',
+    email: 'drmiguelthevenin@gmail.com',
+    fotoUrl: 'https://ui-avatars.com/api/?name=Dr+Thevenin&background=0284c7&color=fff',
     montoConsultaParticular: 4000,
     exequatur: '34535',
     tarifasSeguros: [
@@ -42,7 +42,7 @@ export class ConfigService {
       nombreComercial: 'Consultorio Médico Dr. Thevenin',
       actividadEconomica: '85121 - Servicios Médicos Especializados',
       telefono: '',
-      correoEmisor: 'dr.miguelthevenin@gmail.com',
+      correoEmisor: 'drmiguelthevenin@gmail.com',
       direccionFiscal: '',
       provincia: 'Santiago',
       municipio: 'Santiago de los Caballeros',
@@ -95,50 +95,48 @@ export class ConfigService {
 
   async refreshConfig() {
     try {
-      if (navigator.onLine) {
-        const { data: configRows, error: configError } = await this.supabase.from('configuracion_doctor').select('*');
-        const { data: tarifas, error: tarifasError } = await this.supabase.from('tarifas_seguro').select('*');
+      const { data: configRows, error: configError } = await this.supabase.from('configuracion_doctor').select('*');
+      const { data: tarifas, error: tarifasError } = await this.supabase.from('tarifas_seguro').select('*');
 
-        if (configError && configError.code !== 'PGRST116') throw configError;
-        if (tarifasError) throw tarifasError;
+      if (configError && configError.code !== 'PGRST116') throw configError;
+      if (tarifasError) throw tarifasError;
 
-        const configRow = Array.isArray(configRows) ? (configRows.find((r: any) => r.id === 1 || r.id === '1') || configRows[0]) : configRows;
+      const configRow = Array.isArray(configRows) ? (configRows.find((r: any) => r.id === 1 || r.id === '1') || configRows[0]) : configRows;
 
-        if (configRow) {
-          const facturacionData = configRow.facturacion_json 
-            ? (typeof configRow.facturacion_json === 'string' ? JSON.parse(configRow.facturacion_json) : configRow.facturacion_json)
-            : this.defaultConfig.facturacion;
+      if (configRow) {
+        const facturacionData = configRow.facturacion_json 
+          ? (typeof configRow.facturacion_json === 'string' ? JSON.parse(configRow.facturacion_json) : configRow.facturacion_json)
+          : this.defaultConfig.facturacion;
 
-          const certificadoData = configRow.certificado_json
-            ? (typeof configRow.certificado_json === 'string' ? JSON.parse(configRow.certificado_json) : configRow.certificado_json)
-            : this.defaultConfig.certificado;
+        const certificadoData = configRow.certificado_json
+          ? (typeof configRow.certificado_json === 'string' ? JSON.parse(configRow.certificado_json) : configRow.certificado_json)
+          : this.defaultConfig.certificado;
 
-          const config: ConfiguracionDoctor = {
-            nombreDoctor: configRow.nombre_doctor || this.defaultConfig.nombreDoctor,
-            especialidad: configRow.especialidad || this.defaultConfig.especialidad,
-            email: configRow.email || this.defaultConfig.email,
-            fotoUrl: configRow.foto_url || this.defaultConfig.fotoUrl,
-            montoConsultaParticular: configRow.monto_consulta_particular !== undefined ? Number(configRow.monto_consulta_particular) : this.defaultConfig.montoConsultaParticular,
-            exequatur: configRow.exequatur || this.defaultConfig.exequatur,
-            tarifasSeguros: (tarifas && tarifas.length > 0)
-              ? tarifas.map((t: DbTarifaSeguro) => ({
-                  id: t.id,
-                  seguro: t.seguro,
-                  montoCobertura: Number(t.monto_cobertura) || 0,
-                  copago: Number(t.copago) || 0
-                }))
-              : this.defaultConfig.tarifasSeguros,
-            facturacion: { ...this.defaultConfig.facturacion, ...facturacionData },
-            certificado: { ...this.defaultConfig.certificado, ...certificadoData }
-          };
+        const config: ConfiguracionDoctor = {
+          nombreDoctor: configRow.nombre_doctor || this.defaultConfig.nombreDoctor,
+          especialidad: configRow.especialidad || this.defaultConfig.especialidad,
+          email: configRow.email || this.defaultConfig.email,
+          fotoUrl: configRow.foto_url || this.defaultConfig.fotoUrl,
+          montoConsultaParticular: configRow.monto_consulta_particular !== undefined ? Number(configRow.monto_consulta_particular) : this.defaultConfig.montoConsultaParticular,
+          exequatur: configRow.exequatur || this.defaultConfig.exequatur,
+          tarifasSeguros: (tarifas && tarifas.length > 0)
+            ? tarifas.map((t: DbTarifaSeguro) => ({
+                id: t.id,
+                seguro: t.seguro,
+                montoCobertura: Number(t.monto_cobertura) || 0,
+                copago: Number(t.copago) || 0
+              }))
+            : this.defaultConfig.tarifasSeguros,
+          facturacion: { ...this.defaultConfig.facturacion, ...facturacionData },
+          certificado: { ...this.defaultConfig.certificado, ...certificadoData }
+        };
 
-          await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
-          this.configSubject.next(config);
-          return;
-        }
+        await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
+        this.configSubject.next(config);
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching config from offline storage:', error);
+      console.warn('[ConfigService] Network issue, fetching config from offline storage:', error);
     }
 
     const local = await this.offlineService.getLocalData<ConfiguracionDoctor>('configuracion_doctor');
@@ -162,68 +160,53 @@ export class ConfigService {
   }
 
   async saveConfig(config: ConfiguracionDoctor) {
+    // 1. Save locally + memory update
+    await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
+    this.configSubject.next(config);
+
+    // 2. Sync Configuration Info
+    const dbConfigPayload = {
+      id: 1,
+      nombre_doctor: config.nombreDoctor,
+      especialidad: config.especialidad,
+      foto_url: config.fotoUrl,
+      email: config.email,
+      monto_consulta_particular: config.montoConsultaParticular,
+      exequatur: config.exequatur,
+      facturacion_json: config.facturacion ? JSON.stringify(config.facturacion) : null,
+      certificado_json: config.certificado ? JSON.stringify(config.certificado) : null
+    };
+
     try {
-      // 1. Save locally
-      await this.offlineService.saveLocalData('configuracion_doctor', { ...config, id: 1 });
-      this.configSubject.next(config);
-
-      // 2. Sync Configuration Info
-      const dbConfigPayload = {
-        id: 1,
-        nombre_doctor: config.nombreDoctor,
-        especialidad: config.especialidad,
-        foto_url: config.fotoUrl,
-        email: config.email,
-        monto_consulta_particular: config.montoConsultaParticular,
-        exequatur: config.exequatur,
-        facturacion_json: config.facturacion ? JSON.stringify(config.facturacion) : null,
-        certificado_json: config.certificado ? JSON.stringify(config.certificado) : null
-      };
-
-      if (navigator.onLine) {
-        const { error: updateError } = await this.supabase.from('configuracion_doctor').upsert(dbConfigPayload);
-        if (updateError) throw updateError;
-        
-        // Sincronizar tarifas: borrar y re-insertar
-        await this.supabase.from('tarifas_seguro').delete().neq('seguro', 'NONE');
-        if (config.tarifasSeguros.length > 0) {
-          const inserts = config.tarifasSeguros.map(t => ({
-            id: t.id || ('tar-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5)),
+      const { error: updateError } = await this.supabase.from('configuracion_doctor').upsert(dbConfigPayload);
+      if (updateError) throw updateError;
+      
+      // Sincronizar tarifas: borrar y re-insertar
+      await this.supabase.from('tarifas_seguro').delete().neq('seguro', 'NONE');
+      if (config.tarifasSeguros.length > 0) {
+        const inserts = config.tarifasSeguros.map(t => ({
+          id: t.id || ('tar-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5)),
+          seguro: t.seguro,
+          monto_cobertura: t.montoCobertura,
+          copago: t.copago
+        }));
+        const { error: insertError } = await this.supabase.from('tarifas_seguro').insert(inserts);
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.warn('[ConfigService] Error saving config online/LAN, queuing:', error);
+      await this.offlineService.addToQueue('configuracion_doctor', 'upsert', dbConfigPayload, 'id', 1);
+      await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', 'NONE');
+      if (config.tarifasSeguros.length > 0) {
+        for (const t of config.tarifasSeguros) {
+          await this.offlineService.addToQueue('tarifas_seguro', 'insert', {
+            id: t.id,
             seguro: t.seguro,
             monto_cobertura: t.montoCobertura,
             copago: t.copago
-          }));
-          const { error: insertError } = await this.supabase.from('tarifas_seguro').insert(inserts);
-          if (insertError) throw insertError;
-        }
-      } else {
-        await this.offlineService.addToQueue('configuracion_doctor', 'upsert', dbConfigPayload, 'id', 1);
-        await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', 'NONE');
-        if (config.tarifasSeguros.length > 0) {
-          for (const t of config.tarifasSeguros) {
-            await this.offlineService.addToQueue('tarifas_seguro', 'insert', {
-              id: t.id,
-              seguro: t.seguro,
-              monto_cobertura: t.montoCobertura,
-              copago: t.copago
-            });
-          }
+          });
         }
       }
-      await this.refreshConfig();
-    } catch (error) {
-      console.warn('Error saving config, queueing updates:', error);
-      const dbConfigPayload = {
-        id: 1,
-        nombre_doctor: config.nombreDoctor,
-        especialidad: config.especialidad,
-        foto_url: config.fotoUrl,
-        email: config.email,
-        monto_consulta_particular: config.montoConsultaParticular,
-        exequatur: config.exequatur,
-        facturacion_json: config.facturacion ? JSON.stringify(config.facturacion) : null
-      };
-      await this.offlineService.addToQueue('configuracion_doctor', 'upsert', dbConfigPayload, 'id', 1);
     }
   }
 

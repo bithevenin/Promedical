@@ -135,39 +135,37 @@ export class AppointmentService {
 
   async refreshAppointments() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('citas').select('*');
-        if (error) throw error;
+      const { data, error } = await this.supabase.from('citas').select('*');
+      if (error) throw error;
 
-        if (data) {
-          const appointments: Cita[] = data.map((c: DbCita) => ({
-            id: c.id,
-            turno: Number(c.turno),
-            nombre: c.nombre,
-            cedula: c.cedula,
-            edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
-            fecha_nacimiento: c.fecha_nacimiento,
-            seguro: c.seguro || 'Particular',
-            sexo: c.sexo,
-            fecha: c.fecha,
-            estado: c.estado,
-            hora: c.hora,
-            altura: c.altura || '',
-            peso: c.peso || '',
-            profesion: c.profesion || '',
-            instruccionCobro: c.instruccion_cobro || 'cobrar',
-            montoCobrado: c.monto_cobrado || 0,
-            carnetSeguro: c.carnet_seguro || '',
-            telefono: c.telefono || ''
-          }));
+      if (data) {
+        const appointments: Cita[] = data.map((c: DbCita) => ({
+          id: c.id,
+          turno: Number(c.turno),
+          nombre: c.nombre,
+          cedula: c.cedula,
+          edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
+          fecha_nacimiento: c.fecha_nacimiento,
+          seguro: c.seguro || 'Particular',
+          sexo: c.sexo,
+          fecha: c.fecha,
+          estado: c.estado,
+          hora: c.hora,
+          altura: c.altura || '',
+          peso: c.peso || '',
+          profesion: c.profesion || '',
+          instruccionCobro: c.instruccion_cobro || 'cobrar',
+          montoCobrado: c.monto_cobrado || 0,
+          carnetSeguro: c.carnet_seguro || '',
+          telefono: c.telefono || ''
+        }));
 
-          this.appointmentsSubject.next(appointments);
-          this.offlineService.saveLocalDataBulk('citas', appointments).catch(() => {});
-          return;
-        }
+        this.appointmentsSubject.next(appointments);
+        this.offlineService.saveLocalDataBulk('citas', appointments).catch(() => {});
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching appointments from offline storage:', error);
+      console.warn('[AppointmentService] Network issue, fetching appointments from offline storage:', error);
     }
 
     const local = await this.offlineService.getLocalData<Cita>('citas');
@@ -216,14 +214,10 @@ export class AppointmentService {
         telefono: cita.telefono
       };
 
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('citas').insert([dbData]);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('citas', 'insert', dbData);
-      }
+      const { error } = await this.supabase.from('citas').insert([dbData]);
+      if (error) throw error;
     } catch (error) {
-      console.warn('Error saving appointment, queueing write:', error);
+      console.warn('[AppointmentService] Error saving appointment online/LAN, queueing write:', error);
       const dbData = {
         turno: cita.turno,
         nombre: cita.nombre,
@@ -271,20 +265,12 @@ export class AppointmentService {
         });
       }
 
-      if (navigator.onLine) {
-        if (target && target.id && target.id > 0) {
-          const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
-          if (error) throw error;
-        } else {
-          const { error } = await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
-          if (error) throw error;
-        }
+      if (target && target.id && target.id > 0) {
+        const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
+        if (error) throw error;
       } else {
-        if (target && target.id && target.id > 0) {
-          await this.offlineService.addToQueue('citas', 'update', updateData, 'id', target.id);
-        } else {
-          await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);
-        }
+        const { error } = await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
+        if (error) throw error;
       }
     } catch (error) {
       console.warn('Error updating appointment online, queueing write:', error);

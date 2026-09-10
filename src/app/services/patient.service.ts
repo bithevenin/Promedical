@@ -161,9 +161,7 @@ export class PatientService {
             signosVitales: Array.isArray(p.signos_vitales) ? p.signos_vitales : []
           }));
           this.patientsSubject.next(mapped);
-          if (!localPatients || localPatients.length === 0) {
-            await this.offlineService.saveLocalDataBulk('pacientes', mapped);
-          }
+          this.offlineService.saveLocalDataBulk('pacientes', mapped).catch(() => {});
         }
         return;
       }
@@ -297,14 +295,10 @@ export class PatientService {
         direccion: paciente.direccion || existing?.direccion || null
       };
 
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('pacientes').upsert(dbData);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
-      }
+      const { error } = await this.supabase.from('pacientes').upsert(dbData);
+      if (error) throw error;
     } catch (error) {
-      console.error('Error saving patient to Supabase, queuing for offline sync:', error);
+      console.warn('[PatientService] Error saving patient online/LAN, queuing for offline sync:', error);
       const dbDataOffline = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
@@ -356,14 +350,10 @@ export class PatientService {
       this.patientsSubject.next(current);
 
       // 3. Eliminar en Supabase o encolar
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
-      }
+      const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
+      if (error) throw error;
     } catch (error) {
-      console.error('Error deleting patient:', error);
+      console.warn('[PatientService] Error deleting patient online/LAN, queuing:', error);
       await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
     }
   }
@@ -524,13 +514,9 @@ export class PatientService {
         this.patientsSubject.next(this.getPatients());
       }
 
-      // 2. Queue or write to Supabase
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('signos_vitales', 'insert', dataToInsert);
-      }
+      // 2. Queue or write to Supabase / LAN
+      const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
+      if (error) throw error;
       return null;
     } catch (error) {
       const dataToInsert = {

@@ -50,11 +50,18 @@ export class SupabaseService {
                     if (cfg) {
                         const oldHost = localStorage.getItem('promedical_lan_server_host');
                         const oldMode = localStorage.getItem('promedical_lan_mode');
+                        const oldPort = localStorage.getItem('promedical_lan_server_port');
+
                         if (cfg.mode) localStorage.setItem('promedical_lan_mode', cfg.mode);
-                        if (cfg.serverHost) localStorage.setItem('promedical_lan_server_host', cfg.serverHost);
+
+                        let host = cfg.serverHost;
+                        if (cfg.mode === 'client' && (!host || host === 'localhost' || host === '127.0.0.1')) {
+                            host = '192.168.0.101';
+                        }
+                        if (host) localStorage.setItem('promedical_lan_server_host', host);
                         if (cfg.port) localStorage.setItem('promedical_lan_server_port', String(cfg.port));
 
-                        if (cfg.serverHost !== oldHost || cfg.mode !== oldMode) {
+                        if (host !== oldHost || cfg.mode !== oldMode || String(cfg.port) !== oldPort) {
                             this.localClient.reconnect();
                         }
                     }
@@ -114,10 +121,15 @@ export class SupabaseService {
 
     getLanServer(): { host: string; port: string; mode: string } {
         if (typeof localStorage !== 'undefined') {
+            const mode = localStorage.getItem('promedical_lan_mode') || 'server';
+            let host = localStorage.getItem('promedical_lan_server_host');
+            if (mode === 'client' && (!host || host === 'localhost' || host === '127.0.0.1')) {
+                host = '192.168.0.101';
+            }
             return {
-                host: localStorage.getItem('promedical_lan_server_host') || 'localhost',
+                host: host || (mode === 'server' ? 'localhost' : '192.168.0.101'),
                 port: localStorage.getItem('promedical_lan_server_port') || '3000',
-                mode: localStorage.getItem('promedical_lan_mode') || 'server'
+                mode
             };
         }
         return { host: 'localhost', port: '3000', mode: 'server' };
