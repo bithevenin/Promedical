@@ -20,29 +20,56 @@ function getLocalIpAddresses() {
   return addresses;
 }
 
-function startServer(port = 3000, customDbPath = null) {
+async function startServer(port = 3000, customDbPath = null) {
   const app = express();
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server });
 
-  const db = new LocalDB(customDbPath);
+  const db = await LocalDB.create(customDbPath);
 
   app.use(cors({ origin: '*' }));
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-  // Broadcast helper
+  // Broadcast helper — sends full payload to every connected LAN client
   function broadcastChange(payload) {
     const message = JSON.stringify(payload);
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+        try { client.send(message); } catch {}
       }
     });
   }
 
-  wss.on('connection', ws => {
+  // Keep WebSocket connections alive with server-side ping every 20s
+  const heartbeatInterval = setInterval(() => {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        try { client.ping(); } catch {}
+      } else if (client.readyState !== WebSocket.CONNECTING) {
+        client.terminate();
+      }
+    });
+  }, 20000);
+
+  wss.on('close', () => clearInterval(heartbeatInterval));
+
+  wss.on('connection', (ws, req) => {
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
+    ws.on('message', (msg) => {
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
+      } catch {}
+    });
     ws.send(JSON.stringify({ event: 'CONNECTED', message: 'Promedical LAN Realtime Connected' }));
+    // Send RELOAD_ALL to newly connected client so it fetches all data from the server
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'broadcast', event: 'RELOAD_ALL', table: '*' }));
+      }
+    }, 500);
   });
 
   // Status & Info endpoint
@@ -72,7 +99,7 @@ function startServer(port = 3000, customDbPath = null) {
           nombre: email.split('@')[0],
           rol: 'doctor',
           especialidad: 'Medicina General',
-          password_hash: password || '123456'
+          password_hash: password || '12345678'
         };
         db.insert('usuarios', newUser);
         return res.json({
@@ -207,12 +234,14 @@ function startServer(port = 3000, customDbPath = null) {
     }
 
     try {
+      // db.update() already does SELECT after UPDATE, so updated[0] is the full record
       const updated = db.update(table, data, filters);
+      const fullRecord = updated && updated.length > 0 ? updated[0] : { ...data, ...filters };
       broadcastChange({
         type: 'broadcast',
         event: 'UPDATE',
         table,
-        record: updated[0] || data
+        record: fullRecord    // ← registro COMPLETO para que la PC receptora no tenga que hacer otra petición
       });
       res.json(updated);
     } catch (err) {
@@ -241,6 +270,7 @@ function startServer(port = 3000, customDbPath = null) {
         type: 'broadcast',
         event: 'DELETE',
         table,
+        record: filters,   // ← identifica cuál row eliminar en PCs receptoras
         filters
       });
       res.json(result);
@@ -248,6 +278,16 @@ function startServer(port = 3000, customDbPath = null) {
       console.error(`[DELETE /api/data/${table}] Error:`, err);
       res.status(500).json({ error: err.message });
     }
+  });
+
+  // Broadcast reload event to all connected LAN clients
+  app.post('/api/sync/broadcast-reload', (req, res) => {
+    broadcastChange({
+      type: 'broadcast',
+      event: 'RELOAD_ALL',
+      table: '*'
+    });
+    res.json({ success: true, message: 'Reload signal broadcasted to all LAN clients' });
   });
 
   // Backup & Restore

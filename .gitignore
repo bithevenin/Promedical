@@ -71,3 +71,8 @@ Thumbs.db
 
 # Agent files
 .agent/
+
+# Electron build outputs
+dist-electron/
+build/
+

@@ -1,4 +1,4 @@
-<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-24 lg:pb-0 max-w-full overflow-x-hidden">
+<div class="dashboard-wrapper min-h-screen bg-medical-dark text-white font-inter selection:bg-primary selection:text-white flex flex-col pb-36 max-w-full overflow-y-auto overflow-x-hidden">
   <!-- Top Navigation Bar (Menú Tipo Barra Arriba) -->
   <header class="top-nav-bar flex items-center justify-between h-16 px-3 sm:px-5 lg:px-6 bg-dark-secondary/80 backdrop-blur-xl border-b border-glass-border sticky top-0 z-50 shrink-0 w-full shadow-lg gap-2 max-w-full overflow-hidden">
     <!-- Logo & Brand -->
@@ -44,13 +44,13 @@
       </button>
 
       <!-- User Profile Box -->
-      <div class="flex items-center gap-2 bg-white/5 border border-glass-border p-1 pr-2.5 rounded-xl shrink-0">
+      <div routerLink="/configuracion" [queryParams]="{ tab: 'usuarios' }" class="flex items-center gap-2 bg-white/5 hover:bg-white/15 border border-glass-border hover:border-primary/40 p-1 pr-2.5 rounded-xl shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]" title="Configuración de Perfil y Usuarios">
         <div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 shrink-0">
           <img [src]="currentProfile()?.foto_url || 'https://i.pravatar.cc/150?u=admin'" [alt]="currentProfile()?.nombre" class="w-full h-full object-cover">
         </div>
         <div class="hidden 2xl:block text-left">
           <span class="block text-xs font-bold text-white leading-none truncate max-w-[100px]">{{ currentProfile()?.nombre || 'Usuario' }}</span>
-          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol }}</span>
+          <span class="block text-[7.5px] font-black text-primary uppercase tracking-widest mt-0.5">{{ currentProfile()?.rol === 'admin' ? 'Control Maestro' : (currentProfile()?.especialidad || currentProfile()?.rol || 'Usuario') }}</span>
         </div>
       </div>
 
@@ -61,7 +61,7 @@
     </div>
   </header>
 
-  <main class="main-content flex flex-col relative w-full pb-24 lg:pb-8 flex-grow">
+  <main class="main-content flex flex-col relative w-full pb-36 flex-grow">
 
     <!-- Content -->
     <div class="content-body px-3 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 w-full max-w-full animate-fade-in flex flex-col flex-grow">
@@ -80,10 +80,10 @@
             }
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <!-- Bajar de la Nube Button -->
           <button (click)="syncService.downloadAllFromCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing"
-                  class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+                  class="btn-saas btn-success btn-sm shrink-0 disabled:opacity-50"
                   title="Descargar todos los pacientes y consultas desde Supabase a la base de datos local">
             <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'download' ? 'sync' : 'cloud-download-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'download'" class="text-sm"></ion-icon>
             <span>Bajar Nube</span>
@@ -91,7 +91,7 @@
 
           <!-- Subir a la Nube Button (Fin de Jornada) -->
           <button (click)="syncService.uploadAllToCloud()" [disabled]="(syncService.syncState$ | async)?.isSyncing"
-                  class="flex items-center gap-1.5 px-3 py-2 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-sky-500/10 disabled:opacity-50"
+                  class="btn-saas btn-primary btn-sm shrink-0 disabled:opacity-50"
                   title="Subir todos los datos locales modificados a Supabase (Fin de jornada laboral)">
             <ion-icon [name]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'upload' ? 'sync' : 'cloud-upload-outline'" [class.animate-spin]="(syncService.syncState$ | async)?.isSyncing && (syncService.syncState$ | async)?.type === 'upload'" class="text-sm"></ion-icon>
             <span>Subir Nube</span>
@@ -99,7 +99,7 @@
 
           <!-- Cartas Button -->
           <button (click)="abrirModalCartas()" 
-                  class="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary/80 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                  class="btn-saas btn-glass btn-sm shrink-0"
                   title="Cartas de Consentimiento">
             <ion-icon name="document-text-outline" class="text-sm"></ion-icon>
             <span>Carta Consentimiento</span>
@@ -109,7 +109,7 @@
           <div class="relative flex-grow sm:flex-grow-0">
             <ion-icon name="search-outline" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-sm"></ion-icon>
             <input type="text" 
-                   class="w-full sm:w-52 lg:w-60 pl-9 pr-3.5 py-2 bg-glass-light border border-glass-border rounded-xl text-xs text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
+                   class="w-full sm:w-52 lg:w-60 pl-9 pr-3.5 py-2 bg-white/5 border border-glass-border rounded-xl text-xs text-white placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all" 
                    placeholder="Buscar nombre o cédula..."
                    [ngModel]="filtroNombre"
                    (ngModelChange)="onFiltroChange($event)">

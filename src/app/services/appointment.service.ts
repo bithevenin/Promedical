@@ -47,23 +47,11 @@ export class AppointmentService {
   }
 
   private setupAutoSync() {
-    // Polling removido para evitar el consumo excesivo de la cuota (egress) de Supabase
-    /* setInterval(() => {
-      if (navigator.onLine) {
-        this.refreshAppointments();
-      }
-    }, 10000); */
-
-    // Sync on tab focus or visibility change
     if (typeof window !== 'undefined') {
-      window.addEventListener('focus', () => {
+      window.addEventListener('online', () => {
         if (navigator.onLine) this.refreshAppointments();
       });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && navigator.onLine) {
-          this.refreshAppointments();
-        }
-      });
+      // Evitamos re-cargar en focus para no generar peticiones innecesarias
     }
   }
 
@@ -73,22 +61,32 @@ export class AppointmentService {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'citas' },
-        async (payload: any) => {
-          this.ngZone.run(async () => {
-            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        (payload: any) => {
+          this.ngZone.run(() => {
+            if (payload.eventType === 'RELOAD_ALL') {
+              this.refreshAppointments();
+              return;
+            }
+
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
               const c = payload.new;
+              if (!c || c.turno === undefined || c.turno === null) {
+                this.refreshAppointments();
+                return;
+              }
+
               const newCita: Cita = {
                 id: c.id,
                 turno: Number(c.turno),
-                nombre: c.nombre,
-                cedula: c.cedula,
-                edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
+                nombre: c.nombre || '',
+                cedula: c.cedula || '',
+                edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : (c.edad || 0),
                 fecha_nacimiento: c.fecha_nacimiento,
                 seguro: c.seguro || 'Particular',
-                sexo: c.sexo,
+                sexo: c.sexo || 'M',
                 fecha: c.fecha,
-                estado: c.estado,
-                hora: c.hora,
+                estado: c.estado || 'espera',
+                hora: c.hora || '',
                 altura: c.altura || '',
                 peso: c.peso || '',
                 profesion: c.profesion || '',
@@ -97,18 +95,37 @@ export class AppointmentService {
                 carnetSeguro: c.carnet_seguro || '',
                 telefono: c.telefono || ''
               };
+
               const currentList = this.appointmentsSubject.value;
-              const index = currentList.findIndex(item => item.id === newCita.id || (item.turno === newCita.turno && item.fecha === newCita.fecha));
-              let updated = [...currentList];
-              if (index >= 0) updated[index] = newCita;
-              else updated.push(newCita);
+              const index = currentList.findIndex(item =>
+                (newCita.id && item.id === newCita.id) ||
+                (item.turno === newCita.turno && item.fecha === newCita.fecha)
+              );
+
+              const updated = [...currentList];
+              if (index >= 0) {
+                updated[index] = { ...updated[index], ...newCita };
+              } else {
+                updated.push(newCita);
+              }
               this.appointmentsSubject.next(updated);
-              await this.offlineService.saveLocalData('citas', newCita);
+              // No-blocking: guardar en IndexedDB sin bloquear el UI
+              this.offlineService.saveLocalData('citas', newCita).catch(() => {});
+
             } else if (payload.eventType === 'DELETE') {
               const currentList = this.appointmentsSubject.value;
-              const updated = currentList.filter(item => item.id !== payload.old.id);
+              // El servidor ahora envía record = filters en DELETE → está en payload.new
+              const targetId = payload.new?.id || payload.old?.id || payload.filters?.id;
+              const targetTurno = payload.new?.turno || payload.old?.turno || payload.filters?.turno;
+              const updated = currentList.filter(item => {
+                if (targetId) return String(item.id) !== String(targetId);
+                if (targetTurno) return String(item.turno) !== String(targetTurno);
+                return true;
+              });
               this.appointmentsSubject.next(updated);
-              await this.offlineService.deleteLocalData('citas', payload.old.id);
+              if (targetId) {
+                this.offlineService.deleteLocalData('citas', targetId).catch(() => {});
+              }
             }
           });
         }
@@ -118,42 +135,37 @@ export class AppointmentService {
 
   async refreshAppointments() {
     try {
-      if (navigator.onLine) {
-        const { data, error } = await this.supabase.from('citas').select('*');
-        if (error) throw error;
+      const { data, error } = await this.supabase.from('citas').select('*');
+      if (error) throw error;
 
-        if (data) {
-          await this.offlineService.clearStore('citas');
-          const appointments: Cita[] = data.map((c: DbCita) => ({
-            id: c.id,
-            turno: Number(c.turno),
-            nombre: c.nombre,
-            cedula: c.cedula,
-            edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
-            fecha_nacimiento: c.fecha_nacimiento,
-            seguro: c.seguro || 'Particular',
-            sexo: c.sexo,
-            fecha: c.fecha,
-            estado: c.estado,
-            hora: c.hora,
-            altura: c.altura || '',
-            peso: c.peso || '',
-            profesion: c.profesion || '',
-            instruccionCobro: c.instruccion_cobro || 'cobrar',
-            montoCobrado: c.monto_cobrado || 0,
-            carnetSeguro: c.carnet_seguro || '',
-            telefono: c.telefono || ''
-          }));
+      if (data) {
+        const appointments: Cita[] = data.map((c: DbCita) => ({
+          id: c.id,
+          turno: Number(c.turno),
+          nombre: c.nombre,
+          cedula: c.cedula,
+          edad: c.fecha_nacimiento ? this.patientService.calcularEdad(c.fecha_nacimiento) : c.edad,
+          fecha_nacimiento: c.fecha_nacimiento,
+          seguro: c.seguro || 'Particular',
+          sexo: c.sexo,
+          fecha: c.fecha,
+          estado: c.estado,
+          hora: c.hora,
+          altura: c.altura || '',
+          peso: c.peso || '',
+          profesion: c.profesion || '',
+          instruccionCobro: c.instruccion_cobro || 'cobrar',
+          montoCobrado: c.monto_cobrado || 0,
+          carnetSeguro: c.carnet_seguro || '',
+          telefono: c.telefono || ''
+        }));
 
-          for (const app of appointments) {
-            await this.offlineService.saveLocalData('citas', app);
-          }
-          this.appointmentsSubject.next(appointments);
-          return;
-        }
+        this.appointmentsSubject.next(appointments);
+        this.offlineService.saveLocalDataBulk('citas', appointments).catch(() => {});
+        return;
       }
     } catch (error) {
-      console.warn('Network issue, fetching appointments from offline storage:', error);
+      console.warn('[AppointmentService] Network issue, fetching appointments from offline storage:', error);
     }
 
     const local = await this.offlineService.getLocalData<Cita>('citas');
@@ -165,25 +177,23 @@ export class AppointmentService {
   }
 
   async addAppointment(cita: Cita) {
-    // Generate a temporary negative ID if not defined, to ensure IndexedDB has a key
     const localCita = {
       ...cita,
       id: cita.id || Math.floor(Math.random() * -100000)
     };
 
+    // 1. Actualización optimista en memoria INSTANTÁNEA (0ms)
+    const currentList = [...this.appointmentsSubject.value];
+    const existingIndex = currentList.findIndex(c => c.turno === localCita.turno && c.fecha === localCita.fecha);
+    if (existingIndex === -1) {
+      currentList.push(localCita);
+    } else {
+      currentList[existingIndex] = localCita;
+    }
+    this.appointmentsSubject.next(currentList);
+    this.offlineService.saveLocalData('citas', localCita).catch(() => {});
+
     try {
-      // 1. Save locally
-      await this.offlineService.saveLocalData('citas', localCita);
-
-      // 2. Optimistic update: emit new list immediately so UI reflects change instantly
-      const currentList = [...this.appointmentsSubject.value];
-      const existingIndex = currentList.findIndex(c => c.turno === localCita.turno && c.fecha === localCita.fecha);
-      if (existingIndex === -1) {
-        currentList.push(localCita);
-        this.appointmentsSubject.next(currentList);
-      }
-
-      // 3. Prepare database payload
       const dbData = {
         turno: cita.turno,
         nombre: cita.nombre,
@@ -204,14 +214,10 @@ export class AppointmentService {
         telefono: cita.telefono
       };
 
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('citas').insert([dbData]);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('citas', 'insert', dbData);
-      }
+      const { error } = await this.supabase.from('citas').insert([dbData]);
+      if (error) throw error;
     } catch (error) {
-      console.warn('Error saving appointment, queueing write:', error);
+      console.warn('[AppointmentService] Error saving appointment online/LAN, queueing write:', error);
       const dbData = {
         turno: cita.turno,
         nombre: cita.nombre,
@@ -233,36 +239,24 @@ export class AppointmentService {
       };
       await this.offlineService.addToQueue('citas', 'insert', dbData);
     }
-    // No se llama refreshAppointments() aquí para evitar la race condition:
-    // la cita ya fue emitida optimistamente al BehaviorSubject y el canal
-    // Realtime de Supabase actualiza el ID real sin necesidad de clearStore+reload.
   }
 
   async updateAppointmentStatus(turno: number, estado: Cita['estado'], extraData?: Partial<Cita>) {
-    // Use local date to match how citas are stored (citas.page uses local date for fechaSeleccionada)
     const today = extraData?.fecha || getLocalDateString();
+
+    // 1. Actualización optimista en memoria INSTANTÁNEA (0ms)
+    const current = [...this.appointmentsSubject.value];
+    const target = current.find((c: Cita) => c.turno === turno && c.fecha === today) || current.find((c: Cita) => c.turno === turno);
+    if (target) {
+      target.estado = estado;
+      if (extraData) {
+        Object.assign(target, extraData);
+      }
+      this.appointmentsSubject.next(current);
+      this.offlineService.saveLocalData('citas', target).catch(() => {});
+    }
+
     try {
-      // 1. Update locally in IndexedDB first
-      const local = await this.offlineService.getLocalData<Cita>('citas');
-      // Try to find by turno+fecha (local date), fallback to turno only
-      let target = local.find((c: Cita) => c.turno === turno && c.fecha === today);
-      if (!target) {
-        // Fallback: find by turno alone (in case of date mismatch)
-        target = local.find((c: Cita) => c.turno === turno);
-      }
-
-      if (target) {
-        target.estado = estado;
-        if (extraData) {
-          Object.assign(target, extraData);
-        }
-        await this.offlineService.saveLocalData('citas', target);
-        // Emit updated list immediately (optimistic update) so UI updates without waiting for DB
-        const updatedLocal = await this.offlineService.getLocalData<Cita>('citas');
-        this.appointmentsSubject.next(updatedLocal);
-      }
-
-      // 2. Prepare payload for Supabase
       const updateData: Record<string, unknown> = { estado };
       if (extraData) {
         Object.keys(extraData).forEach(key => {
@@ -271,21 +265,12 @@ export class AppointmentService {
         });
       }
 
-      if (navigator.onLine) {
-        if (target && target.id && target.id > 0) {
-          const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
-          if (error) throw error;
-        } else {
-          // Try by turno+fecha then by turno only
-          const { error } = await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
-          if (error) throw error;
-        }
+      if (target && target.id && target.id > 0) {
+        const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
+        if (error) throw error;
       } else {
-        if (target && target.id && target.id > 0) {
-          await this.offlineService.addToQueue('citas', 'update', updateData, 'id', target.id);
-        } else {
-          await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);
-        }
+        const { error } = await this.supabase.from('citas').update(updateData).eq('turno', turno).eq('fecha', today);
+        if (error) throw error;
       }
     } catch (error) {
       console.warn('Error updating appointment online, queueing write:', error);
@@ -297,8 +282,6 @@ export class AppointmentService {
         });
       }
       await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);
-    } finally {
-      await this.refreshAppointments();
     }
   }
 }

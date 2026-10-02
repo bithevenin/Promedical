@@ -13,7 +13,7 @@ export class AuthService {
   private userSession = new BehaviorSubject<Session | null>(null);
 
   constructor(private supabaseService: SupabaseService) {
-    this.supabase = this.supabaseService.client;
+    this.supabase = this.supabaseService.cloudClient;
     this.supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       this.userSession.next(session);
       if (session?.user) {
@@ -25,13 +25,17 @@ export class AuthService {
   }
 
   async isSessionActive(): Promise<boolean> {
-    const { data: { session } } = await this.supabase.auth.getSession();
-    if (session?.user) {
-      this.userSession.next(session);
-      if (!this.userProfile.value) {
-        await this.loadProfile(session.user.id);
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (session?.user) {
+        this.userSession.next(session);
+        if (!this.userProfile.value) {
+          await this.loadProfile(session.user.id);
+        }
+        return true;
       }
-      return true;
+    } catch (e) {
+      console.warn('[AuthService] Error checking session:', e);
     }
     return false;
   }

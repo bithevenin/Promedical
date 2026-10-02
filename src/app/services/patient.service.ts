@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
@@ -48,7 +48,8 @@ export class PatientService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private ngZone: NgZone
   ) {
     this.refreshPatients();
     this.setupRealtime();
@@ -59,11 +60,8 @@ export class PatientService {
     try {
       this.supabase
         .channel('pacientes-realtime')
-        .on('broadcast', { table: 'pacientes' }, () => {
-          this.refreshPatients();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
-          this.refreshPatients();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, (payload: any) => {
+          this.handleRealtimePatient(payload);
         })
         .subscribe();
     } catch (e) {
@@ -71,15 +69,57 @@ export class PatientService {
     }
   }
 
+  private handleRealtimePatient(payload: any) {
+    this.ngZone.run(async () => {
+      if (payload?.eventType === 'RELOAD_ALL') {
+        await this.refreshPatients();
+        return;
+      }
+      const p = payload?.new;
+      if (p && p.cedula) {
+        const patient: Paciente = {
+          cedula: p.cedula,
+          nombre: p.nombre,
+          edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : (p.edad || 0),
+          fecha_nacimiento: p.fecha_nacimiento,
+          profesion: p.profesion || '',
+          seguro: p.seguro || 'Particular',
+          sexo: p.sexo || 'M',
+          telefono: p.telefono || '',
+          email: p.email || '',
+          altura: p.altura || '',
+          peso: p.peso || '',
+          carnetSeguro: p.carnet_seguro || '',
+          antecedentesPersonales: p.antecedentes_personales || '',
+          antecedentesFamiliares: p.antecedentes_familiares || '',
+          alergias: p.alergias || '',
+          tipo_sangre: p.tipo_sangre || '',
+          fotoUrl: p.foto_url || '',
+          direccion: p.direccion || '',
+          signosVitales: Array.isArray(p.signos_vitales) ? p.signos_vitales : []
+        };
+        const current = this.patientsSubject.getValue();
+        const idx = current.findIndex(item => item.cedula === patient.cedula);
+        let updated = [...current];
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], ...patient };
+        } else {
+          updated.unshift(patient);
+        }
+        this.patientsSubject.next(updated);
+        await this.offlineService.saveLocalData('pacientes', patient);
+      } else if (payload?.eventType === 'DELETE' && payload?.old?.cedula) {
+        const current = this.patientsSubject.getValue().filter(item => item.cedula !== payload.old.cedula);
+        this.patientsSubject.next(current);
+        await this.offlineService.deleteLocalData('pacientes', payload.old.cedula);
+      }
+    });
+  }
+
   private setupAutoSync() {
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
-        this.refreshPatients();
-      });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          this.refreshPatients();
-        }
+        // Fast in-memory check without reloading whole database
       });
     }
   }
@@ -121,7 +161,7 @@ export class PatientService {
             signosVitales: Array.isArray(p.signos_vitales) ? p.signos_vitales : []
           }));
           this.patientsSubject.next(mapped);
-          await this.offlineService.saveLocalDataBulk('pacientes', mapped);
+          this.offlineService.saveLocalDataBulk('pacientes', mapped).catch(() => {});
         }
         return;
       }
@@ -255,14 +295,10 @@ export class PatientService {
         direccion: paciente.direccion || existing?.direccion || null
       };
 
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('pacientes').upsert(dbData);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('pacientes', 'upsert', dbData);
-      }
+      const { error } = await this.supabase.from('pacientes').upsert(dbData);
+      if (error) throw error;
     } catch (error) {
-      console.error('Error saving patient to Supabase, queuing for offline sync:', error);
+      console.warn('[PatientService] Error saving patient online/LAN, queuing for offline sync:', error);
       const dbDataOffline = {
         cedula: paciente.cedula,
         nombre: paciente.nombre,
@@ -314,14 +350,10 @@ export class PatientService {
       this.patientsSubject.next(current);
 
       // 3. Eliminar en Supabase o encolar
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
-      }
+      const { error } = await this.supabase.from('pacientes').delete().eq('cedula', cedula);
+      if (error) throw error;
     } catch (error) {
-      console.error('Error deleting patient:', error);
+      console.warn('[PatientService] Error deleting patient online/LAN, queuing:', error);
       await this.offlineService.addToQueue('pacientes', 'delete', { queryKey: 'cedula', queryValue: cedula });
     }
   }
@@ -482,13 +514,9 @@ export class PatientService {
         this.patientsSubject.next(this.getPatients());
       }
 
-      // 2. Queue or write to Supabase
-      if (navigator.onLine) {
-        const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
-        if (error) throw error;
-      } else {
-        await this.offlineService.addToQueue('signos_vitales', 'insert', dataToInsert);
-      }
+      // 2. Queue or write to Supabase / LAN
+      const { error } = await this.supabase.from('signos_vitales').insert(dataToInsert);
+      if (error) throw error;
       return null;
     } catch (error) {
       const dataToInsert = {

@@ -225,7 +225,7 @@ export class PrintRecetaService {
     </div>
     <div class="contact-row">
       <span class="contact-label">Egresado de Medicina en la Universidad Central del Este</span>
-      <span>drmiguelthevenin@gmail.com</span>
+      <span><strong>Correo:</strong> drmiguelthevenin@gmail.com</span>
     </div>
     <div class="contact-row">
       <span class="contact-label">Postgrado Urología HRUJMCYB, Ministerio de Salud Pública.</span>

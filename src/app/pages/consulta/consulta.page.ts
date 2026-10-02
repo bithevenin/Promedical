@@ -85,6 +85,18 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   // Flag para indicar si es consulta directa (sin cita previa)
   esConsultaDirecta = false;
 
+  // Bandera para colapsar/ocultar el panel lateral de pacientes en espera
+  ocultarEspera = false;
+  ocultarHistorial = false;
+
+  toggleEspera() {
+    this.ocultarEspera = !this.ocultarEspera;
+  }
+
+  toggleHistorial() {
+    this.ocultarHistorial = !this.ocultarHistorial;
+  }
+
   // Formulario de consulta
   nuevaConsulta = {
     diagnostico: '',

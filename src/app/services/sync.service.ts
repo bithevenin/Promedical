@@ -5,6 +5,11 @@ import { environment } from '../../environments/environment';
 import { SupabaseService } from './supabase.service';
 import { OfflineService } from './offline.service';
 import { NotificationService } from './notification.service';
+import { PatientService } from './patient.service';
+import { AppointmentService } from './appointment.service';
+import { ConsultationService } from './consultation.service';
+import { FinancialService } from './financial.service';
+import { ConfigService } from './config.service';
 
 export interface SyncProgress {
   isSyncing: boolean;
@@ -52,7 +57,12 @@ export class SyncService {
   constructor(
     private supabaseService: SupabaseService,
     private offlineService: OfflineService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private patientService: PatientService,
+    private appointmentService: AppointmentService,
+    private consultationService: ConsultationService,
+    private financialService: FinancialService,
+    private configService: ConfigService
   ) {
     this.cloudSupabase = createClient(
       environment.supabaseUrl,
@@ -159,6 +169,18 @@ export class SyncService {
           }
         }
       }
+
+      // 🔄 Recargar todos los servicios en memoria para que las vistas se actualicen al instante
+      await Promise.all([
+        this.patientService.refreshPatients(),
+        this.appointmentService.refreshAppointments(),
+        this.consultationService.refreshConsultas(),
+        this.financialService.refreshAll(),
+        this.configService.refreshConfig()
+      ]);
+
+      // 📡 Notificar a todas las terminales conectadas en la red LAN para que recarguen sus datos
+      await this.supabaseService.broadcastReload();
 
       const nowStr = new Date().toLocaleString();
       localStorage.setItem('promedical_last_cloud_sync', nowStr);

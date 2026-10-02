@@ -18,6 +18,23 @@ export class AppComponent {
   }
 
   initializeApp() {
+    // Unregister any old lingering Service Workers and clear caches
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister();
+          console.log('[SW] Unregistered lingering ServiceWorker');
+        }
+      }).catch(() => {});
+    }
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      caches.keys().then(names => {
+        for (const name of names) {
+          caches.delete(name);
+        }
+      }).catch(() => {});
+    }
+
     this.supabaseService.client.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth Event:', event);
       

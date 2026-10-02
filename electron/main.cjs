@@ -1,14 +1,14 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
-const { startServer, getLocalIpAddresses } = require('../server/server.cjs');
 
 let mainWindow = null;
 let serverInstance = null;
 
 // Configure autoUpdater
-autoUpdater.autoDownload = false;
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 const configPath = path.join(app.getPath('userData'), 'promedical_lan_config.json');
@@ -16,7 +16,7 @@ const configPath = path.join(app.getPath('userData'), 'promedical_lan_config.jso
 function loadConfig() {
   const defaultConfig = {
     mode: 'server', // 'server' (Host / Principal) or 'client' (Terminal)
-    serverHost: 'localhost',
+    serverHost: '192.168.0.101',
     port: 3000
   };
 
@@ -33,7 +33,12 @@ function loadConfig() {
 
 function saveConfig(config) {
   try {
+    const dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    console.log('[Electron] LAN config successfully saved to:', configPath, config);
     return true;
   } catch (err) {
     console.error('[Electron] Error saving config:', err);
@@ -42,10 +47,15 @@ function saveConfig(config) {
 }
 
 function setupAutoUpdater() {
+  autoUpdater.logger = console;
+
   autoUpdater.on('checking-for-update', () => {
-    console.log('[AutoUpdater] Checking for updates...');
+    console.log('[AutoUpdater] Checking for update...');
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'checking', message: 'Buscando actualizaciones...' });
+      mainWindow.webContents.send('update-status', {
+        status: 'checking',
+        message: 'Comprobando actualizaciones...'
+      });
     }
   });
 
@@ -75,10 +85,14 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[AutoUpdater] Error:', err);
+    let message = err.message || 'Error al comprobar actualizaciones';
+    if (message.includes('404') || message.includes('releases.atom')) {
+      message = 'No se encontró ninguna versión publicada en GitHub (o el repositorio es privado/requiere token).';
+    }
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-status', {
         status: 'error',
-        message: err.message || 'Error al comprobar actualizaciones'
+        message
       });
     }
   });
@@ -110,15 +124,44 @@ function setupAutoUpdater() {
   });
 }
 
+function getLocalIpAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) addresses.push(iface.address);
+    }
+  }
+  return addresses;
+}
+
+async function startEmbeddedServer(port, dbDir) {
+  try {
+    if (serverInstance && serverInstance.server) {
+      try { serverInstance.server.close(); } catch {}
+      serverInstance = null;
+    }
+    const { startServer } = require('../server/server.cjs');
+    serverInstance = await startServer(port, dbDir);
+    console.log('[Electron] In-process LAN Server running on port', port, 'dbDir:', dbDir);
+    return serverInstance;
+  } catch (err) {
+    console.error('[Electron] Error starting LAN server:', err);
+    throw err;
+  }
+}
+
 async function createWindow() {
   const config = loadConfig();
 
-  // If running as Server/Host, start local Express/WebSocket server
-  if (config.mode === 'server') {
+  // Ensure embedded server only runs in server mode (Host).
+  // In client (terminal) mode, do NOT run local server process.
+  const shouldStartServer = config.mode !== 'client';
+  if (shouldStartServer && !serverInstance) {
     try {
       const dbDir = path.join(app.getPath('userData'), 'db');
-      serverInstance = await startServer(config.port || 3000, dbDir);
-      console.log('[Electron] Embedded LAN Server started on port', config.port);
+      await startEmbeddedServer(config.port || 3000, dbDir);
+      console.log('[Electron] Embedded LAN Server started on port', config.port || 3000);
     } catch (err) {
       console.error('[Electron] Failed to start embedded server:', err);
     }
@@ -131,7 +174,7 @@ async function createWindow() {
     minHeight: 700,
     backgroundColor: '#0f172a',
     title: 'Promedical - Sistema Médico Local',
-    icon: path.join(__dirname, '../favicon.png'),
+    icon: path.join(__dirname, '../build/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
@@ -142,15 +185,31 @@ async function createWindow() {
 
   mainWindow.maximize();
 
-  // Initialize auto-updater events
-  setupAutoUpdater();
+  // Prevenir Super Zoom excesivo por escalado de pantalla en Windows
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.setZoomFactor(0.88);
+  });
 
-  // Allow F12 or Ctrl+Shift+I to open DevTools for diagnostic support
+  // Atajos de Teclado: F12 (DevTools), Ctrl + / Ctrl - / Ctrl 0 (Zoom)
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
       mainWindow.webContents.toggleDevTools();
     }
+    if (input.control && (input.key === '+' || input.key === '=')) {
+      const currentZoom = mainWindow.webContents.getZoomFactor();
+      mainWindow.webContents.setZoomFactor(Math.min(currentZoom + 0.05, 1.3));
+    }
+    if (input.control && (input.key === '-' || input.key === '_')) {
+      const currentZoom = mainWindow.webContents.getZoomFactor();
+      mainWindow.webContents.setZoomFactor(Math.max(currentZoom - 0.05, 0.6));
+    }
+    if (input.control && input.key === '0') {
+      mainWindow.webContents.setZoomFactor(0.88);
+    }
   });
+
+  // Initialize auto-updater events
+  setupAutoUpdater();
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('[Electron] Page failed to load:', errorCode, errorDescription);
@@ -161,6 +220,11 @@ async function createWindow() {
       }, 500);
     }
   });
+
+  // Clear any legacy ServiceWorkers or corrupted cache storage at Chromium session level
+  mainWindow.webContents.session.clearStorageData({
+    storages: ['serviceworkers', 'cachestorage']
+  }).catch(() => {});
 
   const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
   if (isDev) {
@@ -196,8 +260,27 @@ ipcMain.handle('get-config', () => {
   return loadConfig();
 });
 
-ipcMain.handle('save-config', (event, newConfig) => {
+ipcMain.handle('save-config', async (event, newConfig) => {
   const success = saveConfig(newConfig);
+  if (success) {
+    if (newConfig.mode === 'server' && !serverInstance) {
+      try {
+        const dbDir = path.join(app.getPath('userData'), 'db');
+        await startEmbeddedServer(newConfig.port || 3000, dbDir);
+        console.log('[Electron] In-process LAN Server started via IPC on port', newConfig.port || 3000);
+      } catch (err) {
+        console.error('[Electron] Failed to start server via IPC:', err);
+      }
+    } else if (newConfig.mode === 'client' && serverInstance && serverInstance.server) {
+      try {
+        serverInstance.server.close();
+        serverInstance = null;
+        console.log('[Electron] Stopped local server process because client mode was set');
+      } catch (err) {
+        console.error('[Electron] Error stopping server:', err);
+      }
+    }
+  }
   return success;
 });
 
@@ -225,7 +308,11 @@ ipcMain.handle('check-for-updates', async () => {
     const result = await autoUpdater.checkForUpdates();
     return { success: true, updateInfo: result?.updateInfo };
   } catch (err) {
-    return { success: false, error: err.message };
+    let msg = err.message || 'Error al comprobar actualizaciones';
+    if (msg.includes('404') || msg.includes('releases.atom')) {
+      msg = 'No se encontró ninguna versión publicada en GitHub (o el repositorio es privado/requiere token).';
+    }
+    return { success: false, error: msg };
   }
 });
 
@@ -245,8 +332,19 @@ ipcMain.handle('install-update', () => {
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
+  if (serverInstance && serverInstance.server) {
+    try { serverInstance.server.close(); } catch {}
+    serverInstance = null;
+  }
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  if (serverInstance && serverInstance.server) {
+    try { serverInstance.server.close(); } catch {}
+    serverInstance = null;
   }
 });
 
