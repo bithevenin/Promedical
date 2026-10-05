@@ -1,8 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
+
+// Disable default menu bar (File, Edit, View, Window, Help)
+Menu.setApplicationMenu(null);
 
 let mainWindow = null;
 let serverInstance = null;
@@ -175,6 +178,7 @@ async function createWindow() {
     backgroundColor: '#0f172a',
     title: 'Promedical - Sistema Médico Local',
     icon: path.join(__dirname, '../build/icon.ico'),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
@@ -183,6 +187,7 @@ async function createWindow() {
     }
   });
 
+  mainWindow.setMenu(null);
   mainWindow.maximize();
 
   // Prevenir Super Zoom excesivo por escalado de pantalla en Windows

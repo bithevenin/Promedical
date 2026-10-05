@@ -287,4 +287,40 @@ export class ConsultationService {
       return this.consultationsSubject.value;
     }
   }
+
+  async deleteConsultation(consultaOrId: Consulta | string) {
+    const id = typeof consultaOrId === 'string' ? consultaOrId : consultaOrId.id;
+    const cedula = typeof consultaOrId === 'object' ? consultaOrId.cedula : undefined;
+    const fecha = typeof consultaOrId === 'object' ? consultaOrId.fecha : undefined;
+
+    // 1. Optimistic update en memoria
+    const currentList = this.consultationsSubject.getValue();
+    const updated = currentList.filter(c => {
+      if (id && c.id) return c.id !== id;
+      if (cedula && fecha) return !(c.cedula === cedula && c.fecha === fecha);
+      return true;
+    });
+    this.consultationsSubject.next(updated);
+
+    // 2. Eliminar de IndexedDB local
+    if (id) {
+      this.offlineService.deleteLocalData('consultas', id).catch(() => {});
+    }
+
+    // 3. Eliminar de Supabase / LAN
+    try {
+      if (id) {
+        const { error } = await this.supabase.from('consultas').delete().eq('id', id);
+        if (error) throw error;
+      } else if (cedula && fecha) {
+        const { error } = await this.supabase.from('consultas').delete().eq('paciente_cedula', cedula).eq('fecha', fecha);
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.warn('[ConsultationService] Error deleting consultation online/LAN, queueing offline delete:', error);
+      if (id) {
+        await this.offlineService.addToQueue('consultas', 'delete', { id }, 'id', id);
+      }
+    }
+  }
 }

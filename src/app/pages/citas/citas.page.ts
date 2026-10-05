@@ -41,6 +41,137 @@ export class CitasPage implements OnInit {
   // Modo de registro: 'nuevo' o 'registrado'
   modoRegistro: 'nuevo' | 'registrado' = 'nuevo';
   
+  // Opción para pacientes Menor de Edad (Sin Cédula)
+  esMenorEdad = false;
+
+  generarIdMenor(): string {
+    const randomSixDigits = Math.floor(100000 + Math.random() * 900000);
+    return `MN-${randomSixDigits}`;
+  }
+
+  toggleMenorEdad() {
+    this.esMenorEdad = !this.esMenorEdad;
+    if (this.esMenorEdad) {
+      if (!this.nuevoPaciente.cedula || !this.nuevoPaciente.cedula.startsWith('MN-')) {
+        this.nuevoPaciente.cedula = this.generarIdMenor();
+      }
+      this.errorBusqueda = '';
+    } else {
+      if (this.nuevoPaciente.cedula && this.nuevoPaciente.cedula.startsWith('MN-')) {
+        this.nuevoPaciente.cedula = '';
+      }
+    }
+  }
+
+  regenerarIdMenor() {
+    if (this.esMenorEdad) {
+      this.nuevoPaciente.cedula = this.generarIdMenor();
+    }
+  }
+
+  onFechaNacimientoChange() {
+    if (this.nuevoPaciente.fecha_nacimiento) {
+      this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
+      if (this.nuevoPaciente.edad !== null && this.nuevoPaciente.edad < 18 && !this.nuevoPaciente.cedula) {
+        this.esMenorEdad = true;
+        this.nuevoPaciente.cedula = this.generarIdMenor();
+      }
+    }
+  }
+
+  // Modal para Editar Paciente en Cola
+  mostrarModalEditarCita = false;
+  citaParaEditar: Cita | null = null;
+  nombreEditadoTemp = '';
+  seguroEditadoTemp = 'Particular';
+  carnetEditadoTemp = '';
+  fechaNacimientoEditadaTemp = '';
+  actualizarExpedientePaciente = true;
+
+  abrirModalEditarCita(cita: Cita) {
+    this.citaParaEditar = { ...cita };
+    this.nombreEditadoTemp = cita.nombre;
+    this.seguroEditadoTemp = cita.seguro || 'Particular';
+
+    const p = this.patientService.findPatientByCedula(cita.cedula);
+    this.carnetEditadoTemp = cita.carnetSeguro || p?.carnetSeguro || '';
+    this.fechaNacimientoEditadaTemp = cita.fecha_nacimiento || p?.fecha_nacimiento || '';
+
+    this.actualizarExpedientePaciente = true;
+    this.mostrarModalEditarCita = true;
+  }
+
+  cerrarModalEditarCita() {
+    this.mostrarModalEditarCita = false;
+    this.citaParaEditar = null;
+  }
+
+  async guardarEdicionCita() {
+    if (!this.citaParaEditar) return;
+    const nuevoNombre = this.nombreEditadoTemp.trim();
+    if (!nuevoNombre) {
+      this.notificationService.showError('Nombre Requerido', 'Por favor ingrese el nombre del paciente.');
+      return;
+    }
+
+    const nuevoSeguro = this.seguroEditadoTemp;
+    const nuevoCarnet = this.carnetEditadoTemp.trim();
+    const nuevaFechaNacimiento = this.fechaNacimientoEditadaTemp;
+    let nuevaEdad = this.citaParaEditar.edad;
+    if (nuevaFechaNacimiento) {
+      nuevaEdad = this.patientService.calcularEdad(nuevaFechaNacimiento);
+    }
+
+    const updatedData: Partial<Cita> = {
+      nombre: nuevoNombre,
+      seguro: nuevoSeguro,
+      carnetSeguro: nuevoCarnet,
+      fecha_nacimiento: nuevaFechaNacimiento,
+      edad: nuevaEdad
+    };
+
+    await this.appointmentService.updateAppointmentData(this.citaParaEditar, updatedData);
+
+    if (this.actualizarExpedientePaciente && this.citaParaEditar.cedula) {
+      const p = this.patientService.findPatientByCedula(this.citaParaEditar.cedula);
+      if (p) {
+        await this.patientService.savePatient({
+          ...p,
+          nombre: nuevoNombre,
+          seguro: nuevoSeguro,
+          carnetSeguro: nuevoCarnet,
+          fecha_nacimiento: nuevaFechaNacimiento,
+          edad: nuevaEdad
+        });
+      }
+    }
+
+    this.notificationService.showSuccess('Cita Actualizada', `Se han actualizado los datos de "${nuevoNombre}".`);
+    this.cerrarModalEditarCita();
+  }
+
+  // Modal para Eliminar Paciente de la Cola
+  mostrarModalEliminarCita = false;
+  citaParaEliminar: Cita | null = null;
+
+  solicitarEliminarCita(cita: Cita) {
+    this.citaParaEliminar = cita;
+    this.mostrarModalEliminarCita = true;
+  }
+
+  cerrarModalEliminarCita() {
+    this.mostrarModalEliminarCita = false;
+    this.citaParaEliminar = null;
+  }
+
+  async confirmarEliminarCita() {
+    if (!this.citaParaEliminar) return;
+    const cita = this.citaParaEliminar;
+    await this.appointmentService.deleteAppointment(cita);
+    this.notificationService.showSuccess('Paciente Retirado', `El turno #${cita.turno} (${cita.nombre}) ha sido retirado de la cola.`);
+    this.cerrarModalEliminarCita();
+  }
+  
   // Datos del formulario
   nuevoPaciente = {
     nombre: '',
@@ -339,6 +470,11 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
   }
 
   async buscarJCE() {
+    if (this.esMenorEdad) {
+      this.errorBusqueda = 'Los pacientes menores de edad no poseen cédula para consultar en JCE.';
+      return;
+    }
+
     if (!this.nuevoPaciente.cedula) {
       this.errorBusqueda = 'Por favor, ingrese un número de cédula.';
       return;
@@ -432,6 +568,11 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
   }
 
   async registrarCita() {
+    // Si es menor de edad y no tiene cédula asignada, generar una única automáticamente
+    if (this.esMenorEdad && !this.nuevoPaciente.cedula) {
+      this.nuevoPaciente.cedula = this.generarIdMenor();
+    }
+
     if (this.nuevoPaciente.nombre && this.nuevoPaciente.cedula && this.nuevoPaciente.fecha_nacimiento) {
       // Calcular edad automáticamente si se tiene la fecha de nacimiento
       this.nuevoPaciente.edad = this.patientService.calcularEdad(this.nuevoPaciente.fecha_nacimiento);
@@ -443,7 +584,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         nombre: this.nuevoPaciente.nombre,
         edad: this.nuevoPaciente.edad,
         fecha_nacimiento: this.nuevoPaciente.fecha_nacimiento,
-        profesion: this.nuevoPaciente.profesion,
+        profesion: this.nuevoPaciente.profesion || (this.esMenorEdad ? 'Estudiante / Menor' : ''),
         seguro: this.nuevoPaciente.seguro,
         sexo: this.nuevoPaciente.sexo,
         altura: this.nuevoPaciente.altura,
@@ -474,12 +615,13 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         altura: this.nuevoPaciente.altura,
         peso: this.nuevoPaciente.peso,
-        profesion: this.nuevoPaciente.profesion,
+        profesion: this.nuevoPaciente.profesion || (this.esMenorEdad ? 'Estudiante / Menor' : ''),
         telefono: this.nuevoPaciente.telefono,
         carnetSeguro: this.carnetSeguroTemp
       };
 
       await this.appointmentService.addAppointment(nuevaCita);
+      this.notificationService.showSuccess('Turno Asignado', `Turno #${this.proximoTurno} asignado exitosamente a ${this.nuevoPaciente.nombre}.`);
       this.limpiarFormulario();
       this.carnetSeguroTemp = '';
 
@@ -541,6 +683,9 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
   seleccionarPacienteDeLista(paciente: Paciente) {
     this.cedulaOriginal = paciente.cedula;
+    const isMenor = !!(paciente.cedula && (paciente.cedula.startsWith('MN-') || paciente.cedula.startsWith('MENOR-') || (paciente.edad !== undefined && paciente.edad < 18 && paciente.cedula.startsWith('MN'))));
+    this.esMenorEdad = isMenor;
+
     this.nuevoPaciente = {
       nombre: paciente.nombre,
       cedula: paciente.cedula && paciente.cedula.startsWith('IMP-') ? '' : paciente.cedula,
@@ -560,7 +705,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
     this.pacientesFiltrados = [];
     this.mostrarDropdownPacientes = false;
 
-    if (!paciente.fotoUrl && paciente.cedula) {
+    if (!paciente.fotoUrl && paciente.cedula && !this.esMenorEdad) {
       this.patientService.fetchPhotoIfMissing(paciente.cedula).then(() => {
         const updated = this.patientService.findPatientByCedula(paciente.cedula);
         if (updated && updated.fotoUrl) {
@@ -572,6 +717,7 @@ Vuelto entregado: ${this.formatMonto(this.datosCobro.vuelto)}`;
 
   limpiarFormulario() {
     this.cedulaOriginal = '';
+    this.esMenorEdad = false;
     this.nuevoPaciente = {
       nombre: '',
       cedula: '',

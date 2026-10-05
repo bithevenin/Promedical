@@ -148,7 +148,12 @@
             <tbody class="divide-y divide-glass-border/50">
               @for (paciente of pacientesFiltrados; track paciente.cedula) {
               <tr class="hover:bg-white/[0.04] transition-colors group">
-                <td class="patient-cedula px-4 py-2.5 text-[11px] font-black tracking-tight whitespace-nowrap">{{ paciente.cedula }}</td>
+                <td class="patient-cedula px-4 py-2.5 text-[11px] font-black tracking-tight whitespace-nowrap">
+                  @if (paciente.cedula.startsWith('MN-') || paciente.cedula.startsWith('MENOR-')) {
+                    <span class="mr-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[8px] font-black tracking-wider">MENOR</span>
+                  }
+                  {{ paciente.cedula }}
+                </td>
                 <td class="px-4 py-2.5">
                   <div class="flex items-center gap-2.5">
                     @if (paciente.fotoUrl) {

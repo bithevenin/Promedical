@@ -303,8 +303,20 @@ body.light-theme {
   .text-text-secondary {
     color: #1e293b !important;
   }
+  .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 {
+    color: #0f172a !important;
+  }
   .logo-text, h1:not(.bg-primary *), h2:not(.bg-primary *), h3:not(.bg-primary *), h4:not(.bg-primary *), h5:not(.bg-primary *), h6:not(.bg-primary *) {
     color: #0f172a !important;
+  }
+
+  /* Force dark text for outline / ghost / neutral buttons in light mode */
+  button:not(.bg-primary):not(.bg-primary *):not(.bg-rose-500):not(.bg-rose-500 *):not(.bg-rose-600):not(.bg-rose-600 *):not(.bg-emerald-500):not(.bg-emerald-500 *):not(.bg-emerald-600):not(.bg-emerald-600 *) {
+    color: #0f172a;
+
+    span:not(.text-primary):not(.text-emerald-400):not(.text-emerald-500):not(.text-rose-400):not(.text-rose-500):not(.text-rose-600):not(.text-amber-400):not(.text-amber-500):not(.text-sky-400):not(.text-sky-500):not(.text-sky-600) {
+      color: #0f172a !important;
+    }
   }
 
   /* Rich textarea editor in Light Mode */

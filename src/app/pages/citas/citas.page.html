@@ -111,24 +111,57 @@
               </div>
 
               <div>
-                <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Identificación (Cédula)</label>
+                <div class="flex items-center justify-between mb-1.5 gap-2">
+                  <label class="text-[9px] font-black text-text-muted tracking-widest uppercase block truncate">
+                    {{ esMenorEdad ? 'Identificación (Menor sin Cédula)' : 'Identificación (Cédula)' }}
+                  </label>
+                  
+                  <!-- Interruptor Compacto Menor de Edad -->
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer select-none py-1 px-2.5 rounded-lg border transition-all shrink-0"
+                         [class.bg-amber-500\/15]="esMenorEdad"
+                         [class.border-amber-500\/40]="esMenorEdad"
+                         [class.bg-white\/5]="!esMenorEdad"
+                         [class.border-glass-border]="!esMenorEdad"
+                         title="Activar si el paciente es menor de edad y no tiene cédula">
+                    <span class="text-[8.5px] font-black uppercase tracking-wider transition-colors"
+                          [class.text-amber-400]="esMenorEdad"
+                          [class.text-text-muted]="!esMenorEdad">
+                      Menor de edad
+                    </span>
+                    <input type="checkbox" class="sr-only" [checked]="esMenorEdad" (change)="toggleMenorEdad()">
+                    <div class="w-7 h-3.5 bg-white/10 rounded-full p-0.5 transition-colors relative border border-white/10"
+                         [class.bg-amber-500]="esMenorEdad">
+                      <div class="w-2.5 h-2.5 bg-white rounded-full transition-transform"
+                           [class.translate-x-3.5]="esMenorEdad"></div>
+                    </div>
+                  </label>
+                </div>
+
                 <div class="relative w-full">
                   <div class="flex items-center gap-2">
                     <input type="text" 
                            class="flex-1 min-w-0 px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-black text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/30" 
                            [(ngModel)]="nuevoPaciente.cedula"
+                           [readonly]="esMenorEdad"
                            (input)="filtrarPacientes($event)"
                            (focus)="setActiveSearchField('cedula'); mostrarDropdownPacientes = pacientesFiltrados.length > 0"
-                           placeholder="000-0000000-0">
-                    <button class="btn-saas btn-primary btn-md shrink-0 disabled:opacity-50"
-                            (click)="buscarJCE()" [disabled]="isLoadingJce" title="Buscar por Cédula / Paciente / JCE">
-                       @if (isLoadingJce) {
-                         <ion-spinner name="crescent" class="text-xs text-white"></ion-spinner>
-                       } @else {
-                         <ion-icon name="search-outline" class="text-sm text-white"></ion-icon>
-                         <span class="text-[10px] uppercase font-black tracking-wider text-white">Buscar</span>
-                       }
-                    </button>
+                           [placeholder]="esMenorEdad ? 'MN-000000' : '000-0000000-0'">
+                    @if (!esMenorEdad) {
+                      <button class="btn-saas btn-primary btn-md shrink-0 disabled:opacity-50"
+                              (click)="buscarJCE()" [disabled]="isLoadingJce" title="Buscar por Cédula / Paciente / JCE">
+                         @if (isLoadingJce) {
+                           <ion-spinner name="crescent" class="text-xs text-white"></ion-spinner>
+                         } @else {
+                           <ion-icon name="search-outline" class="text-sm text-white"></ion-icon>
+                           <span class="text-[10px] uppercase font-black tracking-wider text-white">Buscar</span>
+                         }
+                      </button>
+                    } @else {
+                      <button class="p-2.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 rounded-xl transition-all shrink-0 flex items-center gap-1 shadow-sm"
+                              (click)="regenerarIdMenor()" title="Generar otro código ID para el menor">
+                        <ion-icon name="refresh-outline" class="text-base"></ion-icon>
+                      </button>
+                    }
                   </div>
 
                   <!-- Floating Dropdown list for matching patients -->
@@ -142,7 +175,7 @@
                         </div>
                         <div class="flex-grow min-w-0">
                            <span class="block text-xs font-bold text-white truncate">{{ p.nombre }}</span>
-                           <span class="block text-[8px] font-black text-text-muted uppercase tracking-tight">Cédula: {{ p.cedula }}</span>
+                           <span class="block text-[8px] font-black text-text-muted uppercase tracking-tight">Cédula / ID: {{ p.cedula }}</span>
                         </div>
                      </div>
                      }
@@ -192,7 +225,8 @@
                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Nacimiento</label>
                   <input type="date" 
                          class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-[10px] font-bold text-white focus:outline-none" 
-                         [(ngModel)]="nuevoPaciente.fecha_nacimiento">
+                         [(ngModel)]="nuevoPaciente.fecha_nacimiento"
+                         (ngModelChange)="onFechaNacimientoChange()">
                 </div>
                 <div>
                   <label class="text-[9px] font-black text-text-muted tracking-widest uppercase mb-1.5 block">Ocupación</label>
@@ -253,7 +287,7 @@
 
               <button class="btn-saas btn-purple btn-lg w-full disabled:opacity-50" 
                       (click)="registrarCita()"
-                      [disabled]="!nuevoPaciente.nombre || !nuevoPaciente.cedula || !nuevoPaciente.fecha_nacimiento">
+                      [disabled]="!nuevoPaciente.nombre || (!nuevoPaciente.cedula && !esMenorEdad) || !nuevoPaciente.fecha_nacimiento">
                 <ion-icon name="add-circle" class="text-base text-white group-hover:rotate-90 transition-transform"></ion-icon>
                 <span class="text-white">Asignar Turno</span>
               </button>
@@ -285,7 +319,7 @@
                     <th class="px-5 py-3.5 whitespace-nowrap">Turno</th>
                     <th class="px-5 py-3.5">Paciente</th>
                     <th class="px-5 py-3.5 hidden sm:table-cell whitespace-nowrap">Seguro</th>
-                    <th class="px-5 py-3.5 text-right whitespace-nowrap">Acciones</th>
+                    <th class="px-5 py-3.5 text-center whitespace-nowrap w-44">Acciones</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-glass-border/50">
@@ -307,7 +341,12 @@
                         }
                         <div>
                           <span class="block text-sm font-bold text-white group-hover:text-primary transition-colors truncate max-w-[200px] sm:max-w-none">{{ cita.nombre }}</span>
-                          <span class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{{ cita.cedula }} • {{ cita.edad }} años</span>
+                          <span class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                            @if (cita.cedula.startsWith('MN-') || cita.cedula.startsWith('MENOR-')) {
+                              <span class="inline-block mr-1 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[8px] font-black tracking-widest">MENOR</span>
+                            }
+                            {{ cita.cedula }} • {{ cita.edad }} años
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -316,12 +355,29 @@
                         {{ cita.seguro || 'Particular' }}
                       </span>
                     </td>
-                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                      <button (click)="enviarRecordatorio(cita)" 
-                              class="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors" 
-                              title="Recordatorio WhatsApp">
-                        <ion-icon name="logo-whatsapp" class="text-lg"></ion-icon>
-                      </button>
+                    <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                      <div class="flex items-center justify-center gap-2.5">
+                        <!-- WhatsApp Reminder -->
+                        <button (click)="enviarRecordatorio(cita)" 
+                                class="p-2 text-emerald-400 hover:bg-emerald-500/20 bg-emerald-500/10 border border-emerald-500/20 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm" 
+                                title="Recordatorio WhatsApp">
+                          <ion-icon name="logo-whatsapp" class="text-base"></ion-icon>
+                        </button>
+
+                        <!-- Editar Paciente / Nombre -->
+                        <button (click)="abrirModalEditarCita(cita)" 
+                                class="p-2 text-primary hover:bg-primary/20 bg-primary/10 border border-primary/20 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm" 
+                                title="Editar Nombre / Datos del Paciente">
+                          <ion-icon name="create-outline" class="text-base"></ion-icon>
+                        </button>
+
+                        <!-- Eliminar Paciente de la Cola -->
+                        <button (click)="solicitarEliminarCita(cita)" 
+                                class="p-2 text-rose-400 hover:bg-rose-500/20 bg-rose-500/10 border border-rose-500/20 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm" 
+                                title="Eliminar de la Cola">
+                          <ion-icon name="trash-outline" class="text-base"></ion-icon>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   } @empty {
@@ -484,6 +540,126 @@
         </button>
         <button (click)="guardarCarnetSeguro()" class="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
           Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal de Editar Paciente en Cola -->
+@if (mostrarModalEditarCita && citaParaEditar) {
+<div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+  <div class="bg-dark-secondary border border-glass-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scale-in">
+    <div class="flex justify-between items-center mb-4 pb-3 border-b border-glass-border">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-base">
+          <ion-icon name="create-outline"></ion-icon>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white uppercase tracking-tight">Editar Paciente en Cola</h3>
+          <span class="text-[8px] font-black text-primary uppercase tracking-widest">Turno #{{ citaParaEditar.turno }} • {{ citaParaEditar.cedula }}</span>
+        </div>
+      </div>
+      <button (click)="cerrarModalEditarCita()" class="text-text-muted hover:text-white transition-colors">
+        <ion-icon name="close-outline" class="text-2xl"></ion-icon>
+      </button>
+    </div>
+
+    <div class="space-y-3.5">
+      <div>
+        <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Nombre del Paciente</label>
+        <input type="text" 
+               class="w-full px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all" 
+               [(ngModel)]="nombreEditadoTemp"
+               placeholder="Nombre completo"
+               (keyup.enter)="guardarEdicionCita()">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Nacimiento</label>
+          <input type="date" 
+                 class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none" 
+                 [(ngModel)]="fechaNacimientoEditadaTemp">
+        </div>
+
+        <div>
+          <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Seguro Médico</label>
+          <select class="w-full px-3 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none" 
+                  [(ngModel)]="seguroEditadoTemp">
+            @for (seguro of listaSeguros; track seguro) {
+            <option [value]="seguro" class="bg-dark-secondary">{{ seguro }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">
+          Número de Carnet / NSS
+        </label>
+        <input type="text" 
+               class="w-full px-4 py-2.5 bg-white/5 border border-glass-border rounded-xl text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all placeholder:text-text-muted/30" 
+               [(ngModel)]="carnetEditadoTemp"
+               placeholder="Ingrese el número de carnet"
+               (keyup.enter)="guardarEdicionCita()">
+      </div>
+
+      <div class="flex items-center gap-2 p-3 bg-white/5 border border-glass-border rounded-xl">
+        <input type="checkbox" id="checkActualizarExp" class="rounded text-primary focus:ring-0 cursor-pointer" [(ngModel)]="actualizarExpedientePaciente">
+        <label for="checkActualizarExp" class="text-[10px] font-bold text-slate-300 cursor-pointer select-none">
+          Actualizar también estos datos en el expediente de Pacientes
+        </label>
+      </div>
+
+      <div class="flex gap-3 pt-3 border-t border-glass-border">
+        <button (click)="cerrarModalEditarCita()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs rounded-xl transition-all">
+          Cancelar
+        </button>
+        <button (click)="guardarEdicionCita()" class="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+          <ion-icon name="save-outline" class="text-base"></ion-icon> Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal de Confirmar Eliminación de Paciente de la Cola -->
+@if (mostrarModalEliminarCita && citaParaEliminar) {
+<div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+  <div class="bg-dark-secondary border border-rose-500/20 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-glass-border">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl">
+        <ion-icon name="trash-outline"></ion-icon>
+      </div>
+      <div>
+        <h3 class="text-sm font-black text-white uppercase tracking-tight">Retirar de la Cola</h3>
+        <span class="text-[8px] font-black text-rose-400 uppercase tracking-widest">Confirmación Requerida</span>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <p class="text-xs text-text-muted leading-relaxed">
+        ¿Está seguro de que desea retirar al siguiente paciente de la cola de espera?
+      </p>
+
+      <div class="p-3 bg-white/5 border border-glass-border rounded-xl">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[9px] font-black text-primary uppercase">Turno #{{ citaParaEliminar.turno }}</span>
+          <span class="text-[9px] font-bold text-text-muted">{{ citaParaEliminar.hora }}</span>
+        </div>
+        <span class="block text-sm font-bold text-white">{{ citaParaEliminar.nombre }}</span>
+        <span class="block text-[10px] text-text-muted">{{ citaParaEliminar.cedula }} • {{ citaParaEliminar.seguro || 'Particular' }}</span>
+      </div>
+
+      <div class="flex gap-3 pt-3 border-t border-glass-border">
+        <button (click)="cerrarModalEliminarCita()" class="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold text-xs rounded-xl transition-all">
+          Cancelar
+        </button>
+        <button (click)="confirmarEliminarCita()" class="flex-1 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <ion-icon name="trash-outline" class="text-sm"></ion-icon> Retirar
         </button>
       </div>
     </div>

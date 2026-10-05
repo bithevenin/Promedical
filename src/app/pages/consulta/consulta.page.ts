@@ -9,8 +9,29 @@ import { Cita, Paciente, Consulta, UserProfile } from '../../models';
 import { SignoVital } from '../../models/patient.model';
 import { ToastController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
-import { getLocalDateString } from '../../utils/format.utils';
+import { ConfigService } from '../../services/config.service';
+import { getLocalDateString, parseJCEDate } from '../../utils/format.utils';
 import { SpellCheckService } from '../../services/spell-check.service';
+
+interface JceResult {
+  fotoUrl?: string;
+  nombreCompleto?: string;
+  nombres?: string;
+  apellido1?: string;
+  apellido2?: string;
+  fechaNacimiento?: string;
+  sexo?: string;
+  ocupacion?: string;
+  ocupación?: string;
+  direccion?: string;
+  dirección?: string;
+  lugarNacimiento?: string;
+  tipo_sangre?: string;
+  tipoSangre?: string;
+  grupoSanguineo?: string;
+  grupo_sanguineo?: string;
+  sangre?: string;
+}
 
 @Component({
   selector: 'app-consulta',
@@ -130,11 +151,39 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     alergias: ''
   };
 
+  // Modal de Edición de Paciente
+  showEditPatientModal = false;
+  isLoadingJce = false;
+  listaSeguros: string[] = ['Particular'];
+  originalCedula = '';
+
+  editPatientData: Paciente = {
+    cedula: '',
+    nombre: '',
+    edad: 0,
+    fecha_nacimiento: '',
+    profesion: '',
+    seguro: 'Particular',
+    sexo: 'M',
+    altura: '',
+    peso: '',
+    telefono: '',
+    email: '',
+    carnetSeguro: '',
+    antecedentesPersonales: '',
+    antecedentesFamiliares: '',
+    alergias: '',
+    tipo_sangre: '',
+    fotoUrl: '',
+    direccion: ''
+  };
+
   constructor(
     private appointmentService: AppointmentService,
     private patientService: PatientService,
     private consultationService: ConsultationService,
     private printRecetaService: PrintRecetaService,
+    private configService: ConfigService,
     private route: ActivatedRoute,
     private authService: AuthService,
     private toastController: ToastController,
@@ -144,6 +193,13 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   ) { }
 
   ngOnInit() {
+    // Suscripción a lista de seguros disponibles
+    this.configService.config$.subscribe(config => {
+      if (config?.tarifasSeguros) {
+        this.listaSeguros = ['Particular', ...config.tarifasSeguros.map(t => t.seguro)];
+      }
+    });
+
     // Inicializar corrector ortográfico español
     this.spellCheckService.initialize().then(() => {
       this.spellCheckLoading = false;
@@ -920,6 +976,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
 
   showDetalleConsultaModal = false;
   consultaDetalleSeleccionada: Consulta | null = null;
+  showConfirmBorrarConsultaModal = false;
 
   verDetalleConsulta(consulta: Consulta) {
     this.consultaDetalleSeleccionada = consulta;
@@ -929,6 +986,31 @@ export class ConsultaPage implements OnInit, AfterViewInit {
   cerrarModalDetalleConsulta() {
     this.showDetalleConsultaModal = false;
     this.consultaDetalleSeleccionada = null;
+  }
+
+  solicitarEliminarConsultaHistorica() {
+    this.showConfirmBorrarConsultaModal = true;
+  }
+
+  cerrarConfirmBorrarConsulta() {
+    this.showConfirmBorrarConsultaModal = false;
+  }
+
+  async confirmarEliminarConsultaHistorica() {
+    if (!this.consultaDetalleSeleccionada) return;
+    const c = this.consultaDetalleSeleccionada;
+
+    await this.consultationService.deleteConsultation(c);
+
+    // Actualizar historialPasado local
+    this.historialPasado = this.historialPasado.filter(item => {
+      if (c.id && item.id) return item.id !== c.id;
+      return !(item.fecha === c.fecha && item.diagnostico === c.diagnostico);
+    });
+
+    this.showConfirmBorrarConsultaModal = false;
+    this.cerrarModalDetalleConsulta();
+    this.presentToast('Consulta médica eliminada del historial', 'success');
   }
 
   imprimirRecetaHistorica() {
@@ -1074,6 +1156,219 @@ export class ConsultaPage implements OnInit, AfterViewInit {
         this.signosForm = { presionArterial: '', frecuenciaCardiaca: 0, temperatura: 0, peso: 0, talla: 0, imc: 0, saturacionOxigeno: 0 };
       }
     }
+  }
+
+  // ─── Modal Edición de Información del Paciente ─────────────────────────────
+  abrirModalEditarPaciente() {
+    if (!this.pacienteSeleccionado) return;
+
+    let fullPatient = this.patientService.findPatientByCedula(this.pacienteSeleccionado.cedula);
+    if (!fullPatient && this.pacienteSeleccionado.nombre) {
+      fullPatient = this.patientService.getPatients().find(p => p.nombre.toLowerCase().trim() === this.pacienteSeleccionado!.nombre.toLowerCase().trim());
+    }
+
+    this.originalCedula = this.pacienteSeleccionado.cedula || fullPatient?.cedula || '';
+
+    this.editPatientData = {
+      cedula: this.originalCedula,
+      nombre: this.pacienteSeleccionado.nombre || fullPatient?.nombre || '',
+      edad: this.pacienteSeleccionado.edad || fullPatient?.edad || 0,
+      fecha_nacimiento: fullPatient?.fecha_nacimiento || this.pacienteSeleccionado.fecha_nacimiento || '',
+      profesion: this.pacienteSeleccionado.profesion || fullPatient?.profesion || '',
+      seguro: this.pacienteSeleccionado.seguro || fullPatient?.seguro || 'Particular',
+      sexo: this.pacienteSeleccionado.sexo || fullPatient?.sexo || 'M',
+      altura: this.pacienteSeleccionado.altura || fullPatient?.altura || '',
+      peso: this.pacienteSeleccionado.peso || fullPatient?.peso || '',
+      telefono: fullPatient?.telefono || this.pacienteSeleccionado.telefono || '',
+      email: fullPatient?.email || '',
+      carnetSeguro: fullPatient?.carnetSeguro || this.pacienteSeleccionado.carnetSeguro || '',
+      antecedentesPersonales: this.pacienteSeleccionado.antecedentesPersonales || (this.pacienteSeleccionado as any).antecedentes_personales || fullPatient?.antecedentesPersonales || (fullPatient as any)?.antecedentes_personales || '',
+      antecedentesFamiliares: this.pacienteSeleccionado.antecedentesFamiliares || (this.pacienteSeleccionado as any).antecedentes_familiares || fullPatient?.antecedentesFamiliares || (fullPatient as any)?.antecedentes_familiares || '',
+      alergias: this.pacienteSeleccionado.alergias || fullPatient?.alergias || '',
+      tipo_sangre: fullPatient?.tipo_sangre || '',
+      fotoUrl: fullPatient?.fotoUrl || '',
+      direccion: fullPatient?.direccion || ''
+    };
+
+    if (this.editPatientData.fecha_nacimiento && !this.editPatientData.edad) {
+      this.editPatientData.edad = this.patientService.calcularEdad(this.editPatientData.fecha_nacimiento);
+    }
+
+    this.showEditPatientModal = true;
+  }
+
+  cerrarModalEditarPaciente() {
+    this.showEditPatientModal = false;
+  }
+
+  onFechaNacimientoChange() {
+    if (this.editPatientData.fecha_nacimiento) {
+      this.editPatientData.edad = this.patientService.calcularEdad(this.editPatientData.fecha_nacimiento);
+    }
+  }
+
+  async buscarJCEEnEdicion() {
+    if (!this.editPatientData.cedula) {
+      this.presentToast('Por favor, ingrese una cédula.', 'danger');
+      return;
+    }
+    this.isLoadingJce = true;
+    try {
+      const result = await this.patientService.consultarJCE(this.editPatientData.cedula) as JceResult;
+      if (result) {
+        this.editPatientData.nombre = result.nombreCompleto ||
+          `${result.nombres || ''} ${result.apellido1 || ''} ${result.apellido2 || ''}`.trim().replace(/\s+/g, ' ');
+
+        if (result.fechaNacimiento) {
+          this.editPatientData.fecha_nacimiento = parseJCEDate(result.fechaNacimiento);
+          if (this.editPatientData.fecha_nacimiento) {
+            this.editPatientData.edad = this.patientService.calcularEdad(this.editPatientData.fecha_nacimiento);
+          }
+        }
+
+        if (result.sexo) {
+          const s = result.sexo.trim().toUpperCase();
+          this.editPatientData.sexo = s.startsWith('F') ? 'F' : 'M';
+        }
+
+        if (result.ocupacion || result.ocupación) {
+          this.editPatientData.profesion = result.ocupacion || result.ocupación || '';
+        }
+
+        this.editPatientData.direccion = result.direccion || result.dirección ||
+          [result.lugarNacimiento].filter(Boolean).join(', ') || '';
+
+        if (result.tipo_sangre) {
+          this.editPatientData.tipo_sangre = result.tipo_sangre;
+        }
+
+        this.editPatientData.fotoUrl = result.fotoUrl || this.editPatientData.fotoUrl || '';
+
+        this.presentToast('¡Datos de la cédula cargados con éxito!', 'success');
+      }
+    } catch (error: any) {
+      this.presentToast('Consulta JCE: ' + (error?.message || error), 'danger');
+    } finally {
+      this.isLoadingJce = false;
+    }
+  }
+
+  async guardarEdicionPaciente() {
+    if (!this.editPatientData.nombre || !this.editPatientData.nombre.trim()) {
+      this.presentToast('El nombre del paciente es obligatorio.', 'danger');
+      return;
+    }
+
+    if (this.editPatientData.fecha_nacimiento) {
+      this.editPatientData.edad = this.patientService.calcularEdad(this.editPatientData.fecha_nacimiento);
+    }
+
+    const nuevoNombre = this.editPatientData.nombre.trim();
+    this.editPatientData.nombre = nuevoNombre;
+
+    // 1. Guardar en PatientService (actualiza DB y offline)
+    await this.patientService.savePatient(this.editPatientData, this.originalCedula);
+
+    // 2. Actualizar pacienteSeleccionado en pantalla
+    if (this.pacienteSeleccionado) {
+      this.pacienteSeleccionado = {
+        ...this.pacienteSeleccionado,
+        nombre: nuevoNombre,
+        cedula: this.editPatientData.cedula,
+        edad: this.editPatientData.edad,
+        seguro: this.editPatientData.seguro,
+        sexo: this.editPatientData.sexo,
+        profesion: this.editPatientData.profesion,
+        telefono: this.editPatientData.telefono,
+        carnetSeguro: this.editPatientData.carnetSeguro,
+        fecha_nacimiento: this.editPatientData.fecha_nacimiento,
+        antecedentesPersonales: this.editPatientData.antecedentesPersonales,
+        antecedentesFamiliares: this.editPatientData.antecedentesFamiliares,
+        alergias: this.editPatientData.alergias
+      };
+      (this.pacienteSeleccionado as any).antecedentes_personales = this.editPatientData.antecedentesPersonales;
+      (this.pacienteSeleccionado as any).antecedentes_familiares = this.editPatientData.antecedentesFamiliares;
+
+      // 3. Si tiene cita activa / turno, actualizar en AppointmentService
+      if (!this.esConsultaDirecta && this.pacienteSeleccionado.turno) {
+        await this.appointmentService.updateAppointmentData(this.pacienteSeleccionado, {
+          nombre: nuevoNombre,
+          cedula: this.editPatientData.cedula,
+          edad: this.editPatientData.edad,
+          seguro: this.editPatientData.seguro,
+          sexo: this.editPatientData.sexo,
+          profesion: this.editPatientData.profesion,
+          telefono: this.editPatientData.telefono,
+          carnetSeguro: this.editPatientData.carnetSeguro,
+          fecha_nacimiento: this.editPatientData.fecha_nacimiento
+        });
+      }
+
+      // 4. Actualizar en lista de espera local en tiempo real
+      const indexEspera = this.pacientesEspera.findIndex(p => p.turno === this.pacienteSeleccionado?.turno);
+      if (indexEspera !== -1) {
+        this.pacientesEspera[indexEspera] = {
+          ...this.pacientesEspera[indexEspera],
+          nombre: nuevoNombre,
+          cedula: this.editPatientData.cedula,
+          edad: this.editPatientData.edad,
+          seguro: this.editPatientData.seguro
+        };
+      }
+    }
+
+    this.presentToast('Información del paciente actualizada con éxito', 'success');
+    this.cerrarModalEditarPaciente();
+  }
+
+  // ─── Modal Confirmar Quitar Paciente de Espera / Consulta ───────────────────
+  showConfirmQuitarModal = false;
+  pacienteParaQuitar: Cita | null = null;
+
+  solicitarQuitarPaciente() {
+    if (!this.pacienteSeleccionado) return;
+    this.pacienteParaQuitar = this.pacienteSeleccionado;
+    this.showConfirmQuitarModal = true;
+  }
+
+  solicitarQuitarPacienteDeCola(paciente: Cita) {
+    this.pacienteParaQuitar = paciente;
+    this.showConfirmQuitarModal = true;
+  }
+
+  cerrarModalQuitarPaciente() {
+    this.showConfirmQuitarModal = false;
+    this.pacienteParaQuitar = null;
+  }
+
+  async confirmarQuitarPaciente() {
+    if (!this.pacienteParaQuitar) return;
+    const paciente = this.pacienteParaQuitar;
+    const esElActual = this.pacienteSeleccionado?.turno === paciente.turno;
+
+    // 1. Eliminar cita a través de AppointmentService
+    await this.appointmentService.deleteAppointment(paciente);
+
+    // 2. Remover de la lista local de espera
+    this.pacientesEspera = this.pacientesEspera.filter(p => p.turno !== paciente.turno);
+
+    // 3. Si era el paciente actual en consulta
+    if (esElActual) {
+      this.pacienteSeleccionado = null;
+      this.historialPasado = [];
+      this.nuevaConsulta = { diagnostico: '', receta: '', instruccionCobro: 'cobrar' };
+      this.esConsultaDirecta = false;
+      this.updateEditorContents();
+
+      // Si hay otro paciente que ya estaba en estado 'consulta', seleccionarlo
+      const siguienteEnConsulta = this.pacientesEspera.find(c => c.estado === 'consulta');
+      if (siguienteEnConsulta) {
+        this.seleccionarPaciente(siguienteEnConsulta);
+      }
+    }
+
+    this.presentToast(`Paciente "${paciente.nombre}" retirado de la cola de espera`, 'success');
+    this.cerrarModalQuitarPaciente();
   }
 
   async logout() {

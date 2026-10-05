@@ -284,4 +284,69 @@ export class AppointmentService {
       await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', turno);
     }
   }
+
+  async deleteAppointment(cita: Cita) {
+    const today = cita.fecha || getLocalDateString();
+    
+    // 1. Actualización optimista en memoria (0ms)
+    const currentList = this.appointmentsSubject.value.filter(item =>
+      !((cita.id && item.id === cita.id) || (item.turno === cita.turno && item.fecha === today))
+    );
+    this.appointmentsSubject.next(currentList);
+    if (cita.id) {
+      this.offlineService.deleteLocalData('citas', cita.id).catch(() => {});
+    }
+
+    // 2. Eliminación en servidor LAN / Supabase
+    try {
+      if (cita.id && cita.id > 0) {
+        const { error } = await this.supabase.from('citas').delete().eq('id', cita.id);
+        if (error) throw error;
+      } else {
+        const { error } = await this.supabase.from('citas').delete().eq('turno', cita.turno).eq('fecha', today);
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.warn('[AppointmentService] Error deleting appointment, queueing write:', error);
+      await this.offlineService.addToQueue('citas', 'delete', cita, 'turno', cita.turno);
+    }
+  }
+
+  async updateAppointmentData(cita: Cita, updatedFields: Partial<Cita>) {
+    const today = cita.fecha || getLocalDateString();
+
+    // 1. Actualización optimista en memoria (0ms)
+    const current = [...this.appointmentsSubject.value];
+    const target = current.find(c => (cita.id && c.id === cita.id) || (c.turno === cita.turno && c.fecha === today));
+    if (target) {
+      Object.assign(target, updatedFields);
+      this.appointmentsSubject.next(current);
+      this.offlineService.saveLocalData('citas', target).catch(() => {});
+    }
+
+    // 2. Actualización en servidor LAN / Supabase
+    try {
+      const updateData: Record<string, unknown> = {};
+      Object.keys(updatedFields).forEach(key => {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        updateData[snakeKey] = updatedFields[key as keyof Cita];
+      });
+
+      if (target && target.id && target.id > 0) {
+        const { error } = await this.supabase.from('citas').update(updateData).eq('id', target.id);
+        if (error) throw error;
+      } else {
+        const { error } = await this.supabase.from('citas').update(updateData).eq('turno', cita.turno).eq('fecha', today);
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.warn('[AppointmentService] Error updating appointment data, queueing write:', error);
+      const updateData: Record<string, unknown> = {};
+      Object.keys(updatedFields).forEach(key => {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        updateData[snakeKey] = updatedFields[key as keyof Cita];
+      });
+      await this.offlineService.addToQueue('citas', 'update', updateData, 'turno', cita.turno);
+    }
+  }
 }
