@@ -880,16 +880,22 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     return clone.innerHTML;
   }
 
-  imprimirReceta() {
+  async imprimirReceta() {
     if (this.pacienteSeleccionado && this.nuevaConsulta.receta) {
-      this.printRecetaService.imprimirReceta({
+      this.presentToast('🖨️ Enviando receta a la impresora...', 'primary');
+      const res = await this.printRecetaService.imprimirReceta({
         pacienteNombre: this.pacienteSeleccionado.nombre,
         pacienteEdad: this.pacienteSeleccionado.edad,
         pacienteSexo: this.pacienteSeleccionado.sexo || 'M',
         receta: this.nuevaConsulta.receta
       });
+      if (res.success) {
+        this.presentToast('✓ Receta enviada exitosamente a la impresora', 'success');
+      } else {
+        this.presentToast('Error al imprimir: ' + (res.error || 'Fallo de impresora'), 'danger');
+      }
     } else {
-      alert('Por favor ingrese la receta antes de imprimir.');
+      this.presentToast('Por favor ingrese el contenido de la receta antes de imprimir.', 'warning');
     }
   }
 
@@ -1013,14 +1019,20 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     this.presentToast('Consulta médica eliminada del historial', 'success');
   }
 
-  imprimirRecetaHistorica() {
+  async imprimirRecetaHistorica() {
     if (this.pacienteSeleccionado && this.consultaDetalleSeleccionada?.receta) {
-      this.printRecetaService.imprimirReceta({
+      this.presentToast('🖨️ Enviando receta histórica a la impresora...', 'primary');
+      const res = await this.printRecetaService.imprimirReceta({
         pacienteNombre: this.pacienteSeleccionado.nombre,
         pacienteEdad: this.pacienteSeleccionado.edad,
         pacienteSexo: this.pacienteSeleccionado.sexo || 'M',
         receta: this.consultaDetalleSeleccionada.receta
       });
+      if (res.success) {
+        this.presentToast('✓ Receta médica impresa con éxito', 'success');
+      } else {
+        this.presentToast('Error al imprimir: ' + (res.error || 'Fallo de impresora'), 'danger');
+      }
     }
   }
 
@@ -1029,7 +1041,7 @@ export class ConsultaPage implements OnInit, AfterViewInit {
     return p?.fotoUrl || '';
   }
 
-  async presentToast(message: string, color: 'success' | 'danger' | 'info') {
+  async presentToast(message: string, color: 'success' | 'danger' | 'info' | 'warning' | 'primary' = 'success') {
     const toast = await this.toastController.create({
       message,
       duration: 3000,

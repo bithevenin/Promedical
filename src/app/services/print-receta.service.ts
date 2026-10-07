@@ -6,11 +6,21 @@ import {
   FONDO_RINONES
 } from '../assets/receta-images.constants';
 
-interface DatosReceta {
+export interface DatosReceta {
   pacienteNombre: string;
   pacienteEdad: number;
   pacienteSexo: string;
   receta: string;
+}
+
+export interface PrinterConfig {
+  selectedPrinter: string; // '' = predeterminada
+  silent: boolean;         // true = sin diálogos ni modales
+  pageSize: 'Letter' | 'A4' | 'Legal' | 'Ticket';
+  landscape: boolean;
+  copies: number;
+  margins: 'none' | 'default' | 'minimum';
+  printBackground: boolean;
 }
 
 @Injectable({
@@ -18,17 +28,148 @@ interface DatosReceta {
 })
 export class PrintRecetaService {
 
+  private readonly STORAGE_KEY = 'promedical_printer_config';
+
+  private defaultConfig: PrinterConfig = {
+    selectedPrinter: '',
+    silent: true,
+    pageSize: 'Letter',
+    landscape: false,
+    copies: 1,
+    margins: 'none',
+    printBackground: true
+  };
+
   constructor() { }
 
-  imprimirReceta(datos: DatosReceta) {
-    try {
-      const fecha = new Date().toLocaleDateString('es-DO', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  private get electronApi(): any {
+    return (window as any).electronAPI;
+  }
 
-      const htmlContent = `
+  isElectron(): boolean {
+    return !!this.electronApi?.isElectron;
+  }
+
+  async getPrinters(): Promise<any[]> {
+    if (this.isElectron() && this.electronApi?.getPrinters) {
+      try {
+        return await this.electronApi.getPrinters();
+      } catch (e) {
+        console.error('Error al consultar impresoras desde Electron:', e);
+      }
+    }
+    return [];
+  }
+
+  async getPrinterConfig(): Promise<PrinterConfig> {
+    if (this.isElectron() && this.electronApi?.getPrinterConfig) {
+      try {
+        const cfg = await this.electronApi.getPrinterConfig();
+        if (cfg) return { ...this.defaultConfig, ...cfg };
+      } catch (e) {
+        console.warn('Error al leer configuración de impresora desde Electron:', e);
+      }
+    }
+
+    // Fallback a localStorage
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        return { ...this.defaultConfig, ...JSON.parse(stored) };
+      }
+    } catch (e) {}
+
+    return { ...this.defaultConfig };
+  }
+
+  async savePrinterConfig(config: PrinterConfig): Promise<boolean> {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(config));
+      if (this.isElectron() && this.electronApi?.savePrinterConfig) {
+        await this.electronApi.savePrinterConfig(config);
+      }
+      return true;
+    } catch (e) {
+      console.error('Error al guardar configuración de impresora:', e);
+      return false;
+    }
+  }
+
+  async imprimirHtml(html: string, customOptions?: Partial<PrinterConfig>): Promise<{ success: boolean; error?: string }> {
+    const config = await this.getPrinterConfig();
+    const finalOptions: PrinterConfig = { ...config, ...(customOptions || {}) };
+
+    // Si estamos en entorno Electron, usamos el motor nativo directo
+    if (this.isElectron() && this.electronApi?.printHtml) {
+      try {
+        const res = await this.electronApi.printHtml({
+          html,
+          printerName: finalOptions.selectedPrinter,
+          silent: finalOptions.silent,
+          copies: finalOptions.copies,
+          pageSize: finalOptions.pageSize === 'Ticket' ? { width: 80000, height: 297000 } : finalOptions.pageSize,
+          landscape: finalOptions.landscape,
+          margins: finalOptions.margins,
+          printBackground: finalOptions.printBackground
+        });
+        return res;
+      } catch (err: any) {
+        console.error('Error en printHtml Electron:', err);
+        return { success: false, error: err?.message || 'Error al comunicarse con la impresora' };
+      }
+    }
+
+    // Fallback para navegador web (modo iframe silencioso o ventana emergente)
+    return new Promise((resolve) => {
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document;
+        if (!doc) {
+          throw new Error('No se pudo acceder al documento del iframe de impresión');
+        }
+
+        doc.open();
+        doc.write(html);
+        doc.close();
+
+        iframe.onload = () => {
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              setTimeout(() => {
+                iframe.remove();
+                resolve({ success: true });
+              }, 1500);
+            } catch (err: any) {
+              iframe.remove();
+              resolve({ success: false, error: err?.message });
+            }
+          }, 300);
+        };
+      } catch (err: any) {
+        console.error('Error en impresión fallback:', err);
+        resolve({ success: false, error: err?.message });
+      }
+    });
+  }
+
+  generarRecetaHtml(datos: DatosReceta): string {
+    const fecha = new Date().toLocaleDateString('es-DO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,7 +207,6 @@ export class PrintRecetaService {
       z-index: -1;
       pointer-events: none;
     }
-
 
     .header {
       text-align: center;
@@ -110,19 +250,6 @@ export class PrintRecetaService {
     .contact-label {
       font-weight: bold;
       min-width: 200px;
-    }
- 
-    .rx-section {
-      display: flex;
-      align-items: flex-start;
-      margin: 25px 0;
-      gap: 20px;
-    }
- 
-    .rx-symbol {
-      width: 80px;
-      height: 80px;
-      flex-shrink: 0;
     }
  
     .rx-section {
@@ -277,29 +404,123 @@ ${datos.receta}
 </body>
 </html>
     `;
+  }
 
-      // Crear ventana de impresión
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-
-        // Esperar a que carguen las imágenes base64
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-        }, 500);
-      } else {
-        console.error('No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes (popups) para este sitio.');
-        alert('No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes (popups) en la configuración de su navegador para imprimir la receta.');
-      }
-    } catch (error) {
+  async imprimirReceta(datos: DatosReceta): Promise<{ success: boolean; error?: string }> {
+    try {
+      const html = this.generarRecetaHtml(datos);
+      return await this.imprimirHtml(html);
+    } catch (error: any) {
       console.error('Error al intentar imprimir la receta:', error);
-      alert('Ocurrió un error inesperado al intentar generar la impresión de la receta médica.');
+      return { success: false, error: error?.message || 'Error inesperado al imprimir' };
     }
   }
 
-  // Aquí irán los métodos para obtener las imágenes en base64
+  async imprimirPaginaPrueba(printerName?: string): Promise<{ success: boolean; error?: string }> {
+    const fechaHora = new Date().toLocaleString('es-DO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Página de Prueba de Impresión - ProMedical</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px;
+      color: #0f172a;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+    .card {
+      border: 2px solid #2563eb;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 650px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #1d4ed8;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      background: #10b981;
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
+    .footer-note {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">✓ Conexión Exitosa</div>
+    <div class="title">ProMedical System</div>
+    <div class="subtitle">Prueba de Impresión Directa Electron</div>
+
+    <div class="info-box">
+      <div><strong>Impresora Utilizada:</strong> ${printerName || 'Predeterminada del Sistema de Windows'}</div>
+      <div><strong>Fecha y Hora de Emisión:</strong> ${fechaHora}</div>
+      <div><strong>Estado del Canal de Hardware:</strong> Activo / Operativo (Silent Direct Print)</div>
+      <div><strong>Sistema:</strong> ProMedical Desktop v2.3.7</div>
+    </div>
+
+    <p style="font-size: 13px; color: #334155; font-weight: 600;">
+      ¡Excelente! Si estás leyendo este documento, la configuración de impresión directa en ProMedical está funcionando a la perfección.
+    </p>
+
+    <div class="footer-note">
+      ProMedical Clinical System &bull; La Vega, República Dominicana &bull; Dr. Miguel Thevenin
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return await this.imprimirHtml(html, { selectedPrinter: printerName });
+  }
+
+  // Métodos para obtener las imágenes en base64
   private getLogoCentro(): string {
     return LOGO_CENTRO_MEDICO;
   }

@@ -9,6 +9,7 @@ import { Paciente, Consulta, UserProfile } from '../../models';
 import { formatMonto, parseJCEDate } from '../../utils/format.utils';
 import { ToastController, AlertController } from '@ionic/angular';
 import { ThemeService } from '../../services/theme.service';
+import { PrintRecetaService } from '../../services/print-receta.service';
 import jsPDF from 'jspdf';
 
 interface JceResult {
@@ -142,6 +143,7 @@ export class PacientesPage implements OnInit {
     private router: Router,
     private authService: AuthService,
     public syncService: SyncService,
+    public printService: PrintRecetaService,
     private toastController: ToastController,
     private alertController: AlertController,
     public themeService: ThemeService
@@ -451,14 +453,14 @@ export class PacientesPage implements OnInit {
     return templates[this.tipoCartaSeleccionada];
   }
 
-  imprimirDirecto() {
+  async imprimirDirecto() {
     const printElement = document.getElementById('print-document-sheet');
-    if (!printElement) return;
+    if (!printElement) {
+      this.presentToast('No se encontró el contenido del documento para imprimir.', 'danger');
+      return;
+    }
 
-    const windowPrint = window.open('', '', 'left=0,top=0,width=850,height=900,toolbar=0,scrollbars=1,status=0');
-    if (!windowPrint) return;
-
-    windowPrint.document.write(`
+    const html = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -521,14 +523,33 @@ export class PacientesPage implements OnInit {
           ${printElement.innerHTML}
         </body>
       </html>
-    `);
+    `;
 
-    windowPrint.document.close();
-    windowPrint.focus();
-    setTimeout(() => {
-      windowPrint.print();
-      windowPrint.close();
-    }, 500);
+    this.presentToast('🖨️ Enviando documento a la impresora...', 'primary');
+    const res = await this.printService.imprimirHtml(html, {
+      pageSize: this.opcionTamanoPapel === 'letter' ? 'Letter' : 'A4'
+    });
+
+    if (res.success) {
+      this.presentToast('✓ Documento enviado exitosamente a la impresora', 'success');
+    } else {
+      this.presentToast('Error al imprimir: ' + (res.error || 'Fallo de impresora'), 'danger');
+    }
+  }
+
+  async imprimirConsentimientoDirecto() {
+    if (!this.cartaPacienteSeleccionado) {
+      this.presentToast('Por favor seleccione un paciente.', 'warning');
+      return;
+    }
+    localStorage.setItem('default_carta_ciudad', this.cartaCiudad);
+    
+    // Si no está abierto el studio, abrimos brevemente el DOM oculto o llamamos directamente a imprimir
+    this.showPrintStudioModal = true;
+    setTimeout(async () => {
+      await this.imprimirDirecto();
+      this.showPrintStudioModal = false;
+    }, 150);
   }
 
   generarCartaWord() {
@@ -829,11 +850,11 @@ export class PacientesPage implements OnInit {
     }
   }
 
-  async presentToast(message: string, color: 'success' | 'danger') {
+  async presentToast(message: string, color: 'success' | 'danger' | 'info' | 'warning' | 'primary' = 'success') {
     const toast = await this.toastController.create({
       message,
       duration: 3000,
-      color,
+      color: (color === 'info' || color === 'primary') ? 'primary' : (color === 'warning' ? 'warning' : color),
       position: 'bottom',
       cssClass: 'custom-toast'
     });

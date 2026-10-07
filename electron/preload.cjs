@@ -11,5 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   onServerStatus: (callback) => ipcRenderer.on('server-status', (event, value) => callback(value)),
-  onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, value) => callback(value))
+  onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, value) => callback(value)),
+  getPrinters: () => ipcRenderer.invoke('get-printers'),
+  getPrinterConfig: () => ipcRenderer.invoke('get-printer-config'),
+  savePrinterConfig: (config) => ipcRenderer.invoke('save-printer-config', config),
+  printHtml: (options) => ipcRenderer.invoke('print-html', options)
 });

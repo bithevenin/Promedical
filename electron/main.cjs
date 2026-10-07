@@ -15,6 +15,7 @@ autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 const configPath = path.join(app.getPath('userData'), 'promedical_lan_config.json');
+const printerConfigPath = path.join(app.getPath('userData'), 'promedical_printer_config.json');
 
 function loadConfig() {
   const defaultConfig = {
@@ -45,6 +46,42 @@ function saveConfig(config) {
     return true;
   } catch (err) {
     console.error('[Electron] Error saving config:', err);
+    return false;
+  }
+}
+
+function loadPrinterConfig() {
+  const defaultConfig = {
+    selectedPrinter: '', // '' significa impresora predeterminada del sistema
+    silent: true,
+    pageSize: 'Letter',
+    landscape: false,
+    copies: 1,
+    margins: 'none',
+    printBackground: true
+  };
+  try {
+    if (fs.existsSync(printerConfigPath)) {
+      const data = fs.readFileSync(printerConfigPath, 'utf8');
+      return { ...defaultConfig, ...JSON.parse(data) };
+    }
+  } catch (err) {
+    console.error('[Electron] Error loading printer config:', err);
+  }
+  return defaultConfig;
+}
+
+function savePrinterConfig(config) {
+  try {
+    const dir = path.dirname(printerConfigPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(printerConfigPath, JSON.stringify(config, null, 2), 'utf8');
+    console.log('[Electron] Printer config successfully saved to:', printerConfigPath, config);
+    return true;
+  } catch (err) {
+    console.error('[Electron] Error saving printer config:', err);
     return false;
   }
 }
@@ -190,6 +227,17 @@ async function createWindow() {
   mainWindow.setMenu(null);
   mainWindow.maximize();
 
+  // Prevenir que ventanas secundarias o popups pierdan la sesión o abran instancias aisladas
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http:') || url.startsWith('https:')) {
+      if (!url.includes('localhost') && !url.includes('127.0.0.1')) {
+        require('electron').shell.openExternal(url);
+        return { action: 'deny' };
+      }
+    }
+    return { action: 'allow' };
+  });
+
   // Prevenir Super Zoom excesivo por escalado de pantalla en Windows
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.setZoomFactor(0.88);
@@ -303,6 +351,109 @@ ipcMain.handle('get-network-info', () => {
   };
 });
 
+// --- IPC Impresoras y Manejo Directo de Impresión ---
+ipcMain.handle('get-printers', async () => {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const printers = await mainWindow.webContents.getPrintersAsync();
+      return printers;
+    }
+    return [];
+  } catch (err) {
+    console.error('[Electron] Error al obtener lista de impresoras:', err);
+    return [];
+  }
+});
+
+ipcMain.handle('get-printer-config', () => {
+  return loadPrinterConfig();
+});
+
+ipcMain.handle('save-printer-config', (event, config) => {
+  return savePrinterConfig(config);
+});
+
+ipcMain.handle('print-html', async (event, options = {}) => {
+  const {
+    html,
+    printerName = '',
+    silent = true,
+    copies = 1,
+    pageSize = 'Letter',
+    landscape = false,
+    margins = 'none',
+    printBackground = true
+  } = options;
+
+  let printWin = new BrowserWindow({
+    show: false,
+    width: 800,
+    height: 1100,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  return new Promise((resolve) => {
+    let handled = false;
+    const cleanup = () => {
+      if (!handled) {
+        handled = true;
+        if (printWin && !printWin.isDestroyed()) {
+          printWin.destroy();
+          printWin = null;
+        }
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, error: 'Tiempo de espera agotado al comunicarse con la impresora.' });
+    }, 30000);
+
+    printWin.webContents.on('did-finish-load', () => {
+      setTimeout(() => {
+        const marginMap = {
+          none: { marginType: 'none' },
+          default: { marginType: 'default' },
+          minimum: { marginType: 'minimum' }
+        };
+
+        const printSettings = {
+          silent: silent !== false,
+          printBackground: printBackground !== false,
+          deviceName: printerName || '',
+          copies: Math.max(1, parseInt(copies, 10) || 1),
+          pageSize: pageSize || 'Letter',
+          landscape: Boolean(landscape),
+          margins: marginMap[margins] || { marginType: 'none' }
+        };
+
+        printWin.webContents.print(printSettings, (success, failureReason) => {
+          clearTimeout(timeout);
+          cleanup();
+          if (!success) {
+            console.error('[Electron] Error al imprimir:', failureReason);
+            resolve({ success: false, error: failureReason || 'Error al comunicarse con la impresora' });
+          } else {
+            console.log('[Electron] Impresión enviada exitosamente a:', printerName || 'Predeterminada');
+            resolve({ success: true, printer: printerName || 'Predeterminada' });
+          }
+        });
+      }, 350);
+    });
+
+    printWin.webContents.on('did-fail-load', (e, code, desc) => {
+      clearTimeout(timeout);
+      cleanup();
+      resolve({ success: false, error: `Error cargando plantilla: ${desc}` });
+    });
+
+    printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  });
+});
+
 ipcMain.handle('restart-app', () => {
   app.relaunch();
   app.exit(0);
@@ -334,7 +485,23 @@ ipcMain.handle('install-update', () => {
   autoUpdater.quitAndInstall(false, true);
 });
 
-app.whenReady().then(createWindow);
+// Single Instance Lock: Garantiza una única instancia activa para no duplicar procesos ni romper la sesión
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('[Electron] Ya existe una instancia activa de ProMedical. Enfocando ventana existente y cerrando duplicado.');
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Al intentar abrir otra ventana/icono, enfocamos la existente preservando la sesión activa al 100%
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(createWindow);
+}
 
 app.on('window-all-closed', () => {
   if (serverInstance && serverInstance.server) {

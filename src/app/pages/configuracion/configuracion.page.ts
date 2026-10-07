@@ -12,6 +12,7 @@ import { NotificationService } from '../../services/notification.service';
 import { UpdateService } from '../../services/update.service';
 import { formatMonto } from '../../utils/format.utils';
 import { ConfiguracionDoctor, TarifaSeguro, Paciente, Consulta, UserProfile } from '../../models';
+import { PrintRecetaService, PrinterConfig } from '../../services/print-receta.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -34,14 +35,29 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         tarifasSeguros: []
     };
 
-    selectedSegment: 'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado' = 'consultorio';
+    selectedSegment: 'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado' | 'impresion' = 'consultorio';
     guardando = false;
     progresoImportacion = 0;
     mensajeExito = '';
 
-    cambiarSegmento(seg: 'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado') {
+    cambiarSegmento(seg: 'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado' | 'impresion') {
         this.selectedSegment = seg;
     }
+
+    // Impresión & Hardware Direct State
+    impresoras: any[] = [];
+    cargandoImpresoras = false;
+    probandoImpresion = false;
+    impresionFeedback: { ok: boolean; message: string } | null = null;
+    configImpresion: PrinterConfig = {
+        selectedPrinter: '',
+        silent: true,
+        pageSize: 'Letter',
+        landscape: false,
+        copies: 1,
+        margins: 'none',
+        printBackground: true
+    };
 
     // DGII & Certificado Testing State
     testingDgii = false;
@@ -111,6 +127,7 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         private supabaseService: SupabaseService,
         public syncService: SyncService,
         public updateService: UpdateService,
+        public printService: PrintRecetaService,
         private router: Router,
         private route: ActivatedRoute,
         public themeService: ThemeService,
@@ -119,11 +136,12 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.cargarConfiguracionLan();
-        // Suscribirse a queryParams para abrir pestaña específica (ej: tab=usuarios)
+        this.cargarConfiguracionImpresion();
+        // Suscribirse a queryParams para abrir pestaña específica (ej: tab=usuarios o tab=impresion)
         this.routeSub = this.route.queryParams.subscribe(params => {
             if (params && params['tab']) {
-                const validTabs: Array<'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado'> = [
-                    'consultorio', 'usuarios', 'datos', 'red_lan', 'facturacion', 'certificado'
+                const validTabs: Array<'consultorio' | 'usuarios' | 'datos' | 'red_lan' | 'facturacion' | 'certificado' | 'impresion'> = [
+                    'consultorio', 'usuarios', 'datos', 'red_lan', 'facturacion', 'certificado', 'impresion'
                 ];
                 if (validTabs.includes(params['tab'])) {
                     this.selectedSegment = params['tab'];
@@ -165,10 +183,13 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
             // 1. Guardar configuración básica en la DB
             await this.configService.saveConfig(this.config);
 
-            // 2. Guardar también la configuración LAN actual para evitar pérdida de ajustes
+            // 2. Guardar también la configuración LAN actual
             await this.guardarConfiguracionLan(true);
 
-            this.notificationService.showSuccess('¡Configuración Guardada!', 'Los ajustes del consultorio y red LAN se actualizaron correctamente.');
+            // 3. Guardar configuración de impresoras
+            await this.guardarConfiguracionImpresion(true);
+
+            this.notificationService.showSuccess('¡Configuración Guardada!', 'Los ajustes del consultorio, red LAN e impresión se actualizaron correctamente.');
         } catch (error) {
             console.error('Error al guardar configuración:', error);
             this.notificationService.showError('Error', 'No se pudo guardar la configuración. Revisa tu conexión.');
@@ -898,6 +919,77 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
             this.notificationService.showError('Validación Fallida', this.resultadoCertificado.message);
         } finally {
             this.validandoCertificado = false;
+        }
+    }
+
+    // --- Métodos de Gestión de Impresoras y Salida Directa ---
+    async cargarConfiguracionImpresion() {
+        try {
+            this.configImpresion = await this.printService.getPrinterConfig();
+            await this.refrescarImpresoras();
+        } catch (e) {
+            console.error('Error al cargar configuración de impresión:', e);
+        }
+    }
+
+    async refrescarImpresoras() {
+        this.cargandoImpresoras = true;
+        try {
+            this.impresoras = await this.printService.getPrinters();
+        } catch (e) {
+            console.error('Error al refrescar impresoras:', e);
+        } finally {
+            this.cargandoImpresoras = false;
+        }
+    }
+
+    async seleccionarImpresora(nombre: string) {
+        this.configImpresion.selectedPrinter = nombre;
+        await this.guardarConfiguracionImpresion(true);
+    }
+
+    async guardarConfiguracionImpresion(silencioso = false) {
+        try {
+            const ok = await this.printService.savePrinterConfig(this.configImpresion);
+            if (!silencioso) {
+                if (ok) {
+                    this.notificationService.showSuccess('Ajustes de Impresión Guardados', 'Preferencias de impresora y modo silencioso actualizadas.');
+                } else {
+                    this.notificationService.showError('Error', 'No se pudieron guardar los ajustes de impresora.');
+                }
+            }
+        } catch (e) {
+            console.error('Error al guardar configuración de impresora:', e);
+        }
+    }
+
+    async probarImpresionDirecta() {
+        this.probandoImpresion = true;
+        this.impresionFeedback = null;
+        try {
+            const target = this.configImpresion.selectedPrinter || '';
+            const res = await this.printService.imprimirPaginaPrueba(target);
+            if (res.success) {
+                this.impresionFeedback = {
+                    ok: true,
+                    message: `¡Página de prueba enviada con éxito a "${target || 'Impresora Predeterminada de Windows'}"!`
+                };
+                this.notificationService.showSuccess('Impresión Exitosa', this.impresionFeedback.message);
+            } else {
+                this.impresionFeedback = {
+                    ok: false,
+                    message: res.error || 'Error al comunicarse con la impresora.'
+                };
+                this.notificationService.showError('Fallo de Impresión', this.impresionFeedback.message);
+            }
+        } catch (err: any) {
+            this.impresionFeedback = {
+                ok: false,
+                message: err?.message || 'Error inesperado al intentar imprimir la página de prueba.'
+            };
+            this.notificationService.showError('Error', this.impresionFeedback.message);
+        } finally {
+            this.probandoImpresion = false;
         }
     }
 }
