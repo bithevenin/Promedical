@@ -89,14 +89,19 @@ async function startServer(port = 3000, customDbPath = null) {
   app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
     try {
-      const users = db.select('usuarios', { filters: { correo: email } });
-      const user = users[0];
+      const allUsers = db.select('usuarios') || [];
+      const cleanInput = (email || '').trim().toLowerCase();
+      const user = allUsers.find(u => 
+        (u.correo && u.correo.toLowerCase() === cleanInput) ||
+        (u.nombre && u.nombre.toLowerCase() === cleanInput) ||
+        (u.correo && u.correo.split('@')[0].toLowerCase() === cleanInput)
+      );
       if (!user) {
         // Auto-create user profile if it's first login locally
         const newUser = {
           id: 'usr-' + Date.now(),
-          correo: email,
-          nombre: email.split('@')[0],
+          correo: cleanInput.includes('@') ? cleanInput : `${cleanInput}@promedical.local`,
+          nombre: email,
           rol: 'doctor',
           especialidad: 'Medicina General',
           password_hash: password || '12345678'

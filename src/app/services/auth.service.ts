@@ -56,6 +56,15 @@ export class AuthService {
         }
       }
     });
+
+    // 3. Sincronizar usuarios desde Supabase Cloud a la base de datos local SQLite para acceso offline
+    this.syncUsersFromCloudToLocal();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        console.log('[AuthService] Red reanudada: Sincronizando usuarios de Supabase hacia SQLite local...');
+        this.syncUsersFromCloudToLocal();
+      });
+    }
   }
 
   private restoreOfflineSessionIfAvailable() {
@@ -404,42 +413,115 @@ export class AuthService {
     return authData || { user: newProfile };
   }
 
-  async signIn(email: string, password: string) {
+  async syncUsersFromCloudToLocal() {
+    try {
+      const { data, error } = await this.supabase
+        .from('usuarios')
+        .select('*');
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const localClient = this.supabaseService.client;
+        for (const u of data) {
+          try {
+            await localClient.from('usuarios').upsert({
+              id: u.id,
+              correo: u.correo,
+              nombre: u.nombre,
+              rol: u.rol || 'doctor',
+              especialidad: u.especialidad || '',
+              foto_url: u.foto_url || ''
+            });
+          } catch {}
+        }
+        console.log(`[AuthService] Sincronizados ${data.length} usuarios desde Supabase hacia SQLite local`);
+      }
+    } catch (e) {
+      // Sin internet o error de conexión
+    }
+  }
+
+  async signIn(identifier: string, password: string) {
     this.isExplicitSignOut = false;
     let cloudError: any = null;
+    const cleanId = (identifier || '').trim();
 
-    // 1. Intentar inicio de sesión en Supabase Cloud si hay conexión
-    try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    // Determinar si es correo o nombre de usuario
+    let emailToUse = cleanId;
 
-      if (!error && data?.session) {
-        this.saveOfflineSession(data.session);
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(OFFLINE_CRED_HASH_KEY, btoa(email.toLowerCase() + ':' + password));
+    // Si NO contiene '@', es un nombre de usuario. Intentar resolver su correo asociado
+    if (!cleanId.includes('@')) {
+      // 1. Buscar en la base de datos local SQLite primero
+      try {
+        const localClient = this.supabaseService.client;
+        const { data: localUsers } = await localClient.from('usuarios').select('*');
+        if (Array.isArray(localUsers)) {
+          const match = localUsers.find(u => 
+            (u.nombre && u.nombre.trim().toLowerCase() === cleanId.toLowerCase()) ||
+            (u.correo && u.correo.split('@')[0].toLowerCase() === cleanId.toLowerCase())
+          );
+          if (match && match.correo) {
+            emailToUse = match.correo;
+            console.log('[AuthService] Nombre de usuario resuelto a correo en SQLite local:', cleanId, '->', emailToUse);
+          }
         }
-        await this.loadProfile(data.user.id);
-        if (this.userProfile.value) {
-          this.syncUserToLocalDb(this.userProfile.value, password);
-        }
-        return data;
+      } catch {}
+
+      // 2. Si no se resolvió en local y hay conexión, buscar en Supabase Cloud
+      if (!emailToUse.includes('@')) {
+        try {
+          const { data: cloudUsers } = await this.supabase
+            .from('usuarios')
+            .select('*')
+            .ilike('nombre', cleanId)
+            .limit(1);
+
+          if (cloudUsers && cloudUsers.length > 0 && cloudUsers[0].correo) {
+            emailToUse = cloudUsers[0].correo;
+            console.log('[AuthService] Nombre de usuario resuelto a correo en Supabase Cloud:', cleanId, '->', emailToUse);
+          }
+        } catch {}
       }
-      cloudError = error;
-    } catch (err: any) {
-      cloudError = err;
+    }
+
+    // 1. Intentar inicio de sesión en Supabase Cloud si hay conexión y tenemos un correo válido
+    if (emailToUse.includes('@')) {
+      try {
+        const { data, error } = await this.supabase.auth.signInWithPassword({
+          email: emailToUse,
+          password
+        });
+
+        if (!error && data?.session) {
+          this.saveOfflineSession(data.session);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(OFFLINE_CRED_HASH_KEY, btoa(emailToUse.toLowerCase() + ':' + password));
+            // También guardar hash para el identificador usado (ej: nombre de usuario)
+            if (cleanId.toLowerCase() !== emailToUse.toLowerCase()) {
+              localStorage.setItem('promedical_alias_' + cleanId.toLowerCase(), emailToUse.toLowerCase());
+            }
+          }
+          await this.loadProfile(data.user.id);
+          if (this.userProfile.value) {
+            this.syncUserToLocalDb(this.userProfile.value, password);
+          }
+          this.syncUsersFromCloudToLocal();
+          return data;
+        }
+        cloudError = error;
+      } catch (err: any) {
+        cloudError = err;
+      }
     }
 
     // 2. Si falló la nube pero es por error de red / sin internet, intentar login local LAN
     console.warn('[AuthService] No se pudo autenticar en la nube, activando fallback local LAN:', cloudError);
 
     try {
-      const localAuth = await this.signInLocalLan(email, password);
+      const localAuth = await this.signInLocalLan(emailToUse, password);
       if (localAuth?.session) {
         this.saveOfflineSession(localAuth.session);
         if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(OFFLINE_CRED_HASH_KEY, btoa(email.toLowerCase() + ':' + password));
+          localStorage.setItem(OFFLINE_CRED_HASH_KEY, btoa(emailToUse.toLowerCase() + ':' + password));
         }
         await this.loadProfile(localAuth.user.id);
         return localAuth;
@@ -450,19 +532,20 @@ export class AuthService {
 
     // 3. Fallback directo con credenciales guardadas en almacenamiento local
     const cachedHash = typeof localStorage !== 'undefined' ? localStorage.getItem(OFFLINE_CRED_HASH_KEY) : null;
-    const currentHash = btoa(email.toLowerCase() + ':' + password);
+    const currentHash = btoa(emailToUse.toLowerCase() + ':' + password);
     const cachedSession = this.getOfflineSession();
     const cachedProfile = this.getOfflineProfile();
 
     const matchesHash = cachedHash && cachedHash === currentHash;
-    const matchesEmail = (cachedSession?.user?.email?.toLowerCase() === email.toLowerCase()) ||
-                         (cachedProfile?.correo?.toLowerCase() === email.toLowerCase());
+    const matchesEmail = (cachedSession?.user?.email?.toLowerCase() === emailToUse.toLowerCase()) ||
+                         (cachedProfile?.correo?.toLowerCase() === emailToUse.toLowerCase()) ||
+                         (cachedProfile?.nombre?.toLowerCase() === cleanId.toLowerCase());
 
     if (matchesHash || matchesEmail) {
       console.log('[AuthService] Acceso offline concedido por credenciales locales guardadas.');
       const fallbackUser = cachedSession?.user || {
         id: cachedProfile?.id || 'usr-emergency-local',
-        email: email,
+        email: emailToUse,
         user_metadata: { nombre: cachedProfile?.nombre || 'Doctor', rol: cachedProfile?.rol || 'doctor' }
       };
       const fallbackSession = cachedSession || {
@@ -486,7 +569,7 @@ export class AuthService {
       throw cloudError;
     }
 
-    throw new Error('Sin conexión a internet. Verifique sus credenciales o asegúrese de haber iniciado sesión al menos una vez en este equipo.');
+    throw new Error('Sin conexión a internet o credenciales incorrectas. Verifique sus datos o inicie sesión con su correo registrado.');
   }
 
   private async signInLocalLan(email: string, password: string): Promise<any> {
