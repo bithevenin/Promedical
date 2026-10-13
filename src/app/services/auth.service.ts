@@ -255,22 +255,46 @@ export class AuthService {
   }
 
   async getAllUsers() {
+    const userMap = new Map<string, any>();
+
+    // 1. Intentar consultar en Supabase Cloud si hay conexión
     try {
       const { data, error } = await this.supabase
         .from('usuarios')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) return data;
-    } catch {}
+      if (!error && Array.isArray(data)) {
+        for (const u of data) {
+          const key = (u.correo || u.id || '').toLowerCase();
+          if (key) userMap.set(key, u);
+        }
+      }
+    } catch (e) {
+      console.warn('[AuthService] Error obteniendo usuarios de la nube:', e);
+    }
 
-    // Fallback local si no hay internet
-    const localClient = this.supabaseService.client;
-    const { data } = await localClient
-      .from('usuarios')
-      .select('*')
-      .order('nombre', { ascending: true });
-    return data || [];
+    // 2. Consultar en SQLite local LAN para incluir usuarios locales u offline
+    try {
+      const localClient = this.supabaseService.client;
+      const { data: localData } = await localClient
+        .from('usuarios')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+      if (Array.isArray(localData)) {
+        for (const u of localData) {
+          const key = (u.correo || u.id || '').toLowerCase();
+          if (key && !userMap.has(key)) {
+            userMap.set(key, u);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[AuthService] Error obteniendo usuarios locales:', e);
+    }
+
+    return Array.from(userMap.values());
   }
 
   async updateUser(id: string, nombre: string, fotoUrl: string, rol: string, especialidad?: string) {
@@ -320,21 +344,64 @@ export class AuthService {
   }
 
   async signUp(email: string, password: string, nombre: string, fotoUrl: string, rol: string = 'doctor', especialidad: string = '') {
-    const { data: authData, error: authError } = await this.supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nombre,
-          foto_url: fotoUrl,
-          rol,
-          especialidad
-        }
-      }
-    });
+    let userId = '';
+    let authData: any = null;
 
-    if (authError) throw authError;
-    return authData;
+    // 1. Intentar registrar en Supabase Auth si hay conexión a internet
+    try {
+      const { data, error } = await this.supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nombre,
+            foto_url: fotoUrl,
+            rol,
+            especialidad
+          }
+        }
+      });
+      if (error) {
+        console.warn('[AuthService] Supabase signUp aviso:', error.message);
+      }
+      authData = data;
+      if (data?.user?.id) {
+        userId = data.user.id;
+      }
+    } catch (err) {
+      console.warn('[AuthService] Supabase Cloud signUp no disponible (offline o error):', err);
+    }
+
+    if (!userId) {
+      userId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'usr-' + Date.now();
+    }
+
+    const newProfile = {
+      id: userId,
+      correo: email,
+      nombre,
+      foto_url: fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=random`,
+      rol,
+      especialidad: especialidad || ''
+    };
+
+    // 2. Insertar EXPLÍCITAMENTE en la tabla 'usuarios' de Supabase Cloud
+    try {
+      await this.supabase.from('usuarios').upsert(newProfile);
+      console.log('[AuthService] Perfil de usuario insertado en tabla usuarios de Supabase');
+    } catch (cloudInsertErr) {
+      console.warn('[AuthService] No se pudo insertar en usuarios de Supabase Cloud:', cloudInsertErr);
+    }
+
+    // 3. Insertar SIEMPRE en la base de datos local SQLite (LAN)
+    try {
+      await this.syncUserToLocalDb(newProfile, password);
+      console.log('[AuthService] Perfil de usuario insertado en SQLite local LAN');
+    } catch (localInsertErr) {
+      console.warn('[AuthService] No se pudo insertar en usuarios de SQLite local:', localInsertErr);
+    }
+
+    return authData || { user: newProfile };
   }
 
   async signIn(email: string, password: string) {
