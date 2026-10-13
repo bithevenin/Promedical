@@ -234,15 +234,15 @@ export class LocalChannel {
       if (records.length === 0) {
         callback({
           eventType: mappedEvent,
-          new: msg.record || {},
-          old: msg.oldRecord || msg.filters || {}
+          new: mappedEvent === 'DELETE' ? {} : (msg.record || {}),
+          old: mappedEvent === 'DELETE' ? (msg.record || msg.oldRecord || msg.filters || {}) : (msg.oldRecord || msg.filters || {})
         });
       } else {
         for (const item of records) {
           callback({
             eventType: mappedEvent,
-            new: item,
-            old: msg.oldRecord || {}
+            new: mappedEvent === 'DELETE' ? {} : item,
+            old: mappedEvent === 'DELETE' ? (item || msg.filters || {}) : (msg.oldRecord || {})
           });
         }
       }
@@ -316,7 +316,7 @@ export class LocalWebSocketManager {
           if (data.type === 'broadcast') {
             for (const [, list] of this.listeners) {
               for (const listener of list) {
-                if (!listener.table || listener.table === '*' || listener.table === data.table) {
+                if (!listener.table || listener.table === '*' || listener.table === data.table || data.table === '*') {
                   listener.callback(data);
                 }
               }
@@ -349,6 +349,14 @@ export class LocalWebSocketManager {
   reconnect() {
     this.retryCount = 0;
     clearTimeout(this.reconnectTimeout);
+    if (this.ws) {
+      try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.close();
+      } catch {}
+      this.ws = null;
+    }
     this.connect();
   }
 

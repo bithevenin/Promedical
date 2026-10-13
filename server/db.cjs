@@ -610,11 +610,12 @@ class LocalDB {
       params.push(val);
     }
 
-    let sql = `UPDATE ${table} SET ${setClauses}`;
-    if (whereClauses.length > 0) {
-      sql += ` WHERE ${whereClauses.join(' AND ')}`;
+    if (whereClauses.length === 0) {
+      console.warn(`[LocalDB] BLOCKED unsafe UPDATE without WHERE clause on table: ${table}`);
+      return [];
     }
 
+    let sql = `UPDATE ${table} SET ${setClauses} WHERE ${whereClauses.join(' AND ')}`;
     const stmt = this.prepare(sql);
     stmt.run(...params);
     this.save();
@@ -626,16 +627,17 @@ class LocalDB {
     const whereClauses = [];
 
     for (const [key, val] of Object.entries(filters)) {
-      if (val === null || val === undefined) continue;
+      if (val === null || val === undefined || val === '') continue;
       whereClauses.push(`${key} = ?`);
       params.push(val);
     }
 
-    let sql = `DELETE FROM ${table}`;
-    if (whereClauses.length > 0) {
-      sql += ` WHERE ${whereClauses.join(' AND ')}`;
+    if (whereClauses.length === 0) {
+      console.warn(`[LocalDB] BLOCKED unsafe DELETE without WHERE clause on table: ${table}`);
+      return { success: false, error: 'Unsafe delete without filters blocked' };
     }
 
+    let sql = `DELETE FROM ${table} WHERE ${whereClauses.join(' AND ')}`;
     const stmt = this.prepare(sql);
     stmt.run(...params);
     this.save();

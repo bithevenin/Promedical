@@ -114,17 +114,26 @@ export class AppointmentService {
 
             } else if (payload.eventType === 'DELETE') {
               const currentList = this.appointmentsSubject.value;
-              // El servidor ahora envía record = filters en DELETE → está en payload.new
-              const targetId = payload.new?.id || payload.old?.id || payload.filters?.id;
-              const targetTurno = payload.new?.turno || payload.old?.turno || payload.filters?.turno;
-              const updated = currentList.filter(item => {
-                if (targetId) return String(item.id) !== String(targetId);
-                if (targetTurno) return String(item.turno) !== String(targetTurno);
-                return true;
-              });
-              this.appointmentsSubject.next(updated);
-              if (targetId) {
-                this.offlineService.deleteLocalData('citas', targetId).catch(() => {});
+              const targetId = payload.old?.id || payload.new?.id || payload.filters?.id;
+              const targetTurno = payload.old?.turno || payload.new?.turno || payload.filters?.turno;
+              const targetFecha = payload.old?.fecha || payload.new?.fecha || payload.filters?.fecha;
+
+              // Solo eliminar si tenemos un identificador concreto
+              if (targetId || (targetTurno !== undefined && targetTurno !== null)) {
+                const updated = currentList.filter(item => {
+                  if (targetId && item.id) return String(item.id) !== String(targetId);
+                  if (targetTurno !== undefined && targetTurno !== null) {
+                    if (targetFecha && item.fecha) {
+                      return !(String(item.turno) === String(targetTurno) && item.fecha === targetFecha);
+                    }
+                    return String(item.turno) !== String(targetTurno);
+                  }
+                  return true;
+                });
+                this.appointmentsSubject.next(updated);
+                if (targetId) {
+                  this.offlineService.deleteLocalData('citas', targetId).catch(() => {});
+                }
               }
             }
           });
@@ -166,10 +175,11 @@ export class AppointmentService {
       }
     } catch (error) {
       console.warn('[AppointmentService] Network issue, fetching appointments from offline storage:', error);
+      const local = await this.offlineService.getLocalData<Cita>('citas');
+      if (local && local.length > 0) {
+        this.appointmentsSubject.next(local);
+      }
     }
-
-    const local = await this.offlineService.getLocalData<Cita>('citas');
-    this.appointmentsSubject.next(local);
   }
 
   getAppointments() {

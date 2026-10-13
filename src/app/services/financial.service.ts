@@ -98,6 +98,13 @@ export class FinancialService {
 
   private handleTransaccionRealtime(payload: any) {
     if (payload.eventType === 'RELOAD_ALL') { this.refreshTransactions(); return; }
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id || payload.new?.id || payload.filters?.id;
+      if (id) {
+        this.transactionsSubject.next(this.transactionsSubject.value.filter(t => String(t.id) !== String(id)));
+      }
+      return;
+    }
     const item = payload.new;
     if (!item) return;
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
@@ -106,14 +113,18 @@ export class FinancialService {
       if (idx >= 0) current[idx] = { ...current[idx], ...item };
       else current.unshift(item);
       this.transactionsSubject.next(current);
-    } else if (payload.eventType === 'DELETE') {
-      const id = item?.id || payload.old?.id;
-      this.transactionsSubject.next(this.transactionsSubject.value.filter(t => t.id !== id));
     }
   }
 
   private handleFacturaRealtime(payload: any) {
     if (payload.eventType === 'RELOAD_ALL') { this.refreshFacturasSeguro(); return; }
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id || payload.new?.id || payload.filters?.id;
+      if (id) {
+        this.facturasSeguroSubject.next(this.facturasSeguroSubject.value.filter(item => String(item.id) !== String(id)));
+      }
+      return;
+    }
     const f = payload.new;
     if (!f) return;
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
@@ -134,14 +145,18 @@ export class FinancialService {
       if (idx >= 0) current[idx] = { ...current[idx], ...factura };
       else current.unshift(factura);
       this.facturasSeguroSubject.next(current);
-    } else if (payload.eventType === 'DELETE') {
-      const id = f?.id || payload.old?.id;
-      this.facturasSeguroSubject.next(this.facturasSeguroSubject.value.filter(item => item.id !== id));
     }
   }
 
   private handleReportePagoRealtime(payload: any) {
     if (payload.eventType === 'RELOAD_ALL') { this.refreshReportesPagosSeguro(); return; }
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id || payload.new?.id || payload.filters?.id;
+      if (id) {
+        this.reportesPagosSeguroSubject.next(this.reportesPagosSeguroSubject.value.filter(item => String(item.id) !== String(id)));
+      }
+      return;
+    }
     const r = payload.new;
     if (!r) return;
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'UPSERT') {
@@ -150,9 +165,6 @@ export class FinancialService {
       if (idx >= 0) current[idx] = { ...current[idx], ...r };
       else current.unshift(r);
       this.reportesPagosSeguroSubject.next(current);
-    } else if (payload.eventType === 'DELETE') {
-      const id = r?.id || payload.old?.id;
-      this.reportesPagosSeguroSubject.next(this.reportesPagosSeguroSubject.value.filter(item => item.id !== id));
     }
   }
 

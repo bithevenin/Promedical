@@ -4,6 +4,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ConfigService } from '../../services/config.service';
 import { PatientService } from '../../services/patient.service';
 import { ConsultationService } from '../../services/consultation.service';
+import { AppointmentService } from '../../services/appointment.service';
+import { FinancialService } from '../../services/financial.service';
 import { AuthService } from '../../services/auth.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { SyncService } from '../../services/sync.service';
@@ -123,6 +125,8 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         private configService: ConfigService,
         private patientService: PatientService,
         private consultationService: ConsultationService,
+        private appointmentService: AppointmentService,
+        private financialService: FinancialService,
         private authService: AuthService,
         private supabaseService: SupabaseService,
         public syncService: SyncService,
@@ -641,10 +645,15 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
         const targetHost = this.lanMode === 'server' ? 'localhost' : (this.lanHost || '192.168.0.101');
         const targetPort = this.lanPort || 3000;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
         try {
             const res = await fetch(`http://${targetHost}:${targetPort}/api/status`, {
-                headers: { 'Accept': 'application/json' }
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             const latency = Date.now() - startTime;
             if (res.ok) {
                 const data = await res.json();
@@ -737,6 +746,8 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
             this.configService.refreshConfig();
             this.patientService.refreshPatients();
             this.consultationService.refreshConsultas();
+            this.appointmentService.refreshAppointments();
+            this.financialService.refreshAll();
         } catch (e: any) {
             if (!silent) {
                 this.notificationService.showError('Error', e.message || 'No se pudo guardar la configuración.');

@@ -75,11 +75,22 @@ export class PatientService {
         await this.refreshPatients();
         return;
       }
+
+      if (payload?.eventType === 'DELETE') {
+        const cedulaToDelete = payload?.old?.cedula || payload?.new?.cedula || payload?.filters?.cedula;
+        if (cedulaToDelete) {
+          const current = this.patientsSubject.getValue().filter(item => item.cedula !== cedulaToDelete);
+          this.patientsSubject.next(current);
+          await this.offlineService.deleteLocalData('pacientes', cedulaToDelete);
+        }
+        return;
+      }
+
       const p = payload?.new;
       if (p && p.cedula) {
         const patient: Paciente = {
           cedula: p.cedula,
-          nombre: p.nombre,
+          nombre: p.nombre || '',
           edad: p.fecha_nacimiento ? this.calcularEdad(p.fecha_nacimiento) : (p.edad || 0),
           fecha_nacimiento: p.fecha_nacimiento,
           profesion: p.profesion || '',
@@ -102,16 +113,16 @@ export class PatientService {
         const idx = current.findIndex(item => item.cedula === patient.cedula);
         let updated = [...current];
         if (idx >= 0) {
+          // Si el nombre viene vacío por error en payload, preservar el nombre existente
+          if (!patient.nombre && updated[idx].nombre) {
+            patient.nombre = updated[idx].nombre;
+          }
           updated[idx] = { ...updated[idx], ...patient };
-        } else {
+        } else if (patient.nombre) {
           updated.unshift(patient);
         }
         this.patientsSubject.next(updated);
         await this.offlineService.saveLocalData('pacientes', patient);
-      } else if (payload?.eventType === 'DELETE' && payload?.old?.cedula) {
-        const current = this.patientsSubject.getValue().filter(item => item.cedula !== payload.old.cedula);
-        this.patientsSubject.next(current);
-        await this.offlineService.deleteLocalData('pacientes', payload.old.cedula);
       }
     });
   }

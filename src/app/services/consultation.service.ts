@@ -74,10 +74,10 @@ export class ConsultationService {
               await this.offlineService.saveLocalData('consultas', consulta);
             } else if (payload.eventType === 'DELETE') {
               const currentList = this.consultationsSubject.value;
-              const targetId = payload.old?.id || payload.old?.filters?.id;
-              const updated = currentList.filter(item => item.id !== targetId);
-              this.consultationsSubject.next(updated);
+              const targetId = payload.old?.id || payload.old?.filters?.id || payload.new?.id || payload.filters?.id;
               if (targetId) {
+                const updated = currentList.filter(item => String(item.id) !== String(targetId));
+                this.consultationsSubject.next(updated);
                 await this.offlineService.deleteLocalData('consultas', targetId);
               }
             }

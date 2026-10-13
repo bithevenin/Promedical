@@ -31,6 +31,12 @@ export class LoginPage implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe(async params => {
       if (params['authWarning']) {
+        const isActive = await this.authService.isSessionActive();
+        if (isActive) {
+          this.router.navigate(['/main']);
+          return;
+        }
+
         try {
           const modal = await this.modalCtrl.create({
             component: ErrorModalComponent,
