@@ -13,6 +13,11 @@ import * as XLSX from 'xlsx';
 import { getLocalDateString } from '../../utils/format.utils';
 import { Transaccion, Cita, FacturaSeguro } from '../../models';
 
+const currencyFormatter = new Intl.NumberFormat('es-DO', {
+  style: 'currency',
+  currency: 'DOP'
+});
+
 @Component({
   selector: 'app-cierre-turno',
   templateUrl: './cierre-turno.page.html',
@@ -91,10 +96,7 @@ export class CierreTurnoPage implements OnInit {
   }
 
   formatMonto(monto: number): string {
-    return new Intl.NumberFormat('es-DO', {
-      style: 'currency',
-      currency: 'DOP'
-    }).format(monto);
+    return currencyFormatter.format(monto);
   }
 
   async cerrarTurno() {

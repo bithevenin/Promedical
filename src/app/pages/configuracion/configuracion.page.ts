@@ -610,12 +610,14 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
     async cargarConfiguracionLan() {
         if (typeof window !== 'undefined') {
             const electronApi = (window as any).electronAPI;
+            const storage = window.localStorage;
+            const savedHostFromStorage = storage ? storage.getItem('promedical_lan_server_host') : null;
             if (electronApi) {
                 try {
                     const netInfo = await electronApi.getNetworkInfo();
                     this.lanIps = netInfo.ips || [];
                     this.lanMode = netInfo.mode || 'server';
-                    const savedHost = netInfo.serverHost || localStorage.getItem('promedical_lan_server_host');
+                    const savedHost = netInfo.serverHost || savedHostFromStorage;
                     if (this.lanMode === 'client') {
                         this.lanHost = (savedHost && savedHost !== 'localhost' && savedHost !== '127.0.0.1') ? savedHost : '192.168.0.101';
                     } else {
@@ -625,15 +627,15 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
                 } catch (e) {
                     console.warn('[LAN] Error fetching Electron network info:', e);
                 }
-            } else {
-                this.lanMode = (localStorage.getItem('promedical_lan_mode') as 'server' | 'client') || 'server';
-                const savedHost = localStorage.getItem('promedical_lan_server_host');
-                if (this.lanMode === 'client') {
-                    this.lanHost = (savedHost && savedHost !== 'localhost' && savedHost !== '127.0.0.1') ? savedHost : '192.168.0.101';
+            } else if (storage) {
+                const mode = (storage.getItem('promedical_lan_mode') as 'server' | 'client') || 'server';
+                this.lanMode = mode;
+                if (mode === 'client') {
+                    this.lanHost = (savedHostFromStorage && savedHostFromStorage !== 'localhost' && savedHostFromStorage !== '127.0.0.1') ? savedHostFromStorage : '192.168.0.101';
                 } else {
-                    this.lanHost = savedHost || 'localhost';
+                    this.lanHost = savedHostFromStorage || 'localhost';
                 }
-                this.lanPort = Number(localStorage.getItem('promedical_lan_server_port')) || 3000;
+                this.lanPort = Number(storage.getItem('promedical_lan_server_port')) || 3000;
             }
         }
     }
@@ -760,7 +762,7 @@ export class ConfiguracionPage implements OnInit, OnDestroy {
     descargarBackupLocal() {
         const host = this.lanHost || 'localhost';
         const port = this.lanPort || 3000;
-        window.open(`http://${host}:${port}/api/database/backup`, '_blank');
+        window.open(`http://${host}:${port}/api/database/backup`, '_blank', 'noopener,noreferrer');
     }
 
     async probarConexionDgii() {

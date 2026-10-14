@@ -404,15 +404,20 @@ export class PatientService {
       // 3. Insertar por lotes a Supabase
       if (navigator.onLine) {
         const BATCH_SIZE = 500;
+        const batches: any[][] = [];
         for (let i = 0; i < dbPayloads.length; i += BATCH_SIZE) {
-          const batch = dbPayloads.slice(i, i + BATCH_SIZE);
-          const { error } = await this.supabase.from('pacientes').upsert(batch);
-          if (error) throw error;
+          batches.push(dbPayloads.slice(i, i + BATCH_SIZE));
         }
+        await Promise.all(
+          batches.map(async (batch) => {
+            const { error } = await this.supabase.from('pacientes').upsert(batch);
+            if (error) throw error;
+          })
+        );
       } else {
-        for (const payload of dbPayloads) {
-          await this.offlineService.addToQueue('pacientes', 'upsert', payload);
-        }
+        await Promise.all(
+          dbPayloads.map(payload => this.offlineService.addToQueue('pacientes', 'upsert', payload))
+        );
       }
 
       // 4. Actualizar BehaviorSubject en memoria una sola vez
@@ -726,9 +731,9 @@ export class PatientService {
         }));
 
         // Guardar los resultados en la caché local offline
-        for (const patient of patients) {
-          await this.offlineService.saveLocalData('pacientes', patient);
-        }
+        await Promise.all(
+          patients.map(patient => this.offlineService.saveLocalData('pacientes', patient))
+        );
 
         return patients;
       }

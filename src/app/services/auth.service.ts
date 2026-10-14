@@ -421,18 +421,20 @@ export class AuthService {
 
       if (!error && Array.isArray(data) && data.length > 0) {
         const localClient = this.supabaseService.client;
-        for (const u of data) {
-          try {
-            await localClient.from('usuarios').upsert({
-              id: u.id,
-              correo: u.correo,
-              nombre: u.nombre,
-              rol: u.rol || 'doctor',
-              especialidad: u.especialidad || '',
-              foto_url: u.foto_url || ''
-            });
-          } catch {}
-        }
+        await Promise.all(
+          data.map(async (u) => {
+            try {
+              await localClient.from('usuarios').upsert({
+                id: u.id,
+                correo: u.correo,
+                nombre: u.nombre,
+                rol: u.rol || 'doctor',
+                especialidad: u.especialidad || '',
+                foto_url: u.foto_url || ''
+              });
+            } catch {}
+          })
+        );
         console.log(`[AuthService] Sincronizados ${data.length} usuarios desde Supabase hacia SQLite local`);
       }
     } catch (e) {

@@ -198,14 +198,14 @@ export class ConfigService {
       await this.offlineService.addToQueue('configuracion_doctor', 'upsert', dbConfigPayload, 'id', 1);
       await this.offlineService.addToQueue('tarifas_seguro', 'delete', null, 'seguro', 'NONE');
       if (config.tarifasSeguros.length > 0) {
-        for (const t of config.tarifasSeguros) {
-          await this.offlineService.addToQueue('tarifas_seguro', 'insert', {
+        await Promise.all(config.tarifasSeguros.map(t =>
+          this.offlineService.addToQueue('tarifas_seguro', 'insert', {
             id: t.id,
             seguro: t.seguro,
             monto_cobertura: t.montoCobertura,
             copago: t.copago
-          });
-        }
+          })
+        ));
       }
     }
   }

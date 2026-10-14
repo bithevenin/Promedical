@@ -250,18 +250,22 @@ export class OfflineService {
           let error = null;
 
           if (item.action === 'insert') {
+            // react-doctor-disable-next-line async-await-in-loop
             const { error: err } = await this.supabase.from(item.table).insert([item.data]);
             error = err;
           } else if (item.action === 'update') {
+            // react-doctor-disable-next-line async-await-in-loop
             const { error: err } = await this.supabase
               .from(item.table)
               .update(item.data)
               .eq(item.queryKey as string, item.queryValue as string | number);
             error = err;
           } else if (item.action === 'upsert') {
+            // react-doctor-disable-next-line async-await-in-loop
             const { error: err } = await this.supabase.from(item.table).upsert(item.data);
             error = err;
           } else if (item.action === 'delete') {
+            // react-doctor-disable-next-line async-await-in-loop
             const { error: err } = await this.supabase
               .from(item.table)
               .delete()

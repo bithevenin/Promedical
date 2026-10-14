@@ -257,15 +257,20 @@ export class SyncService {
         if (!localErr && localRows && localRows.length > 0) {
           // Subir en bloques de 500 para estabilidad
           const chunkSize = 500;
+          const chunks: any[][] = [];
           for (let i = 0; i < localRows.length; i += chunkSize) {
-            const chunk = localRows.slice(i, i + chunkSize);
-            const { error: uploadErr } = await this.cloudSupabase.from(name).upsert(chunk, { onConflict: conflictKey });
-            if (uploadErr) {
-              console.warn(`[Sync Upload] Error subiendo chunk en ${name}:`, uploadErr);
-            } else {
-              totalUploaded += chunk.length;
-            }
+            chunks.push(localRows.slice(i, i + chunkSize));
           }
+          const results = await Promise.all(
+            chunks.map(chunk => this.cloudSupabase.from(name).upsert(chunk, { onConflict: conflictKey }))
+          );
+          results.forEach((res, idx) => {
+            if (res.error) {
+              console.warn(`[Sync Upload] Error subiendo chunk en ${name}:`, res.error);
+            } else {
+              totalUploaded += chunks[idx].length;
+            }
+          });
         }
       }
 

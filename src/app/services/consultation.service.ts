@@ -248,16 +248,19 @@ export class ConsultationService {
       // 3. Insertar por lotes a Supabase / LAN
       try {
         const BATCH_SIZE = 500;
+        const batches = [];
         for (let i = 0; i < dbPayloads.length; i += BATCH_SIZE) {
-          const batch = dbPayloads.slice(i, i + BATCH_SIZE);
+          batches.push(dbPayloads.slice(i, i + BATCH_SIZE));
+        }
+        await Promise.all(batches.map(async batch => {
           const { error } = await this.supabase.from('consultas').upsert(batch);
           if (error) throw error;
-        }
+        }));
       } catch (upsertErr) {
         console.warn('[ConsultationService] Error upserting consultations online/LAN, queuing:', upsertErr);
-        for (const payload of dbPayloads) {
-          await this.offlineService.addToQueue('consultas', 'insert', payload);
-        }
+        await Promise.all(dbPayloads.map(payload =>
+          this.offlineService.addToQueue('consultas', 'insert', payload)
+        ));
       }
 
       // 4. Actualizar BehaviorSubject en memoria una sola vez

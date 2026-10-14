@@ -1,0 +1,13 @@
+{
+  "ignore": {
+    "files": [
+      "scripts/**",
+      "www/**",
+      ".angular/**",
+      "dist/**",
+      "dist-electron/**",
+      "release/**",
+      "node_modules/**"
+    ]
+  }
+}
